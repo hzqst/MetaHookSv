@@ -13,7 +13,6 @@ int *peakgltextures_SvEngine = NULL;//for SvEngine
 int *numgltextures = NULL;
 int *gHostSpawnCount = NULL;
 int *currenttexture = NULL;
-int *oldtarget = NULL;
 cachewad_t **decal_wad = NULL;
 qboolean* gfCustomBuild = NULL;
 char (*szCustName)[10] = NULL;
@@ -617,16 +616,6 @@ void GL_Bind(int texnum)
 void GL_SelectTexture(GLenum target)
 {
 	gPrivateFuncs.GL_SelectTexture(target);
-}
-
-void GL_DisableMultitexture(void)
-{
-	gPrivateFuncs.GL_DisableMultitexture();
-}
-
-void GL_EnableMultitexture(void)
-{
-	gPrivateFuncs.GL_EnableMultitexture();
 }
 
 void GL_UnloadTextureByIdentifier(const char* identifier)

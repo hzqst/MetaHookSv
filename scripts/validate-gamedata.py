@@ -212,19 +212,17 @@ RENDERER_ENGINE_ALL_GLOBALS = (
     "cshift_water", "currententity", "currenttexture", "d_lightstylevalue", "detTexSupported",
     "envmap", "filterBrightness", "filterColorBlue", "filterColorGreen", "filterColorRed",
     "filterMode", "frustum", "gDecalSurfCount", "gDecalSurfs", "gTempEnts", "g_ChromeOrigin",
-    "gl_mtexable", "lightmap_rectchange", "lightmap_textures", "lightmaps", "mod_known",
-    "mod_numknown", "modelorg", "mtexenabled", "oldtarget", "pstudiohdr",
+    "lightmap_rectchange", "lightmap_textures", "lightmaps", "mod_known",
+    "mod_numknown", "modelorg", "pstudiohdr",
     "r_model", "r_origin", "r_worldentity", "rtable",
 )
 RENDERER_ENGINE_ALL_PATCHES = ("Sys_ShutdownGame_to_GL_Shutdown_callsite_0",)
 RENDERER_NUMBERED_PATCH_SETS = ("CL_LinkPacketEntities_to_R_ResetLatched_callsite",)
 #SvEngine has no body with D_FillRect's legacy (vrect_t*, color*) interface; its connection
-#message fills the rectangle through Draw_FillRGBABlend instead. SvEngine also publishes no
-#GL_EnableMultitexture record, so the plugin keeps a signature scan for that family only.
+#message fills the rectangle through Draw_FillRGBABlend instead.
 RENDERER_ENGINE_NON_SVENGINE_FUNCTIONS = (
     "D_FillRect", "Draw_SpriteFrameAdditive",
-    "Draw_SpriteFrameGeneric", "Draw_SpriteFrameHoles", "GL_EnableMultitexture",
-    "R_LoadSkys", "R_RenderFinalFog",
+    "Draw_SpriteFrameGeneric", "Draw_SpriteFrameHoles", "R_LoadSkys", "R_RenderFinalFog",
 )
 RENDERER_ENGINE_NON_SVENGINE_PATCHES = ("GL_SetMode_call_qwglCreateContext",)
 #SvEngine renamed the alias-poly counter to c_model_polys.

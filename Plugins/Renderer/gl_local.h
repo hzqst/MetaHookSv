@@ -230,9 +230,6 @@ extern int gl_max_texture_size;
 extern float gl_max_ansio;
 extern int *gl_msaa_fbo;
 extern int *gl_backbuffer_fbo;
-extern int *gl_mtexable;
-
-extern qboolean *mtexenabled;
 
 extern vec_t* r_soundOrigin;
 extern vec_t* r_playerViewportAngles;
@@ -513,8 +510,6 @@ void GL_BindStatesForVAO(GLuint VAO, const std::function<void()>& bind);
 void GL_BindStatesForVAO(GLuint VAO, GLuint VBO, GLuint EBO, const std::function<void()>& bind);
 void GL_Bind(int texnum);
 void GL_SelectTexture(GLenum target);
-void GL_DisableMultitexture(void);
-void GL_EnableMultitexture(void);
 void triapi_Shutdown();
 void triapi_RenderMode(int mode);
 void triapi_Begin(int primitiveCode);

@@ -129,8 +129,6 @@ float gl_max_ansio = 0;
 
 int* gl_msaa_fbo = nullptr;
 int* gl_backbuffer_fbo = nullptr;
-int* gl_mtexable = nullptr;
-qboolean* mtexenabled = 0;
 
 vec_t* r_soundOrigin = nullptr;
 vec_t* r_playerViewportAngles = nullptr;

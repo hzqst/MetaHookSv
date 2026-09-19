@@ -40,7 +40,7 @@ All of the following are resolved via `GamedataResolvePtr` (kind `FUNCTION` / `G
 - `CGame_DrawStartupVideo` — HL25-only gate kept (`g_iEngineType == ENGINE_GOLDSRC_HL25`); other engines leave it null by design.
 - `R_StudioDrawPlayer`, `R_StudioDrawModel`, `R_StudioRenderModel`, `R_StudioRenderFinal`, `R_StudioSetupBones`, `R_StudioMergeBones`, `R_StudioSaveBones` — the whole `ClientStudio_FillAddress_StudioDrawPlayer/_StudioDrawModel/_EngineStudioDrawPlayer` thunk-disasm machinery was deleted.
 
-**Retained disasm roots (real-image):** `Engine_FillAddress_GL_Init` still extracts `gl_extensions` (when `!SDL_GL_GetProcAddress`), walking the gamedata-resolved function on the real image with `RealDllInfo` section bounds and assigning displacements verbatim (no `ConvertDllInfoSpace`). `_GL_Bind`'s `currenttexture` extraction was dropped by the 2026-09-18 follow-up (see below) and `_GL_SelectTexture`'s `oldtarget` extraction by the 2026-09-19 one (last section), both of which now resolve the global from gamedata; `Engine_FillAddress_GL_SelectTexture` no longer exists.
+**Retained disasm roots (real-image):** `Engine_FillAddress_GL_Init` still extracts `gl_extensions` (when `!SDL_GL_GetProcAddress`), walking the gamedata-resolved function on the real image with `RealDllInfo` section bounds and assigning displacements verbatim (no `ConvertDllInfoSpace`). `_GL_Bind`'s `currenttexture` extraction was dropped by the 2026-09-18 follow-up (see below) and resolved from gamedata; `_GL_SelectTexture`'s `oldtarget` extraction was dropped by the 2026-09-19 one, which **deleted `oldtarget` entirely** (write-only slot) — `Engine_FillAddress_GL_SelectTexture` no longer exists.
 
 **Engine globals (kind GLOBAL, 10/10):** `currententity`, `r_model`, `pstudiohdr`, `r_origin`, `g_ChromeOrigin` (deleted `EngineStudio_FillAddress_GetCurrentEntity/_SetRenderModel/_StudioSetHeader/_SetChromeOrigin`), `cl_viewentity` (deleted `_CL_ViewEntityVars`), `cl_max_edicts` + `cl_entities` (deleted `_CL_ReallocateDynamicData`), `cl_numvisedicts` + `cl_visedicts` (deleted `_VisEdicts`), `mod_known` + `mod_numknown` (deleted `_ModKnown`/`_Mod_NumKnown`), `gTempEnts` (deleted `_TempEntsVars`), `r_worldentity` + `cl_worldmodel` (replaced the candidate-disasm tail of `Engine_FillAddress_R_RenderView`), `cl_parsecount` (resolved at the top of `_R_DrawTEntitiesOnListVars`; the parsemod/parsecount disasm branches were removed while `r_blend`/`r_entorigin`/`ClientDLL_DrawTransparentTriangles` extraction remains).
 
@@ -207,7 +207,7 @@ Entry point `EngineStudio_FillAddress(pstudio, DllInfo, RealDllInfo)` (`exportfu
 | Local symbol / inferred game object | Declaration / type | Resolution mechanism | Subsequent use |
 | --- | --- | --- | --- |
 | `gl_extensions` | `const char**` | `Engine_FillAddress_GL_Init` (and `GL_SetMode` BFS): `push 0x1F03` (`GL_EXTENSIONS`) then `MOV [.data],EAX`. | GL extension reset. |
-| `vid_d3d` / `currenttexture` / `oldtarget` | `float*` / `int*` / `int*` | `GL_SetMode` BFS (`MOV [.data],0x3F800000`); `GL_Bind` `DisasmRanges(+0x50)` first `MOV [mem],EAX`; `GL_SelectTexture` first `MOV [mem],ESI`. | `currenttexture` mirrored by the plugin; `vid_d3d`/`oldtarget` resolved only. |
+| `vid_d3d` / `currenttexture` / ~~`oldtarget`~~ | `float*` / `int*` | `GL_SetMode` BFS (`MOV [.data],0x3F800000`); `currenttexture` now gamedata GLOBAL. | `currenttexture` mirrored by the plugin; `vid_d3d` resolved only. `oldtarget` was **deleted 2026-09-19** (write-only since `a5bfd6a5`). |
 | `gltextures` / `gltextures_SvEngine` / `maxgltextures_SvEngine` / `peakgltextures_SvEngine` / `numgltextures` / `allocated_textures` / `gHostSpawnCount` | texture-array bookkeeping | `Engine_FillAddress_GL_LoadTexture2` `DisasmRanges` (non-SvEngine: `MOV reg,[.data]`/`MOV reg,imm` after a self-`XOR`; SvEngine: `8B 15 … 8B 1D` for `gltextures_SvEngine`, `6B C1 54 89 0D` for `maxgltextures`, `03 35 … 3B 15` for `peakgltextures`, `66 8B …` for `gHostSpawnCount`). `allocated_textures` chosen from the trailing `MOV [.data],reg` when `!g_bHasOfficialGLTexAllocSupport`. | Texture enumeration/unload/growth. |
 | `particletexture` / `active_particles` | `int*` / `particle_t**` | `Engine_FillAddress_R_DrawParticles`: first `PUSH [.data]` or `MOV reg,[.data]` not followed by `33 C5`/`33 C4`; `active_particles` = the `MOV ESI,[.data]` preceding `E8` that anchors `R_FreeDeadParticles`. | Particle rendering. |
 | `gTempEnts` | `TEMPENTITY*` | `Engine_FillAddress_TempEntsVars`: SvEngine `68 00 E0 5F 00 6A 00 68 <gTempEnts> A3`, others `68 30 68 17 00 6A 00 68 <gTempEnts> E8`; ptr at `addr+8`. | Temp-entity index lookup. |
@@ -336,7 +336,7 @@ Stored in `gPrivateFuncs` but sourced from public interfaces, so excluded from t
 
 ## Notes
 
-- **Dead / resolved-only fields.** Many `gPrivateFuncs` fields are located but never hooked or called: `R_SetupGL`, `R_RenderScene`, `R_SetupFrame`, `R_PolyBlend` (reimplemented), `S_ExtraUpdate`, `GL_SelectTexture`, `R_TextureAnimation`, `R_DrawSequentialPoly[_HL25]`, `R_DrawBrushModel`, `R_DrawWorld` (reimplemented), `R_DrawViewModel`, `R_MarkLeaves`, `EmitWaterPolys`, `VID_UpdateWindowVars`, `R_DrawTEntitiesOnList`, `R_ClearParticles`, `V_InitLevel`, `R_BuildLightMap`, `R_AddDynamicLights`, `R_RenderDynamicLightmaps`, `R_DrawParticles` (reimplemented), `CL_AllocDlight`/`CL_AllocElight`, `R_StudioLighting`, `R_StudioChrome`, `R_LightLambert`, `R_StudioSetupSkin`, `R_StudioGetSkin`, `GL_UnloadTexture`, `Draw_MiptexTexture`, `Draw_DecalTexture`, `Draw_CustomCacheGet`/`Draw_CacheGet`, `R_DrawSpriteModel`, `Mod_LoadSpriteFrame`, `SCR_BeginLoadingPlaque`, `R_LightStrength`, `R_RotateForEntity`, `R_AddTEntity`, `R_RenderFinalFog`, `Mod_LoadBrushModel`, `Mod_LoadModel`, `ClientPortalManager_ResetAll` (hook commented), `GameStudioRenderer_StudioDrawModel`, `R_StudioDrawModel`, and many `*Vars` globals (`cls_state`, `cls_signon`, `r_soundOrigin`, `gl_mtexable`, `mtexenabled`, `lightmap_textures`, `lightmap_rectchange`, `gDecalSurfs`, `modelorg`, `oldtarget`, `vid_d3d`, `g_ChromeOrigin`, `gSkyTexNumber`, `r_loading_skybox`, `lightmap_polys`, `lightmap_modified`, `chrome`, `chromeage`, `locallight`, `numlights`, scissor rect, `pmainwindow` consumers).
+- **Dead / resolved-only fields.** Many `gPrivateFuncs` fields are located but never hooked or called (the multitexture pair and its globals were removed on 2026-09-19 — see the last section): `R_SetupGL`, `R_RenderScene`, `R_SetupFrame`, `R_PolyBlend` (reimplemented), `S_ExtraUpdate`, `GL_SelectTexture`, `R_TextureAnimation`, `R_DrawSequentialPoly[_HL25]`, `R_DrawBrushModel`, `R_DrawWorld` (reimplemented), `R_DrawViewModel`, `R_MarkLeaves`, `EmitWaterPolys`, `VID_UpdateWindowVars`, `R_DrawTEntitiesOnList`, `R_ClearParticles`, `V_InitLevel`, `R_BuildLightMap`, `R_AddDynamicLights`, `R_RenderDynamicLightmaps`, `R_DrawParticles` (reimplemented), `CL_AllocDlight`/`CL_AllocElight`, `R_StudioLighting`, `R_StudioChrome`, `R_LightLambert`, `R_StudioSetupSkin`, `R_StudioGetSkin`, `GL_UnloadTexture`, `Draw_MiptexTexture`, `Draw_DecalTexture`, `Draw_CustomCacheGet`/`Draw_CacheGet`, `R_DrawSpriteModel`, `Mod_LoadSpriteFrame`, `SCR_BeginLoadingPlaque`, `R_LightStrength`, `R_RotateForEntity`, `R_AddTEntity`, `R_RenderFinalFog`, `Mod_LoadBrushModel`, `Mod_LoadModel`, `ClientPortalManager_ResetAll` (hook commented), `GameStudioRenderer_StudioDrawModel`, `R_StudioDrawModel`, and many `*Vars` globals (`cls_state`, `cls_signon`, `r_soundOrigin`, `lightmap_textures`, `lightmap_rectchange`, `gDecalSurfs`, `modelorg`, `vid_d3d`, `g_ChromeOrigin`, `gSkyTexNumber`, `r_loading_skybox`, `lightmap_polys`, `lightmap_modified`, `chrome`, `chromeage`, `locallight`, `numlights`, scissor rect, `pmainwindow` consumers).
 - **Inlined-function flags.** `R_ForceCVars_inlined`, `R_SetupFrame_inlined`, `R_RenderScene_inlined`, `R_LightStrength_inlined`, `R_GlowBlend_inlined` indicate the engine inlined the target; the plugin then uses call-site-sensitive logic instead of a direct hook.
 - **Duplicate resolution sites.** `r_blend` is resolved both by `Engine_FillAddress_R_DrawTEntitiesOnListVars` (gl_hooks) and `EngineStudio_FillAddress_StudioSetRenderamt` (exportfuncs); `R_RenderDynamicLightmaps` by the `R_DrawSequentialPoly` BFS and its own locator; `r_framecount` by `_GetTimes` and a shadowing local in `gl_hooks.cpp:8744`. Both `if (!field)`-guarded, so first wins.
 - **Hook/uninstall asymmetry.** `Host_ClearMemory` is installed but never unhooked; `ClientPortalManager_DrawPortalSurface`'s hook is installed but `EngineSurface_UninstallHooks` is empty; `GameStudioRenderer_StudioDrawPlayer` is installed but not uninstalled.
@@ -739,14 +739,14 @@ were deleted.
 | --- | --- | --- |
 | `R_TextureAnimation` | 11/11 | `Engine_FillAddress_R_TextureAnimation` deleted, now inline in the dispatch together with `rtable`; `R_TEXTUREANIMATION_SIG_{BLOB,NEW,NEW2,HL25,SVENGINE}` removed |
 | `R_RenderDynamicLightmaps` | 11/11 | the four-branch signature block in `Engine_FillAddress_R_RenderDynamicLightmaps` replaced by one resolve; `R_RENDERDYNAMICLIGHTMAPS_SIG_{BLOB,NEW,NEW2,HL25,SVENGINE,SVENGINE_10152}` removed |
-| `GL_EnableMultitexture` | 9/11 (non-SvEngine) | `GL_ENABLEMULTITEXTURE_SIG_{BLOB,NEW,HL25}` removed; `_SVENGINE` kept because svencoop-10257 / 8948 publish no record |
+| ~~`GL_EnableMultitexture`~~ | — | **Withdrawn the same day**: the symbol has no consumer at all, so it was deleted outright instead of wired to gamedata. See the dead-code section at the end. |
 
 **Engine globals (kind GLOBAL, 11/11 identities): 16**
 
 `frustum` (was the `mov esi, offset frustum` walk in
 `Engine_FillAddress_R_CullBox`; the `vpn` / `vup` / `vright` pattern chain that
 is keyed off the resolved `frustum` address is unchanged and still
-catalog-uncovered), `oldtarget`, `gl_mtexable`, `mtexenabled`, `rtable`,
+catalog-uncovered), `rtable`,
 `lightmaps`, `lightmap_textures`, `lightmap_rectchange`, `gDecalSurfs`,
 `gDecalSurfCount`, `d_lightstylevalue`, `filterMode`, `filterColorRed`,
 `filterColorGreen`, `filterColorBlue`, `filterBrightness`.
@@ -754,9 +754,10 @@ catalog-uncovered), `oldtarget`, `gl_mtexable`, `mtexenabled`, `rtable`,
 **Locators deleted**
 
 - `Engine_FillAddress_GL_SelectTexture` — the whole function is gone; the
-  dispatch now resolves `GL_SelectTexture` (FUNCTION) and `oldtarget` (GLOBAL)
-  inline. This retires the last of the three "retained disasm roots" from the
-  #873 migration (`GL_Init` still extracts `gl_extensions`).
+  dispatch now resolves `GL_SelectTexture` (FUNCTION) inline and `oldtarget` was
+  deleted (see the dead-code section). This retires the last of the three
+  "retained disasm roots" from the #873 migration (`GL_Init` still extracts
+  `gl_extensions`).
 - `Engine_FillAddress_R_DrawSequentialPoly`'s 230-line BFS (`std::set` code /
   branch tracking, `mov [reg+0x38]` lightmap anchor, decal-surface register
   heuristic, and the nested `imm 0x14` + `push 0x200` probe that identified
@@ -771,8 +772,8 @@ catalog-uncovered), `oldtarget`, `gl_mtexable`, `mtexenabled`, `rtable`,
   (2 SvEngine) function records exist but the plugin consumes none of them — it
   only ever wanted the globals, and it calls the filter setters through the
   public engine interface.
-- `Engine_FillAddress_GL_EnableMultitexture`'s `DisasmRanges` for `gl_mtexable`
-  / `mtexenabled`.
+- `Engine_FillAddress_GL_EnableMultitexture` / `_GL_DisableMultitexture` —
+  deleted outright rather than migrated, see the dead-code section.
 - `Engine_FillAddress_R_RenderDynamicLightmaps`'s `cmp al, 0FFh` +
   `mov reg, d_lightstylevalue[reg*4]` pair. The retained pass keeps only
   `lightmap_polys` / `lightmap_modified` and is now rooted on the
@@ -806,8 +807,7 @@ scans.
 
 `scripts/validate-gamedata.py`: `R_RenderDynamicLightmaps`, `R_TextureAnimation`
 and `GL_UnloadTextures` added to `RENDERER_ENGINE_ALL_FUNCTIONS`; the 16 globals
-added to `RENDERER_ENGINE_ALL_GLOBALS`; `GL_EnableMultitexture` added to
-`RENDERER_ENGINE_NON_SVENGINE_FUNCTIONS`. New tests in
+added to `RENDERER_ENGINE_ALL_GLOBALS` (minus the three retired below). New tests in
 `scripts/tests/test_gamedata_contract.py::RendererGateTests`:
 `test_gate_requires_lightmap_and_decal_symbols_on_every_identity`,
 `test_gate_requires_screen_filter_globals_on_every_identity`,
@@ -819,7 +819,82 @@ added to `RENDERER_ENGINE_ALL_GLOBALS`; `GL_EnableMultitexture` added to
 passes over the 21 snapshots re-synced from the upstream index at
 `2026-09-19T10:17:32Z`; `Renderer` builds `Release|Win32` with `gl_hooks.cpp`
 recompiled from scratch and no new warnings. **Not verified**: in-game smoke
-tests on any engine family — in particular nobody has confirmed on a running
-SvEngine client that `GL_EnableMultitexture` still resolves through the retained
-signature, nor that the screen-filter globals read correctly now that they come
-from the catalog instead of the `pfnSetFilter*` disassembly.
+tests on any engine family — in particular nobody has confirmed that the
+screen-filter globals read correctly now that they come from the catalog instead
+of the `pfnSetFilter*` disassembly.
+
+## Dead-code removal (2026-09-19): the multitexture pair, `gl_mtexable` / `mtexenabled`, `oldtarget`
+
+Follow-up to the section above, in direct response to the review question
+*"are `GL_EnableMultitexture` / `GL_DisableMultitexture` actually used?"* —
+**they are not**, and neither are the three globals that travelled with them.
+Wiring `GL_EnableMultitexture` to gamedata in the previous pass was the wrong
+call: it created a release-gate dependency on a record with no consumer. All of
+it is deleted instead.
+
+**Evidence (whole repo, excluding `thirdparty/`)**
+
+| Symbol | Every reference before this change | Verdict |
+| --- | --- | --- |
+| `GL_EnableMultitexture` / `GL_DisableMultitexture` (plugin wrappers) | definition `gl_draw.cpp:622-630`, declaration `gl_local.h:516-517` | **zero callers** |
+| `gPrivateFuncs.GL_EnableMultitexture` / `.GL_DisableMultitexture` | field decl `privatehook.h:49-50`, the two locators, and the dead wrappers | never `Install_InlineHook`-ed |
+| `gl_mtexable` / `mtexenabled` | definition `gl_rmain.cpp:132-133`, extern `gl_local.h:233/235`, the locator assignment | **never read** |
+| `oldtarget` | definition `gl_draw.cpp:16`, extern `gl_draw.h:13`, the resolve | **never read** |
+
+**When each died (git `-S` archaeology, not inference)**
+
+- `69cfa251` "Fix portal." (2025-10-06) deleted `GL_PushDrawState` /
+  `GL_PopDrawState` from `gl_rmisc.cpp`. That pair held the only read of
+  `*mtexenabled` (`saved.mtex = *mtexenabled`) and the only two calls to the
+  wrappers (`if (saved.mtex && !(*mtexenabled)) GL_EnableMultitexture(); else
+  ...`). Before it, `gl_hud.cpp` / `gl_light.cpp` carried 7–10 call sites going
+  back to 2021 — this was live fixed-function state-stack code that the Core
+  Profile rewrite retired.
+- `a5bfd6a5` "fix #610" (2025-06-02) removed the last `glActiveTexture((*oldtarget))`
+  reads from `gl_studio.cpp` (4 sites, still present at `de20e644`, 2025-03-03).
+
+**Second reason the multitexture pair could never do anything useful.** Since
+the `LegacyMultiTextureInit` retarget (2026-09-18) the plugin neuters
+`CheckMultiTextureExtensions` on cof-5936 / hl-4554 / hl-6153 / hl-8684, so
+`gl_mtexable` is pinned at 0 there; the engine's own `GL_EnableMultitexture`
+opens with `cmp gl_mtexable, 0` and returns immediately. Even restoring a caller
+would have been a no-op on those four identities.
+
+**Deleted**
+
+- `Engine_FillAddress_GL_DisableMultitexture` (35 lines) and
+  `Engine_FillAddress_GL_EnableMultitexture` (26 lines), plus both dispatch calls.
+  Nothing else used them as an anchor: the Disable locator was rooted on
+  `R_NewMap` and the Enable locator on Disable, and both chains ended there.
+- All five sig macros: `GL_DISABLEMULTITEXTURE_SIG_{BLOB,NEW,HL25,SVENGINE}` and
+  `GL_ENABLEMULTITEXTURE_SIG_SVENGINE`.
+- The two `private_funcs_t` fields, the two wrappers and their declarations.
+- `gl_mtexable` / `mtexenabled` / `oldtarget`: definitions, externs and resolves.
+
+**Consumer gate reverted accordingly.** `GL_EnableMultitexture` removed from
+`RENDERER_ENGINE_NON_SVENGINE_FUNCTIONS`; `gl_mtexable` / `mtexenabled` /
+`oldtarget` removed from `RENDERER_ENGINE_ALL_GLOBALS`. The net gamedata
+adoption for 2026-09-19 is therefore **16 symbols, not 19**: 2 engine functions
+(`R_TextureAnimation`, `R_RenderDynamicLightmaps`) + 13 engine globals + the
+`GL_UnloadTextures` correction. `test_gate_requires_multitexture_globals_on_every_identity`
+and `test_gate_requires_gl_enablemultitexture_on_non_svengine_only` were replaced
+by `test_gate_ignores_symbols_the_renderer_no_longer_consumes`, which asserts all
+five retired names stay out of every `RENDERER_*` table — a regression guard
+against re-adding a gate entry for something nobody consumes.
+
+**Stale comment fixed.** The two `DisasmRanges` predicates in
+`Engine_FillAddress_R_MarkLeaves` carried a copy-pasted
+`//01D57970 83 3D ... cmp gl_mtexable, 0` comment while actually matching
+`mov ecx, r_viewleaf` / `mov r_oldviewleaf, ecx`. Corrected to the real
+instruction shapes.
+
+**Rule worth keeping.** Before migrating a newly published symbol to gamedata,
+check that the plugin actually *reads* it. `loadname` / `loadmodel` (2026-09-18)
+and these five are the same failure mode: upstream publishing a record is not
+evidence that the consumer needs it, and adding it to the gate converts dead
+code into a release-blocking dependency.
+
+**Verified**: `Renderer` `Release|Win32` builds clean — the 9 remaining warnings
+are byte-identical to the pre-change baseline; `validate-gamedata.py` passes over
+the 21 snapshots; 91 passed / 2 skipped across `scripts/tests` (25 Renderer gate
+tests). **Not verified**: in-game smoke tests on any engine family.

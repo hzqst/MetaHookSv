@@ -56,13 +56,6 @@
 
 #define R_SETUPGL_SIG_BLOB "\x55\x8B\xEC\x83\xE4\xF8\x83\xEC\x10\x53\x55\x56\x57\x68\x01\x17\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xFF\x15"
 
-#define GL_DISABLEMULTITEXTURE_SIG_BLOB "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x50\xE8"
-#define GL_DISABLEMULTITEXTURE_SIG_NEW "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x50\xE8"
-#define GL_DISABLEMULTITEXTURE_SIG_HL25 "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xE8"
-#define GL_DISABLEMULTITEXTURE_SIG_SVENGINE "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\xC0\x84\x00\x00\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\xC7\x05\x2A\x2A\x2A\x2A\x00\x00\x00\x00\xC3"
-
-#define GL_ENABLEMULTITEXTURE_SIG_SVENGINE "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x68\xC1\x84\x00\x00\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xC7\x05\x2A\x2A\x2A\x2A\x01\x00\x00\x00\xC3"
-
 #define R_DRAWSEQUENTIALPOLY_SIG_BLOB "\xA1\x2A\x2A\x2A\x2A\x53\x55\x56\x8B\x88\xF8\x02\x00\x00\xBE\x01\x00\x00\x00"
 
 #define R_DRAWBRUSHMODEL_SIG_BLOB "\x83\xEC\x4C\xC7\x05\x2A\x2A\x2A\x2A\xFF\xFF\xFF\xFF\x53\x55\x56\x57"
@@ -1572,70 +1565,6 @@ void Engine_FillAddress_R_AddDynamicLights(const mh_dll_info_t& DllInfo, const m
 	Sig_FuncNotFound(R_AddDynamicLights);
 }
 
-void Engine_FillAddress_GL_DisableMultitexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (gPrivateFuncs.GL_DisableMultitexture)
-		return;
-
-	PVOID GL_DisableMultitexture_VA = 0;
-
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		GL_DisableMultitexture_VA = Search_Pattern(GL_DISABLEMULTITEXTURE_SIG_SVENGINE, DllInfo);
-		gPrivateFuncs.GL_DisableMultitexture = (decltype(gPrivateFuncs.GL_DisableMultitexture))ConvertDllInfoSpace((PVOID)GL_DisableMultitexture_VA, DllInfo, RealDllInfo);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		PVOID R_NewMap_VA = ConvertDllInfoSpace(gPrivateFuncs.R_NewMap, RealDllInfo, DllInfo);
-
-		GL_DisableMultitexture_VA = Search_Pattern_From(R_NewMap_VA, GL_DISABLEMULTITEXTURE_SIG_HL25, DllInfo);
-		gPrivateFuncs.GL_DisableMultitexture = (decltype(gPrivateFuncs.GL_DisableMultitexture))ConvertDllInfoSpace((PVOID)GL_DisableMultitexture_VA, DllInfo, RealDllInfo);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC)
-	{
-		PVOID R_NewMap_VA = ConvertDllInfoSpace(gPrivateFuncs.R_NewMap, RealDllInfo, DllInfo);
-
-		GL_DisableMultitexture_VA = Search_Pattern_From(R_NewMap_VA, GL_DISABLEMULTITEXTURE_SIG_NEW, DllInfo);
-		gPrivateFuncs.GL_DisableMultitexture = (decltype(gPrivateFuncs.GL_DisableMultitexture))ConvertDllInfoSpace((PVOID)GL_DisableMultitexture_VA, DllInfo, RealDllInfo);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
-	{
-		PVOID R_NewMap_VA = ConvertDllInfoSpace(gPrivateFuncs.R_NewMap, RealDllInfo, DllInfo);
-
-		GL_DisableMultitexture_VA = Search_Pattern_From(R_NewMap_VA, GL_DISABLEMULTITEXTURE_SIG_BLOB, DllInfo);
-		gPrivateFuncs.GL_DisableMultitexture = (decltype(gPrivateFuncs.GL_DisableMultitexture))ConvertDllInfoSpace((PVOID)GL_DisableMultitexture_VA, DllInfo, RealDllInfo);
-	}
-
-	Sig_FuncNotFound(GL_DisableMultitexture);
-}
-
-void Engine_FillAddress_GL_EnableMultitexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (gPrivateFuncs.GL_EnableMultitexture)
-		return;
-
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		//SvEngine publishes no catalog record for GL_EnableMultitexture.
-		PVOID GL_EnableMultitexture_VA = Search_Pattern(GL_ENABLEMULTITEXTURE_SIG_SVENGINE, DllInfo);
-		gPrivateFuncs.GL_EnableMultitexture = (decltype(gPrivateFuncs.GL_EnableMultitexture))ConvertDllInfoSpace((PVOID)GL_EnableMultitexture_VA, DllInfo, RealDllInfo);
-	}
-	else
-	{
-		gPrivateFuncs.GL_EnableMultitexture = (decltype(gPrivateFuncs.GL_EnableMultitexture))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_EnableMultitexture", MH_GAMESYMBOL_KIND_FUNCTION);
-	}
-
-	Sig_FuncNotFound(GL_EnableMultitexture);
-
-	/*
-		//Global pointers that link into engine vars
-		int *gl_mtexable = NULL;
-		qboolean *mtexenabled = NULL;
-	*/
-	gl_mtexable = (decltype(gl_mtexable))GamedataResolvePtr(RealDllInfo.ImageBase, "gl_mtexable", MH_GAMESYMBOL_KIND_GLOBAL);
-	mtexenabled = (decltype(mtexenabled))GamedataResolvePtr(RealDllInfo.ImageBase, "mtexenabled", MH_GAMESYMBOL_KIND_GLOBAL);
-}
-
 void Engine_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_DrawSequentialPoly || gPrivateFuncs.R_DrawSequentialPoly_HL25)
@@ -1683,7 +1612,6 @@ void Engine_FillAddress_R_RecursiveWorldNode(const mh_dll_info_t& DllInfo, const
 	{
 		gPrivateFuncs.R_RecursiveWorldNode = (decltype(gPrivateFuncs.R_RecursiveWorldNode))R_RecursiveWorldNode_VA;
 	}
-
 }
 
 void Engine_FillAddress_R_DrawWorld(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -1763,7 +1691,7 @@ void Engine_FillAddress_R_MarkLeaves(const mh_dll_info_t& DllInfo, const mh_dll_
 					pinst->detail->x86.operands[1].mem.index == 0 &&
 					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->RealDllInfo.DataBase &&
 					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize)
-				{//01D57970 83 3D 80 66 00 08 00                                cmp     gl_mtexable, 0
+				{//8B 0D 2A 2A 2A 2A                                   mov     ecx, r_viewleaf
 					ctx->r_viewleaf = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
 				}
 
@@ -1777,7 +1705,7 @@ void Engine_FillAddress_R_MarkLeaves(const mh_dll_info_t& DllInfo, const mh_dll_
 					pinst->detail->x86.operands[0].mem.index == 0 &&
 					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->RealDllInfo.DataBase &&
 					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize)
-				{//01D57970 83 3D 80 66 00 08 00                                cmp     gl_mtexable, 0
+				{//89 0D 2A 2A 2A 2A                                   mov     r_oldviewleaf, ecx
 					ctx->r_oldviewleaf = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
 				}
 
@@ -6575,7 +6503,6 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 	Engine_FillAddress_GL_Bind(DllInfo, RealDllInfo);
 
 	gPrivateFuncs.GL_SelectTexture = (decltype(gPrivateFuncs.GL_SelectTexture))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_SelectTexture", MH_GAMESYMBOL_KIND_FUNCTION);
-	oldtarget = (decltype(oldtarget))GamedataResolvePtr(RealDllInfo.ImageBase, "oldtarget", MH_GAMESYMBOL_KIND_GLOBAL);
 
 	Engine_FillAddress_GL_LoadTexture2(DllInfo, RealDllInfo);
 
@@ -6600,10 +6527,6 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 	Engine_FillAddress_R_BuildLightMap(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_R_AddDynamicLights(DllInfo, RealDllInfo);
-
-	Engine_FillAddress_GL_DisableMultitexture(DllInfo, RealDllInfo);
-
-	Engine_FillAddress_GL_EnableMultitexture(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_R_DrawSequentialPoly(DllInfo, RealDllInfo);
 

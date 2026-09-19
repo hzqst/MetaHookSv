@@ -46,8 +46,6 @@ typedef struct
 	qboolean(*R_CullBox)(vec3_t mins, vec3_t maxs);
 	void (*GL_Bind)(int texnum);
 	void (*GL_SelectTexture)(GLenum target);
-	void (*GL_DisableMultitexture)(void);
-	void (*GL_EnableMultitexture)(void);
 	void (*GL_Init)(void);
 	qboolean (*GL_SetMode_SvEngine)(void* window, HDC* pmaindc, HGLRC* pbaseRC);
 	qboolean (*GL_SetMode_GoldSrc)(void* window, HDC* pmaindc, HGLRC* pbaseRC, int fD3D, const char* pszDriver, const char* pszCmdLine);//SDL builds of GoldSrc/HL25 still keep the six-arg ABI, fD3D/pszDriver/pszCmdLine are forwarded to QGL_Init

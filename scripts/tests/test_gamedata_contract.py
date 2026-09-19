@@ -671,24 +671,24 @@ class RendererGateTests(unittest.TestCase):
                 errors = validate.validate_renderer(symbols, gv)
                 self.assertTrue(any(name in e for e in errors), (name, gv, errors))
 
-    def test_gate_requires_multitexture_globals_on_every_identity(self):
-        for name in ("gl_mtexable", "mtexenabled", "oldtarget"):
-            for gv in validate.RENDERER_ALL_GAMES:
-                symbols = self.complete_engine_symbols(gv)
-                del symbols[name]
-                errors = validate.validate_renderer(symbols, gv)
-                self.assertTrue(any(name in e for e in errors), (name, gv, errors))
-
-    def test_gate_requires_gl_enablemultitexture_on_non_svengine_only(self):
-        for gv in validate.RENDERER_NON_SVENGINE_GAMES:
+    def test_gate_ignores_symbols_the_renderer_no_longer_consumes(self):
+        #The multitexture wrappers and their globals lost their last reader when
+        #GL_PushDrawState / GL_PopDrawState were deleted, and oldtarget lost its
+        #glActiveTexture readers; the plugin resolves none of them, so the gate
+        #must not make the release depend on records nobody consumes.
+        retired = ("GL_EnableMultitexture", "GL_DisableMultitexture",
+                   "gl_mtexable", "mtexenabled", "oldtarget")
+        for name in retired:
+            self.assertNotIn(name, validate.RENDERER_ENGINE_ALL_FUNCTIONS)
+            self.assertNotIn(name, validate.RENDERER_ENGINE_ALL_GLOBALS)
+            self.assertNotIn(name, validate.RENDERER_ENGINE_NON_SVENGINE_FUNCTIONS)
+            self.assertNotIn(name, validate.RENDERER_ENGINE_NON_SVENGINE_GLOBALS)
+            self.assertNotIn(name, validate.RENDERER_ENGINE_SVENGINE_FUNCTIONS)
+            self.assertNotIn(name, validate.RENDERER_SVENGINE_GLOBALS)
+        for gv in validate.RENDERER_ALL_GAMES:
             symbols = self.complete_engine_symbols(gv)
-            self.assertIn("GL_EnableMultitexture", symbols)
-            del symbols["GL_EnableMultitexture"]
-            errors = validate.validate_renderer(symbols, gv)
-            self.assertTrue(any("GL_EnableMultitexture" in e for e in errors), (gv, errors))
-        for gv in validate.RENDERER_SVENGINE_GAMES:
-            symbols = self.complete_engine_symbols(gv)
-            self.assertNotIn("GL_EnableMultitexture", symbols)
+            for name in retired:
+                self.assertNotIn(name, symbols, (gv, name))
             self.assertEqual([], validate.validate_renderer(symbols, gv), gv)
 
     def test_gate_alias_poly_counter_follows_engine_family(self):
