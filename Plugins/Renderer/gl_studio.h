@@ -375,6 +375,7 @@ void R_SaveStudioProgramStates(void);
 void R_LoadStudioProgramStates(void);
 void R_GLStudioDrawPoints(void);
 void R_StudioLoadTextureModel(model_t* mod, studiohdr_t *studiohdr, CStudioModelRenderData* pRenderData);
+model_t* R_StudioLoadTextureModel(model_t* mod);
 
 void studioapi_StudioDynamicLight(cl_entity_t *ent, alight_t *plight);
 qboolean studioapi_StudioCheckBBox(void);

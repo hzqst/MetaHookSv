@@ -1,4 +1,5 @@
 #include "gl_local.h"
+#include "studio_model_validation.h"
 
 byte mod_novis[MAX_MAP_LEAFS_SVENGINE / 8] = {0};
 
@@ -109,6 +110,26 @@ void Mod_LoadStudioModel(model_t* mod, void* buffer)
 
 	if (studiohdr)
 	{
+		if (g_iEngineType == ENGINE_SVENGINE && studiohdr->textureindex == 0)
+		{
+			auto textureModel = R_StudioLoadTextureModel(mod);
+			if (StudioShouldReplaceMissingTextureModel(true, studiohdr->textureindex, textureModel ? textureModel->name : nullptr))
+			{
+				// Replace the body before any client/engine Studio code computes bones.
+				// Reload through the engine to give this model its own header and cache slot.
+				gEngfuncs.Con_Printf("Renderer: replacing %s with %s because its texture model is missing.\n", mod->name, textureModel->name);
+				strncpy(mod->name, textureModel->name, sizeof(mod->name) - 1);
+				mod->name[sizeof(mod->name) - 1] = 0;
+				mod->texinfo = nullptr;
+				mod->needload = NL_NEEDS_LOADED;
+				gPrivateFuncs.Mod_LoadModel(mod, true, false);
+				return;
+			}
+
+			// Reuse the same texture model during lazy RenderData creation and engine draws.
+			mod->texinfo = (mtexinfo_t*)textureModel;
+		}
+
 		if ((int)r_studio_lazy_load->value == 0)
 		{
 			//Force load

@@ -1,4 +1,5 @@
 #include "gl_local.h"
+#include "studio_model_validation.h"
 #include "triangleapi.h"
 #include "mathlib2.h"
 #include "CounterStrike.h"
@@ -282,7 +283,8 @@ void R_StudioGetTextureHeaderSkinref(
 	mstudiotexture_t** ptexture,
 	short** pskinref)
 {
-	if (ptexturehdr && ptexturehdr->textureindex)
+	if (ptexturehdr && ptexturehdr->textureindex > 0 && ptexturehdr->skinindex > 0 &&
+		ptexturehdr->numskinref > 0 && ptexturehdr->numskinfamilies > 0 && ptexturehdr->numtextures > 0)
 	{
 		(*ptexture) = (mstudiotexture_t*)((byte*)ptexturehdr + ptexturehdr->textureindex);
 
@@ -386,8 +388,15 @@ void R_PrepareTBNForRenderMesh(
 {
 	auto pmesh = (mstudiomesh_t*)((byte*)studiohdr + pRenderMesh->nMeshOffset);
 
-	int width = ptexture[pskinref[pmesh->skinref]].width;
-	int height = ptexture[pskinref[pmesh->skinref]].height;
+	const int textureIndex = ptexturehdr && ptexture ?
+		StudioResolveTextureIndex(pskinref, ptexturehdr->numskinref, ptexturehdr->numtextures, pmesh->skinref) : -1;
+	if (textureIndex < 0)
+		return;
+
+	int width = ptexture[textureIndex].width;
+	int height = ptexture[textureIndex].height;
+	if (width <= 0 || height <= 0)
+		return;
 
 	vec2_t uvscale = { 1.0f / width, 1.0f / height };
 
@@ -1616,28 +1625,35 @@ void R_InitStudio(void)
 	r_lowerbody_duck_model_offset = gEngfuncs.pfnRegisterVariable("r_lowerbody_duck_model_offset", "0 0 0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 }
 
+model_t* R_StudioLoadTextureModel(model_t* mod)
+{
+	//This is actually 260 instead of 256
+	char modelname[260];
+
+	size_t maxmodelname = sizeof(modelname) - 1 - (sizeof("T.mdl"));
+
+	strncpy(modelname, mod->name, maxmodelname);
+	modelname[maxmodelname] = 0;
+
+	strcpy(&modelname[strlen(modelname) - 4], "T.mdl");
+
+	auto texmodel = IEngineStudio.Mod_ForName(modelname, true);
+
+	auto ptexturehdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(texmodel);
+	if (ptexturehdr)
+	{
+		strncpy(ptexturehdr->name, modelname, sizeof(ptexturehdr->name) - 1);
+		ptexturehdr->name[sizeof(ptexturehdr->name) - 1] = 0;
+	}
+	return texmodel;
+}
+
 void R_StudioLoadTextureModel(model_t* mod, studiohdr_t* studiohdr, CStudioModelRenderData* pRenderData)
 {
 	if (studiohdr->textureindex == 0 && !pRenderData->TextureModel)
 	{
-		//This is actually 260 instead of 256
-		char modelname[260];
-
-		size_t maxmodelname = sizeof(modelname) - 1 - (sizeof("T.mdl"));
-
-		strncpy(modelname, mod->name, maxmodelname);
-		modelname[maxmodelname] = 0;
-
-		strcpy(&modelname[strlen(modelname) - 4], "T.mdl");
-
-		auto texmodel = IEngineStudio.Mod_ForName(modelname, true);
-		//mod->texinfo = (mtexinfo_t*)texmodel;
-
-		pRenderData->TextureModel = texmodel;
-
-		auto ptexturehdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(texmodel);
-		strncpy(ptexturehdr->name, modelname, sizeof(ptexturehdr->name) - 1);
-		ptexturehdr->name[sizeof(ptexturehdr->name) - 1] = 0;
+		pRenderData->TextureModel = g_iEngineType == ENGINE_SVENGINE && mod->texinfo ?
+			(model_t*)mod->texinfo : R_StudioLoadTextureModel(mod);
 	}
 }
 
@@ -3194,9 +3210,9 @@ void R_StudioDrawMesh(
 {
 	auto pmesh = (mstudiomesh_t*)((byte*)(*pstudiohdr) + (*psubmodel)->meshindex) + pRenderMesh->iMeshIndex;
 
-	auto uskinref = pskinref[pmesh->skinref];
-
-	if (uskinref > ptexturehdr->numtextures)
+	const int uskinref = ptexturehdr && ptexture ?
+		StudioResolveTextureIndex(pskinref, ptexturehdr->numskinref, ptexturehdr->numtextures, pmesh->skinref) : -1;
+	if (uskinref < 0 || ptexture[uskinref].width <= 0 || ptexture[uskinref].height <= 0)
 		return;
 
 	program_state_t StudioProgramState = (program_state_t)(ptexture[uskinref].flags & 0x00000000FFFFFFFFull);
