@@ -66,6 +66,7 @@ void Mod_Init(void)
 	memset(mod_novis, 0xff, sizeof(mod_novis));
 }
 
+//Note that this only get called when switching client
 void Mod_UnloadSpriteTextures(model_t* mod)
 {
 	if (mod->type != mod_sprite)
