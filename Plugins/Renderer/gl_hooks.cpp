@@ -7339,6 +7339,7 @@ void Engine_FillAddress_NET_DrawRect(const mh_dll_info_t& DllInfo, const mh_dll_
 //Every engine identity publishes Mod_UnloadSpriteTextures as a standalone body that
 //SPR_Shutdown still calls out of line, SvEngine and HL25 included, so the inline hook
 //on it covers the HUD sprite list too and there is no branch left to keep.
+//take it carefully with linux build ! Mod_UnloadSpriteTextures can be inlined into SPR_Shutdown in linux build !
 void Engine_FillAddress_Mod_UnloadSpriteTextures(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.Mod_UnloadSpriteTextures)
