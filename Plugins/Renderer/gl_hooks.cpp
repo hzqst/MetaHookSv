@@ -104,12 +104,6 @@
 #define R_LIGHTLAMBERT_SIG_HL25      "\x55\x8B\xEC\x83\xE4\xF8\x8B\x15\x2A\x2A\x2A\x2A\x83\xEC\x18\x2A\x2A\x85\xD2\x0F\x2A\x2A\x2A\x2A\x2A\x0F\x57\x2A\x0F\x57\x2A\x33\xFF"
 #define R_LIGHTLAMBERT_SIG_SVENGINE  "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x2A\xD9\xE8\x8D\x4C\x24\x2A\x8B\x44\x24\x2A\x53"
 
-#define R_STUDIOCHROME_SIG_BLOB "\x83\xEC\x24\x8B\x0D\x2A\x2A\x2A\x2A\x53\x56\x8B\x74\x24\x34\x57\x8B\x04\xB5"
-#define R_STUDIOCHROME_SIG_NEW2 R_STUDIOCHROME_SIG_BLOB
-#define R_STUDIOCHROME_SIG_NEW "\x55\x8B\xEC\x83\xEC\x24\x8B\x0D\x2A\x2A\x2A\x2A\x53\x56\x8B\x75\x0C\x57\x8B\x04\xB5"
-#define R_STUDIOCHROME_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x2A\x8B\x2A\x08\x2A\x8B\x2A\x0C\x8B\x04"
-#define R_STUDIOCHROME_SIG_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x2A\xD9\xE8\x53"
-
 #define BUILDNORMALINDEXTABLE_SIG_BLOB "\x8B\x15\x2A\x2A\x2A\x2A\x2A\x8B\x4A\x50\x85\xC9\x2A\x2A\x83\xC8\xFF"
 #define BUILDNORMALINDEXTABLE_SIG_NEW "\x55\x8B\xEC\x51\x8B\x15\x2A\x2A\x2A\x2A\x57\x8B\x4A\x50\x85\xC9\x7E\x0A\x83\xC8\xFF\xBF"
 #define BUILDNORMALINDEXTABLE_SIG_HL25 ""
@@ -2323,41 +2317,6 @@ void Engine_FillAddress_R_StudioLighting(const mh_dll_info_t& DllInfo, const mh_
 	Sig_VarNotFound(r_blightvec);
 	Sig_VarNotFound(r_plightvec);
 	Sig_VarNotFound(lightgammatable);
-}
-
-void Engine_FillAddress_R_StudioChrome(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (gPrivateFuncs.R_StudioChrome)
-		return;
-
-	PVOID R_StudioChrome_VA = 0;
-
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		R_StudioChrome_VA = Search_Pattern(R_STUDIOCHROME_SIG_SVENGINE, DllInfo);
-		gPrivateFuncs.R_StudioChrome = (decltype(gPrivateFuncs.R_StudioChrome))ConvertDllInfoSpace(R_StudioChrome_VA, DllInfo, RealDllInfo);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		R_StudioChrome_VA = Search_Pattern(R_STUDIOCHROME_SIG_HL25, DllInfo);
-		gPrivateFuncs.R_StudioChrome = (decltype(gPrivateFuncs.R_StudioChrome))ConvertDllInfoSpace(R_StudioChrome_VA, DllInfo, RealDllInfo);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC)
-	{
-		R_StudioChrome_VA = Search_Pattern(R_STUDIOCHROME_SIG_NEW, DllInfo);
-
-		if (!R_StudioChrome_VA)
-			R_StudioChrome_VA = Search_Pattern(R_STUDIOCHROME_SIG_NEW2, DllInfo);
-
-		gPrivateFuncs.R_StudioChrome = (decltype(gPrivateFuncs.R_StudioChrome))ConvertDllInfoSpace(R_StudioChrome_VA, DllInfo, RealDllInfo);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
-	{
-		R_StudioChrome_VA = Search_Pattern(R_STUDIOCHROME_SIG_BLOB, DllInfo);
-		gPrivateFuncs.R_StudioChrome = (decltype(gPrivateFuncs.R_StudioChrome))ConvertDllInfoSpace(R_StudioChrome_VA, DllInfo, RealDllInfo);
-	}
-
-	Sig_FuncNotFound(R_StudioChrome);
 }
 
 void Engine_FillAddress_R_LightLambert(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -4828,151 +4787,9 @@ void Engine_FillAddress_R_DecalInit(const mh_dll_info_t& DllInfo, const mh_dll_i
 	Sig_VarNotFound(gDecalCache);
 }
 
-void Engine_FillAddress_R_RenderDynamicLightmaps(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_LightstyleVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (!gPrivateFuncs.R_RenderDynamicLightmaps)
-	{
-		gPrivateFuncs.R_RenderDynamicLightmaps = (decltype(gPrivateFuncs.R_RenderDynamicLightmaps))GamedataResolvePtr(RealDllInfo.ImageBase, "R_RenderDynamicLightmaps", MH_GAMESYMBOL_KIND_FUNCTION);
-	}
-
-	PVOID R_RenderDynamicLightmaps_VA = (PVOID)gPrivateFuncs.R_RenderDynamicLightmaps;
-
-	/*
-		 int *d_lightstylevalue = NULL;
-		 int *lightmap_modified = NULL;
-		 glpoly_t **lightmap_polys = NULL;
-	 */
 	d_lightstylevalue = (decltype(d_lightstylevalue))GamedataResolvePtr(RealDllInfo.ImageBase, "d_lightstylevalue", MH_GAMESYMBOL_KIND_GLOBAL);
-
-	typedef struct R_RenderDynamicLightmaps_SearchContext_s
-	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-	} R_RenderDynamicLightmaps_SearchContext;
-
-	R_RenderDynamicLightmaps_SearchContext ctx = { RealDllInfo, RealDllInfo };
-
-	g_pMetaHookAPI->DisasmRanges(R_RenderDynamicLightmaps_VA, 0x150, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (R_RenderDynamicLightmaps_SearchContext*)context;
-
-		if (!lightmap_polys &&
-			pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[0].mem.index != 0 &&
-			pinst->detail->x86.operands[0].mem.base == 0 &&
-			pinst->detail->x86.operands[0].mem.scale == 4 &&
-			(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-			(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
-			pinst->detail->x86.operands[1].type == X86_OP_REG &&
-			pinst->detail->x86.operands[1].reg == X86_REG_EAX)
-		{
-			//.text:01D58422 89 04 8D C8 B8 F5 03 mov     lightmap_polys[ecx*4], eax
-
-			lightmap_polys = (decltype(lightmap_polys))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-		}
-		else if (!lightmap_modified &&
-			pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[0].mem.index != 0 &&
-			pinst->detail->x86.operands[0].mem.base == 0 &&
-			pinst->detail->x86.operands[0].mem.scale == 4 &&
-			(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-			(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
-			pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-			pinst->detail->x86.operands[1].imm == 1)
-		{
-			//.text:01D58489 C7 04 85 C8 C8 F5 03 01 00 00 00                    mov     lightmap_modified[eax*4], 1
-
-			lightmap_modified = (decltype(lightmap_modified))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-		}
-
-		if (lightmap_polys && lightmap_modified)
-			return TRUE;
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-	}, 0, &ctx);
-
-	Sig_VarNotFound(lightmap_polys);
-	Sig_VarNotFound(lightmap_modified);
-}
-
-void Engine_FillAddress_R_StudioChromeVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	/*
-		//Global pointers that link into engine vars
-		int (*chromeage)[MAXSTUDIOBONES] = NULL;
-		int (*chrome)[MAXSTUDIOBONES] = NULL;
-	*/
-	PVOID R_GLStudioDrawPoints_VA = 0;
-	PVOID R_StudioChrome_VA = 0;
-
-	if (gPrivateFuncs.R_GLStudioDrawPoints)
-	{
-		R_GLStudioDrawPoints_VA = ConvertDllInfoSpace(gPrivateFuncs.R_GLStudioDrawPoints, RealDllInfo, DllInfo);
-	}
-
-	if (gPrivateFuncs.R_StudioChrome)
-	{
-		R_StudioChrome_VA = ConvertDllInfoSpace(gPrivateFuncs.R_StudioChrome, RealDllInfo, DllInfo);
-	}
-
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		//R_StudioChrome has been inlined into R_GLStudioDrawPoints
-#define CHROMEAGE_SIG_SVENGINE "\xBF\x2A\x2A\x2A\x2A\xF3\xAB\x33\xFF\x39"
-		ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(R_GLStudioDrawPoints_VA, 0x600, CHROMEAGE_SIG_SVENGINE);
-		Sig_AddrNotFound(chromeage);
-		PVOID chromeage_VA = *(PVOID*)(addr + 1);
-		chromeage = (decltype(chromeage))ConvertDllInfoSpace(chromeage_VA, DllInfo, RealDllInfo);
-
-#define CHROME_SIG_SVENGINE "\xC1\xE8\x1F\x03\xC2\x8D\x04\xC5\x2A\x2A\x2A\x2A\x50\xE8"
-		addr = (ULONG_PTR)Search_Pattern_From_Size(R_GLStudioDrawPoints_VA, 0x1000, CHROME_SIG_SVENGINE);
-		Sig_AddrNotFound(chrome);
-		PVOID chrome_VA = *(PVOID*)(addr + 8);
-		chrome = (decltype(chrome))ConvertDllInfoSpace(chrome_VA, DllInfo, RealDllInfo);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		//R_StudioChrome has been inlined into R_GLStudioDrawPoints
-#define CHROMEAGE_SIG_HL25 "\x33\xC0\xBF\x2A\x2A\x2A\x2A\xF3\xAB\x8B"
-		ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(R_GLStudioDrawPoints_VA, 0x600, CHROMEAGE_SIG_HL25);
-		Sig_AddrNotFound(chromeage);
-		PVOID chromeage_VA = *(PVOID*)(addr + 3);
-		chromeage = (decltype(chromeage))ConvertDllInfoSpace(chromeage_VA, DllInfo, RealDllInfo);
-
-#define CHROME_SIG_HL25 "\x8D\x04\xFD\x2A\x2A\x2A\x2A\xFF\xB5\x2A\x2A\x2A\x2A\x50\xE8\x2A\x2A\x2A\x2A\x83\xC4\x0C"
-		addr = (ULONG_PTR)Search_Pattern_From_Size(R_GLStudioDrawPoints_VA, 0x1000, CHROME_SIG_HL25);
-		Sig_AddrNotFound(chrome);
-		PVOID chrome_VA = *(PVOID*)(addr + 3);
-		chrome = (decltype(chrome))ConvertDllInfoSpace(chrome_VA, DllInfo, RealDllInfo);
-	}
-	else
-	{
-#define CHROMEAGE_SIG "\x8B\x04\xB5\x2A\x2A\x2A\x2A\x3B\xC1"
-		ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(R_StudioChrome_VA, 0x50, CHROMEAGE_SIG);
-		Sig_AddrNotFound(chromeage);
-		PVOID chromeage_VA = *(PVOID*)(addr + 3);
-		chromeage = (decltype(chromeage))ConvertDllInfoSpace(chromeage_VA, DllInfo, RealDllInfo);
-
-#define CHROME_SIG_NEW "\x8D\x0C\xD5\x2A\x2A\x2A\x2A\x51\xE8"
-		addr = (ULONG_PTR)Search_Pattern_From_Size(R_GLStudioDrawPoints_VA, 0x600, CHROME_SIG_NEW);
-		Sig_AddrNotFound(chrome);
-		PVOID chrome_VA = *(PVOID*)(addr + 3);
-		chrome = (decltype(chrome))ConvertDllInfoSpace(chrome_VA, DllInfo, RealDllInfo);
-	}
-
-	Sig_VarNotFound(chromeage);
-	Sig_VarNotFound(chrome);
 }
 
 void Engine_FillAddress_WaterVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -6186,8 +6003,6 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 
 	Engine_FillAddress_R_StudioLighting(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_StudioChrome(DllInfo, RealDllInfo);
-
 	Engine_FillAddress_R_LightLambert(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_R_StudioSetupSkin(DllInfo, RealDllInfo);
@@ -6253,9 +6068,7 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 
 	Engine_FillAddress_R_DecalInit(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_RenderDynamicLightmaps(DllInfo, RealDllInfo);
-
-	Engine_FillAddress_R_StudioChromeVars(DllInfo, RealDllInfo);
+	Engine_FillAddress_LightstyleVars(DllInfo, RealDllInfo);
 
 	cl_simorg = (decltype(cl_simorg))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_simorg", MH_GAMESYMBOL_KIND_GLOBAL);
 

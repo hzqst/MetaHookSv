@@ -63,7 +63,6 @@ typedef struct
 	void (*R_RecursiveWorldNode)(mnode_t* node);
 	void (*R_RecursiveWorldNode_HL25)(mnode_t* node, qboolean cleanUpShaderState);//HL25 added the second arg, it is propagated through recursion and into R_DrawSequentialPoly's cleanUpShaderState
 	texture_t* (*R_TextureAnimation)(msurface_t* fa);
-	void (*R_RenderDynamicLightmaps)(msurface_t* fa);
 	void(*R_RotateForEntity)(float* origin, cl_entity_t* ent);
 	void (*Draw_MiptexTexture)(cachewad_t* wad, byte* data);
 	void (*GL_UnloadTexture)(const char* identifier);
@@ -213,8 +212,6 @@ typedef struct
 	void (*R_StudioSetupSkin)(studiohdr_t* ptexturehdr, int index);
 	skin_t* (*R_StudioGetSkin)(int keynum, int index);
 	void (*R_LightLambert)(float (*light)[4], float* normal, float* src, float* lambert);
-
-	void (*R_StudioChrome)(int* pchrome, int bone, vec3_t normal);
 
 	//Engine Studio Exported API
 	void (*studioapi_StudioDynamicLight)(struct cl_entity_s* ent, struct alight_s* plight);

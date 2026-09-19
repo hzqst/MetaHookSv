@@ -302,8 +302,6 @@ void R_ClearWorldSurfaceWorldModels(void);
 
 //engine
 extern byte *lightmaps;
-extern int *lightmap_modified;
-extern glpoly_t **lightmap_polys;
 extern int *d_lightstylevalue;
 extern dlight_t *cl_dlights;
 extern dlight_t* cl_elights;

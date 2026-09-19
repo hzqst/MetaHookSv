@@ -197,7 +197,7 @@ RENDERER_ENGINE_ALL_FUNCTIONS = (
     "R_CullBox", "R_DrawBrushModel", "R_DrawParticles", "R_DrawSequentialPoly",
     "R_DrawTEntitiesOnList", "R_DrawWorld", "R_ForceCVars", "R_FreeDeadParticles",
     "R_GLStudioDrawPoints", "R_GetSpriteFrame", "R_MarkLeaves", "R_NewMap", "R_PolyBlend",
-    "R_RecursiveWorldNode", "R_RenderDynamicLightmaps", "R_RenderView", "R_ResetLatched",
+    "R_RecursiveWorldNode", "R_RenderView", "R_ResetLatched",
     "R_SetupGL",
     "R_StudioDrawModel", "R_StudioDrawPlayer", "R_StudioMergeBones", "R_StudioRenderFinal",
     "R_StudioRenderModel", "R_StudioSaveBones", "R_StudioSetupBones", "R_TextureAnimation",

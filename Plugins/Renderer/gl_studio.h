@@ -325,8 +325,6 @@ extern vec3_t(*lightvalues)[MAXSTUDIOVERTS];
 extern float (*pbonetransform)[MAXSTUDIOBONES][3][4];
 extern float (*plighttransform)[MAXSTUDIOBONES][3][4];
 extern float(*rotationmatrix)[3][4];
-extern int (*chromeage)[MAXSTUDIOBONES];
-extern int(*chrome)[MAXSTUDIOVERTS][2];
 extern cl_entity_t *cl_viewent;
 extern int *g_ForcedFaceFlags;
 extern int *lightgammatable;

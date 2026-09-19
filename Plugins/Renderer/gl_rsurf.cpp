@@ -6,8 +6,6 @@ msurface_t **waterchain = NULL;
 
 //engine
 byte *lightmaps = NULL;
-int *lightmap_modified = NULL;
-glpoly_t **lightmap_polys = NULL;
 int *d_lightstylevalue = NULL;
 dlight_t *cl_dlights = NULL;
 dlight_t* cl_elights = NULL;
