@@ -647,6 +647,50 @@ class RendererGateTests(unittest.TestCase):
             errors = validate.validate_renderer(symbols, gv)
             self.assertTrue(any("D_FillRect" in e for e in errors), (gv, errors))
 
+    def test_gate_requires_lightmap_and_decal_symbols_on_every_identity(self):
+        names = (
+            "R_RenderDynamicLightmaps", "R_TextureAnimation",
+            "d_lightstylevalue", "frustum", "gDecalSurfCount", "gDecalSurfs",
+            "lightmap_rectchange", "lightmap_textures", "lightmaps", "rtable",
+        )
+        for name in names:
+            for gv in validate.RENDERER_ALL_GAMES:
+                symbols = self.complete_engine_symbols(gv)
+                del symbols[name]
+                errors = validate.validate_renderer(symbols, gv)
+                self.assertTrue(any(name in e for e in errors), (name, gv, errors))
+
+    def test_gate_requires_screen_filter_globals_on_every_identity(self):
+        names = ("filterBrightness", "filterColorBlue", "filterColorGreen",
+                 "filterColorRed", "filterMode")
+        for name in names:
+            self.assertIn(name, validate.RENDERER_ENGINE_ALL_GLOBALS)
+            for gv in validate.RENDERER_ALL_GAMES:
+                symbols = self.complete_engine_symbols(gv)
+                del symbols[name]
+                errors = validate.validate_renderer(symbols, gv)
+                self.assertTrue(any(name in e for e in errors), (name, gv, errors))
+
+    def test_gate_requires_multitexture_globals_on_every_identity(self):
+        for name in ("gl_mtexable", "mtexenabled", "oldtarget"):
+            for gv in validate.RENDERER_ALL_GAMES:
+                symbols = self.complete_engine_symbols(gv)
+                del symbols[name]
+                errors = validate.validate_renderer(symbols, gv)
+                self.assertTrue(any(name in e for e in errors), (name, gv, errors))
+
+    def test_gate_requires_gl_enablemultitexture_on_non_svengine_only(self):
+        for gv in validate.RENDERER_NON_SVENGINE_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            self.assertIn("GL_EnableMultitexture", symbols)
+            del symbols["GL_EnableMultitexture"]
+            errors = validate.validate_renderer(symbols, gv)
+            self.assertTrue(any("GL_EnableMultitexture" in e for e in errors), (gv, errors))
+        for gv in validate.RENDERER_SVENGINE_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            self.assertNotIn("GL_EnableMultitexture", symbols)
+            self.assertEqual([], validate.validate_renderer(symbols, gv), gv)
+
     def test_gate_alias_poly_counter_follows_engine_family(self):
         symbols = self.complete_engine_symbols("hl-8684")
         self.assertIn("c_alias_polys", symbols)

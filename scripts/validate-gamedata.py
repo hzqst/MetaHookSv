@@ -189,6 +189,7 @@ RENDERER_ENGINE_ALL_FUNCTIONS = (
     "Draw_Frame", "Draw_Pic", "GL_BeginRendering",
     "GL_Bind", "GL_BuildLightmaps", "GL_EndRendering", "GL_Finish2D", "GL_Init",
     "GL_LoadFilterTexture", "GL_LoadTexture2", "GL_SelectTexture", "GL_Set2D", "GL_Shutdown",
+    "GL_UnloadTextures",
     "Host_ClearMemory", "Host_IsSinglePlayerGame", "Hunk_AllocName", "Mod_LoadBrushModel",
     "Mod_LoadModel", "Mod_LoadSpriteFrame", "Mod_LoadSpriteModel", "Mod_LoadStudioModel",
     "Mod_PointInLeaf", "Mod_UnloadSpriteTextures",
@@ -196,9 +197,11 @@ RENDERER_ENGINE_ALL_FUNCTIONS = (
     "R_CullBox", "R_DrawBrushModel", "R_DrawParticles", "R_DrawSequentialPoly",
     "R_DrawTEntitiesOnList", "R_DrawWorld", "R_ForceCVars", "R_FreeDeadParticles",
     "R_GLStudioDrawPoints", "R_GetSpriteFrame", "R_MarkLeaves", "R_NewMap", "R_PolyBlend",
-    "R_RecursiveWorldNode", "R_RenderView", "R_ResetLatched", "R_SetupGL",
+    "R_RecursiveWorldNode", "R_RenderDynamicLightmaps", "R_RenderView", "R_ResetLatched",
+    "R_SetupGL",
     "R_StudioDrawModel", "R_StudioDrawPlayer", "R_StudioMergeBones", "R_StudioRenderFinal",
-    "R_StudioRenderModel", "R_StudioSaveBones", "R_StudioSetupBones", "R_TracerDraw",
+    "R_StudioRenderModel", "R_StudioSaveBones", "R_StudioSetupBones", "R_TextureAnimation",
+    "R_TracerDraw",
     "S_ExtraUpdate", "V_FadeAlpha", "V_RenderView",
 )
 RENDERER_ENGINE_ALL_GLOBALS = (
@@ -206,17 +209,22 @@ RENDERER_ENGINE_ALL_GLOBALS = (
     "cl_entities", "cl_light_level", "cl_max_edicts", "cl_numvisedicts", "cl_oldtime",
     "cl_parsecount", "cl_simorg", "cl_stats", "cl_time", "cl_viewentity", "cl_visedicts",
     "cl_waterlevel", "cl_weaponsequence", "cl_weaponstarttime", "cl_worldmodel",
-    "cshift_water", "currententity", "currenttexture", "detTexSupported", "envmap",
-    "gTempEnts", "g_ChromeOrigin", "mod_known", "mod_numknown", "modelorg", "pstudiohdr",
-    "r_model", "r_origin", "r_worldentity",
+    "cshift_water", "currententity", "currenttexture", "d_lightstylevalue", "detTexSupported",
+    "envmap", "filterBrightness", "filterColorBlue", "filterColorGreen", "filterColorRed",
+    "filterMode", "frustum", "gDecalSurfCount", "gDecalSurfs", "gTempEnts", "g_ChromeOrigin",
+    "gl_mtexable", "lightmap_rectchange", "lightmap_textures", "lightmaps", "mod_known",
+    "mod_numknown", "modelorg", "mtexenabled", "oldtarget", "pstudiohdr",
+    "r_model", "r_origin", "r_worldentity", "rtable",
 )
 RENDERER_ENGINE_ALL_PATCHES = ("Sys_ShutdownGame_to_GL_Shutdown_callsite_0",)
 RENDERER_NUMBERED_PATCH_SETS = ("CL_LinkPacketEntities_to_R_ResetLatched_callsite",)
 #SvEngine has no body with D_FillRect's legacy (vrect_t*, color*) interface; its connection
-#message fills the rectangle through Draw_FillRGBABlend instead.
+#message fills the rectangle through Draw_FillRGBABlend instead. SvEngine also publishes no
+#GL_EnableMultitexture record, so the plugin keeps a signature scan for that family only.
 RENDERER_ENGINE_NON_SVENGINE_FUNCTIONS = (
     "D_FillRect", "Draw_SpriteFrameAdditive",
-    "Draw_SpriteFrameGeneric", "Draw_SpriteFrameHoles", "R_LoadSkys", "R_RenderFinalFog",
+    "Draw_SpriteFrameGeneric", "Draw_SpriteFrameHoles", "GL_EnableMultitexture",
+    "R_LoadSkys", "R_RenderFinalFog",
 )
 RENDERER_ENGINE_NON_SVENGINE_PATCHES = ("GL_SetMode_call_qwglCreateContext",)
 #SvEngine renamed the alias-poly counter to c_model_polys.
