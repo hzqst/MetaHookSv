@@ -137,7 +137,7 @@ typedef struct
 	void (*Draw_SpriteFrameGeneric_SvEngine)(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect, int src, int dest, int width, int height);
 	void (*Draw_FillRGBA)(int x, int y, int w, int h, int r, int g, int b, int a);
 	void (*Draw_FillRGBABlend)(int x, int y, int w, int h, int r, int g, int b, int a);
-	void (*NET_DrawRect)(int x, int y, int w, int h, int r, int g, int b, int a);
+	void (*Draw_FillRGBABuf)(int x, int y, int w, int h, int r, int g, int b, int a);
 	void (*Draw_Pic)(int x, int y, qpic_t* pic);
 	void (*D_FillRect)(vrect_t* r, unsigned char* color);
 	bool(__fastcall* BaseUISurface_DeleteTextureByID)(void* pthis, int, int textureId);

@@ -185,14 +185,11 @@
 #define DRAW_SPRITEFRAMEGENERIC_BLOB "\x8B\x44\x24\x20\x8B\x4C\x24\x24\x2A\x2A\x8B\x74\x24\x0C\x2A\x68\xE2\x0B\x00\x00\x8B\x3E"
 
 #define DRAW_FILLEDRGBA_BLOB "\x83\xEC\x08\x8D\x44\x24\x28\x8D\x4C\x24\x24\x50\x8D\x54\x24\x24\x51\x8D\x44\x24\x24\x52\x8D\x4C\x24\x24\x50\x8D\x54\x24\x24\x51\x8D\x44\x24\x24\x52\x8D\x4C\x24\x24\x50\x51\xFF\x15\x2A\x2A\x2A\x2A\x83\xC4\x20\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\xE2\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\x00\x00\x04\x46\x68\x00\x22\x00\x00\x68\x00\x23\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x6A\x01"
-#define DRAW_FILLEDRGBA_SVENGINE "\x56\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\xE2\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\x2A\xD9\x1C\x24\x68\x00\x22\x00\x00\x68\x00\x23\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x6A\x01\x68\x02\x03\x00\x00"
 
 #define DRAW_FILLEDRGBABLEND_BLOB "\x83\xEC\x08\x8D\x44\x24\x28\x8D\x4C\x24\x24\x50\x8D\x54\x24\x24\x51\x8D\x44\x24\x24\x52\x8D\x4C\x24\x24\x50\x8D\x54\x24\x24\x51\x8D\x44\x24\x24\x52\x8D\x4C\x24\x24\x50\x51\xFF\x15\x2A\x2A\x2A\x2A\x83\xC4\x20\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\xE2\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\x00\x00\x04\x46\x68\x00\x22\x00\x00\x68\x00\x23\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\x03\x03\x00\x00"
-#define DRAW_FILLEDRGBABLEND_SVENGINE "\x56\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\xE2\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\x2A\xD9\x1C\x24\x68\x00\x22\x00\x00\x68\x00\x23\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\x03\x03\x00\x00\x68\x02\x03\x00\x00"
 
 
 #define D_FILLRECT_BLOB "\x83\xEC\x08\x2A\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\xE2\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\x00\x00\x04\x46\x68\x00\x22\x00\x00\x68\x00\x23\x00\x00"
-#define D_FILLRECT_SVENGINE "\x56\x8B\x35\x2A\x2A\x2A\x2A\x81\xFE\x00\x04\x00\x00\x0F\x2A\x2A\x2A\x2A\x2A\x83\xFE\x01"
 
 #define DRAW_PIC_BLOB "\x51\x56\x8B\x74\x24\x14\x85\xF6\x0F\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\xE1\x0D\x00\x00"
 
@@ -256,7 +253,7 @@ static hook_t* g_phook_Draw_SpriteFrameGeneric = NULL;
 static hook_t* g_phook_Draw_SpriteFrameGeneric_SvEngine = NULL;
 static hook_t* g_phook_Draw_FillRGBA = NULL;
 static hook_t* g_phook_Draw_FillRGBABlend = NULL;
-static hook_t* g_phook_NET_DrawRect = NULL;
+static hook_t* g_phook_Draw_FillRGBABuf = NULL;
 static hook_t* g_phook_Draw_Pic = NULL;
 static hook_t* g_phook_D_FillRect = NULL;
 static hook_t* g_phook_R_GetSpriteFrame = NULL;
@@ -7325,15 +7322,20 @@ void Engine_FillAddress_Draw_SpriteFrameGeneric(const mh_dll_info_t& DllInfo, co
 	}
 }
 
-void Engine_FillAddress_NET_DrawRect(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+//SvEngine replaced the immediate-mode netgraph rectangle with a buffered one that takes
+//eight integers (x, y, w, h, r, g, b, a) and appends four vertices to a 1024-entry vertex
+//buffer. The catalog used to publish that body under the wrong name NET_DrawRect; it is
+//now published as Draw_FillRGBABuf with no compatibility alias, so the old name no longer
+//resolves. No other engine identity carries it.
+void Engine_FillAddress_Draw_FillRGBABuf(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.NET_DrawRect)
+	if (gPrivateFuncs.Draw_FillRGBABuf)
 		return;
 
 	if (g_iEngineType != ENGINE_SVENGINE)
 		return;
 
-		gPrivateFuncs.NET_DrawRect = (decltype(gPrivateFuncs.NET_DrawRect))GamedataResolvePtr(RealDllInfo.ImageBase, "NET_DrawRect", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.Draw_FillRGBABuf = (decltype(gPrivateFuncs.Draw_FillRGBABuf))GamedataResolvePtr(RealDllInfo.ImageBase, "Draw_FillRGBABuf", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 //Every engine identity publishes Mod_UnloadSpriteTextures as a standalone body that
@@ -7348,21 +7350,13 @@ void Engine_FillAddress_Mod_UnloadSpriteTextures(const mh_dll_info_t& DllInfo, c
 	gPrivateFuncs.Mod_UnloadSpriteTextures = (decltype(gPrivateFuncs.Mod_UnloadSpriteTextures))GamedataResolvePtr(RealDllInfo.ImageBase, "Mod_UnloadSpriteTextures", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
-//SvEngine publishes no catalog record for Draw_FillRGBA, Draw_FillRGBABlend or
-//D_FillRect, so those identities keep the legacy signature scan while every
-//catalog-covered identity resolves from gamedata.
+//SvEngine keeps the cl_enginefuncs slots 11 and 130, but the entries there only forward to
+//the real drawing bodies, so the catalog publishes the bodies for every engine identity and
+//the dispatch has no branch left to keep.
 void Engine_FillAddress_Draw_FillRGBA(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.Draw_FillRGBA)
 		return;
-
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		auto Draw_FillRGBA_VA = Search_Pattern(DRAW_FILLEDRGBA_SVENGINE, DllInfo);
-		gPrivateFuncs.Draw_FillRGBA = (decltype(gPrivateFuncs.Draw_FillRGBA))ConvertDllInfoSpace(Draw_FillRGBA_VA, DllInfo, RealDllInfo);
-		Sig_FuncNotFound(Draw_FillRGBA);
-		return;
-	}
 
 	gPrivateFuncs.Draw_FillRGBA = (decltype(gPrivateFuncs.Draw_FillRGBA))GamedataResolvePtr(RealDllInfo.ImageBase, "Draw_FillRGBA", MH_GAMESYMBOL_KIND_FUNCTION);
 }
@@ -7372,29 +7366,19 @@ void Engine_FillAddress_Draw_FillRGBABlend(const mh_dll_info_t& DllInfo, const m
 	if (gPrivateFuncs.Draw_FillRGBABlend)
 		return;
 
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		auto Draw_FillRGBABlend_VA = Search_Pattern(DRAW_FILLEDRGBABLEND_SVENGINE, DllInfo);
-		gPrivateFuncs.Draw_FillRGBABlend = (decltype(gPrivateFuncs.Draw_FillRGBABlend))ConvertDllInfoSpace(Draw_FillRGBABlend_VA, DllInfo, RealDllInfo);
-		Sig_FuncNotFound(Draw_FillRGBABlend);
-		return;
-	}
-
 	gPrivateFuncs.Draw_FillRGBABlend = (decltype(gPrivateFuncs.Draw_FillRGBABlend))GamedataResolvePtr(RealDllInfo.ImageBase, "Draw_FillRGBABlend", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
+//SvEngine has no body with the legacy (vrect_t*, color*) interface: its connection message
+//fills the rectangle through the eight-integer Draw_FillRGBABlend instead, which is hooked
+//on its own, so there is nothing left to resolve or hook here on that engine.
 void Engine_FillAddress_D_FillRect(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.D_FillRect)
 		return;
 
 	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		auto D_FillRect_VA = Search_Pattern(D_FILLRECT_SVENGINE, DllInfo);
-		gPrivateFuncs.D_FillRect = (decltype(gPrivateFuncs.D_FillRect))ConvertDllInfoSpace(D_FillRect_VA, DllInfo, RealDllInfo);
-		Sig_FuncNotFound(D_FillRect);
 		return;
-	}
 
 	gPrivateFuncs.D_FillRect = (decltype(gPrivateFuncs.D_FillRect))GamedataResolvePtr(RealDllInfo.ImageBase, "D_FillRect", MH_GAMESYMBOL_KIND_FUNCTION);
 }
@@ -7658,7 +7642,7 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 
 	Engine_FillAddress_Draw_FillRGBABlend(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_NET_DrawRect(DllInfo, RealDllInfo);
+	Engine_FillAddress_Draw_FillRGBABuf(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_D_FillRect(DllInfo, RealDllInfo);
 
@@ -7750,7 +7734,7 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(Draw_SpriteFrameGeneric_SvEngine);
 	Install_InlineHook(Draw_FillRGBA);
 	Install_InlineHook(Draw_FillRGBABlend);
-	Install_InlineHook(NET_DrawRect);
+	Install_InlineHook(Draw_FillRGBABuf);
 	Install_InlineHook(Draw_Pic);
 	Install_InlineHook(D_FillRect);
 	Install_InlineHook(R_GetSpriteFrame);
@@ -7818,7 +7802,7 @@ void Engine_UninstallHooks(void)
 	Uninstall_Hook(Draw_SpriteFrameGeneric_SvEngine);
 	Uninstall_Hook(Draw_FillRGBA);
 	Uninstall_Hook(Draw_FillRGBABlend);
-	Uninstall_Hook(NET_DrawRect);
+	Uninstall_Hook(Draw_FillRGBABuf);
 	Uninstall_Hook(Draw_Pic);
 	Uninstall_Hook(D_FillRect);
 	Uninstall_Hook(R_GetSpriteFrame);

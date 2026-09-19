@@ -28,7 +28,7 @@ This document inventories the unexported engine (`hw.dll`) and client (`client.d
 - **Vtable resolution.** The client `CGameStudioRenderer` virtuals are resolved by name from gamedata `virtualFunction` records (API 112); `GetVFunctionFromVFTable(vftable, index, DllInfo, RealDllInfo, OutputDllInfo)` (`gl_hooks.cpp`) remains only for the engine `EngineSurface` virtuals (still hooked directly by hardcoded index via `VFTHook`); MetaHook API 113 additionally exposes `MH_GAMESYMBOL_KIND_VTABLE` so a vtable record (`GameStudioRenderer`) can be resolved to its `.rdata` array address, though Renderer currently consumes no vtable record.
 - **Locator primitives.** `Search_Pattern` (`.text`), `Search_Pattern_Data`/`_Rdata` (string anchors), `Search_Pattern_From[_Size]` (bounded scan from an already-resolved function), `Search_Pattern_NoWildCard*`; `\x2A` is a wildcard byte. `ReverseSearchFunctionBegin[Ex]` recovers a function prologue from a body match. `g_pMetaHookAPI->DisasmRanges` (Capstone) walks a bounded instruction window to extract call targets (`E8`/`FF 15` imm), absolute memory operands (`[imm32]`), struct-offset operands (`[reg+disp]`), and `push imm32`/`mov reg,imm` data-slot addresses. `GetCallAddress`/`GetNextCallAddr` read a relative call operand; `InlinePatchRedirectBranch` redirects a private call/jmp site (`E8`/`E9`).
 - **Per-engine signatures.** Many `.text` signatures have `*_SIG_SVENGINE` / `_HL25` / `_NEW` / `_NEW2` / `_BLOB` / `_COMMON` variants selected by `g_iEngineType` (`ENGINE_SVENGINE`, `ENGINE_GOLDSRC_HL25`, `ENGINE_GOLDSRC`, `ENGINE_GOLDSRC_BLOB`); the `#define` catalogue is `gl_hooks.cpp:10-423`. Some symbols are inlined on certain engines (signature `""`) and are tracked by a plugin `*_inlined` flag instead.
-- **Failure policy.** Missing required symbols call `Sig_FuncNotFound`/`Sig_NotFound`/`Sig_VarNotFound`/`Sig_AddrNotFound` → fatal `Sys_Error("Could not found: <name> … Engine buildnum: <n>")`. Several symbols are intentionally optional (engine-specific branches, `SCClientDLL001`-gated Sven client symbols, `CVideoMode`/`NET_DrawRect` on non-matching engines) and stay null without error.
+- **Failure policy.** Missing required symbols call `Sig_FuncNotFound`/`Sig_NotFound`/`Sig_VarNotFound`/`Sig_AddrNotFound` → fatal `Sys_Error("Could not found: <name> … Engine buildnum: <n>")`. Several symbols are intentionally optional (engine-specific branches, `SCClientDLL001`-gated Sven client symbols, `CVideoMode`/`Draw_FillRGBABuf` on non-matching engines) and stay null without error.
 
 ## Gamedata-resolved symbols (2026-09-14 migration)
 
@@ -59,7 +59,7 @@ All of the following are resolved via `GamedataResolvePtr` (kind `FUNCTION` / `G
 5. 2D: `GL_Set2D`, `GL_Finish2D`, `GL_BeginRendering`, `GL_EndRendering`, `EmitWaterPolys`, `VID_UpdateWindowVars`, `Mod_PointInLeaf`, `R_DrawTEntitiesOnList`, `BuildGammaTable`.
 6. Effects/Studio: `R_DrawParticles`, `CL_AllocDlight`, `CL_AllocElight`, `R_GLStudioDrawPoints`, `R_StudioLighting`, `R_StudioChrome`, `R_LightLambert`, `R_StudioSetupSkin`, `Host_ClearMemory`, `Cache_Alloc`, `Draw_MiptexTexture`, `Draw_DecalTexture`, `R_GetSpriteFrame`, `R_DrawSpriteModel`, `R_LightStrength`, `R_RotateForEntity`, `R_GlowBlend`, `SCR_BeginLoadingPlaque`, `Host_IsSinglePlayerGame`, `Mod_UnloadSpriteTextures`, `Mod_LoadSpriteModel`, `Mod_LoadSpriteFrame`, `R_AddTEntity`, `Hunk_AllocName`.
 7. Globals passes: `GL_EndRenderingVars`, `VisEdicts`, `R_AllocTransObjectsVars`, `R_RenderFinalFog`, `R_DrawTEntitiesOnListVars`, `R_RecursiveWorldNodeVars`, `R_LoadSkybox`, `GL_FilterMinMaxVars`, `ScrFov`, `RenderSceneVars`, `RenderSceneVars2`, `CL_IsDevOverviewModeVars`, `R_DecalInit`, `R_RenderDynamicLightmaps`, `R_StudioChromeVars`, `CL_ViewEntityVars`, `CL_ReallocateDynamicData`, `TempEntsVars`, `WaterVars`, `ModKnown`, `Mod_NumKnown`, `Mod_LoadStudioModel`, `Mod_LoadBrushModel`, `Mod_LoadModel`, `BasePalette`, `R_LightStrengthVars`, `SetFilterMode`, `SetFilterColor`, `SetFilterBrightness`, `MoveVars`, `MissingTexture`, `NoTexture`, `LegacyMultiTextureInit`, `PVSNode`.
-8. VideoMode/draw: `DrawStartupGraphic`, `DrawStartupVideo`, `Draw_Frame`, `Draw_SpriteFrameHoles/Additive/Generic`, `Draw_FillRGBA/RGBABlend`, `NET_DrawRect`, `D_FillRect`, `Draw_Pic`.
+8. VideoMode/draw: `DrawStartupGraphic`, `DrawStartupVideo`, `Draw_Frame`, `Draw_SpriteFrameHoles/Additive/Generic`, `Draw_FillRGBA/RGBABlend`, `Draw_FillRGBABuf`, `D_FillRect`, `Draw_Pic`.
 
 ## Engine-private functions
 
@@ -151,7 +151,7 @@ All of the following are resolved via `GamedataResolvePtr` (kind `FUNCTION` / `G
 | `gPrivateFuncs.Host_IsSinglePlayerGame` | `qboolean (*)(void)` | String `"setpause;"` → `68 <str> E8 … 83 C4` + `ReverseSearchPattern(+0x50,"55 8B EC E8",4)`; the `E8` followed by `85 C0` is the target; fallback `HOST_IS_SINGLE_PLAYER_GAME_*`. | Wrapper `gl_rmain.cpp:824`. |
 | `gPrivateFuncs.R_AddTEntity` | `void (*)(cl_entity_t*)` | See render-view table. | Resolved only. |
 | `gPrivateFuncs.R_RenderFinalFog` | `void (*)(void)` | SvEngine `R_RenderFinalFog_VA` is the `push 0B60h` instruction inside the render-view body; HL25/GoldSrc `GetCallAddress(addr+9)`; `VA_from_RVA`. Also yields `g_bUserFogOn`, `g_UserFogDensity/Color/Start/End`. | Resolved only. |
-| `gPrivateFuncs.Draw_Frame` / `Draw_SpriteFrameHoles[_SvEngine]` / `Draw_SpriteFrameAdditive[_SvEngine]` / `Draw_SpriteFrameGeneric[_SvEngine]` / `Draw_FillRGBA` / `Draw_FillRGBABlend` / `NET_DrawRect` / `D_FillRect` / `Draw_Pic` | 2D draw helpers | `Engine_FillAddress_*`: sig-only per engine (`DRAW_*_SIG_*`); `Draw_Frame` also yields `giScissorTest`, `scissor_x/y/width/height`; `NET_DrawRect` and `D_FillRect` share the same SvEngine byte signature, `NET_DrawRect` is SvEngine-only. | `Install_InlineHook` each; handlers in `gl_rmain.cpp`. |
+| `gPrivateFuncs.Draw_Frame` / `Draw_SpriteFrameHoles[_SvEngine]` / `Draw_SpriteFrameAdditive[_SvEngine]` / `Draw_SpriteFrameGeneric[_SvEngine]` / `Draw_FillRGBA` / `Draw_FillRGBABlend` / `Draw_FillRGBABuf` / `D_FillRect` / `Draw_Pic` | 2D draw helpers | `Engine_FillAddress_*`: gamedata-only, engine-gated where the identity set differs; `Draw_Frame` also yields `giScissorTest`, `scissor_x/y/width/height`; `Draw_FillRGBABuf` is SvEngine-only, `D_FillRect` is non-SvEngine-only. | `Install_InlineHook` each; handlers in `gl_rmain.cpp`. |
 
 ### Engine Studio renderer (located in `exportfuncs.cpp`)
 
@@ -323,7 +323,7 @@ Stored in `gPrivateFuncs` but sourced from public interfaces, so excluded from t
 
 ## Hooks installed
 
-- **Engine** (`Engine_InstallHooks`, `gl_hooks.cpp:12594`): `GL_Init`, `GL_SetMode_SvEngine`/`GL_SetMode_GoldSrc`/`GL_SetModeLegacy`(+`GL_SelectPixelFormat` with legacy), `GL_Bind`, `GL_LoadTexture2`, `GL_UnloadTextures`, `GL_LoadFilterTexture`, `GL_BuildLightmaps`, `GL_Set2D`, `GL_Finish2D`, `GL_BeginRendering`, `GL_EndRendering`, `R_RenderView`/`R_RenderView_SvEngine`, `R_NewMap`, `R_CullBox`, `R_ForceCVars`, `Mod_PointInLeaf`, `R_GLStudioDrawPoints`, `R_GetSpriteFrame`, `Mod_LoadStudioModel`, `Mod_LoadSpriteModel`, `Mod_UnloadSpriteTextures`, `BuildGammaTable`, `Host_ClearMemory`, `LegacyMultiTextureInit`, `PVSNode`, `R_LoadSkys`/`R_LoadSkyBox_SvEngine`, `CVideoMode_Common_DrawStartupGraphic`, `CGame_DrawStartupVideo`, `Draw_Frame`, `Draw_SpriteFrame*[_SvEngine]`, `Draw_FillRGBA`/`Draw_FillRGBABlend`, `NET_DrawRect`, `D_FillRect`, `Draw_Pic`, plus the `Sys_ShutdownGame_call_GL_Shutdown` branch redirect.
+- **Engine** (`Engine_InstallHooks`, `gl_hooks.cpp:12594`): `GL_Init`, `GL_SetMode_SvEngine`/`GL_SetMode_GoldSrc`/`GL_SetModeLegacy`(+`GL_SelectPixelFormat` with legacy), `GL_Bind`, `GL_LoadTexture2`, `GL_UnloadTextures`, `GL_LoadFilterTexture`, `GL_BuildLightmaps`, `GL_Set2D`, `GL_Finish2D`, `GL_BeginRendering`, `GL_EndRendering`, `R_RenderView`/`R_RenderView_SvEngine`, `R_NewMap`, `R_CullBox`, `R_ForceCVars`, `Mod_PointInLeaf`, `R_GLStudioDrawPoints`, `R_GetSpriteFrame`, `Mod_LoadStudioModel`, `Mod_LoadSpriteModel`, `Mod_UnloadSpriteTextures`, `BuildGammaTable`, `Host_ClearMemory`, `LegacyMultiTextureInit`, `PVSNode`, `R_LoadSkys`/`R_LoadSkyBox_SvEngine`, `CVideoMode_Common_DrawStartupGraphic`, `CGame_DrawStartupVideo`, `Draw_Frame`, `Draw_SpriteFrame*[_SvEngine]`, `Draw_FillRGBA`/`Draw_FillRGBABlend`, `Draw_FillRGBABuf`, `D_FillRect`, `Draw_Pic`, plus the `Sys_ShutdownGame_call_GL_Shutdown` branch redirect.
 - **Client** (`Client_InstallHooks`, `gl_hooks.cpp:14081`): `ClientPortalManager_DrawPortalSurface`, `_EnableClipPlane`, `_RenderPortals`, `UpdatePlayerPitch`; `SCClientDLL_glewInit()` invoked. `ClientPortalManager_ResetAll` hook is commented out.
 - **Studio** (`EngineStudio_InstalHooks` / `ClientStudio_InstallHooks`, `exportfuncs.cpp`): `CL_FxBlend`, the five `studioapi_*`, and the engine/client `R_Studio*`/`GameStudioRenderer_*` set. Note `EngineStudio_InstalHooks` runs before `ClientStudio_FillAddress`, so the engine Studio render hooks are effectively installed by the guarded `ClientStudio_InstallHooks` calls.
 - **EngineSurface** (`EngineSurface_InstallHooks`): 19 `enginesurface_*` VFTHooks + `VGUI_Surface026::DrawSetTexture`. `EngineSurface_UninstallHooks` is empty — no surface hook is ever restored.
@@ -336,7 +336,7 @@ Stored in `gPrivateFuncs` but sourced from public interfaces, so excluded from t
 
 ## Notes
 
-- **Dead / resolved-only fields.** Many `gPrivateFuncs` fields are located but never hooked or called: `R_SetupGL`, `R_RenderScene`, `R_SetupFrame`, `R_PolyBlend` (reimplemented), `S_ExtraUpdate`, `GL_SelectTexture`, `R_TextureAnimation`, `R_DrawSequentialPoly[_HL25]`, `R_DrawBrushModel`, `R_DrawWorld` (reimplemented), `R_DrawViewModel`, `R_MarkLeaves`, `EmitWaterPolys`, `VID_UpdateWindowVars`, `R_DrawTEntitiesOnList`, `R_ClearParticles`, `V_InitLevel`, `R_BuildLightMap`, `R_AddDynamicLights`, `R_RenderDynamicLightmaps`, `R_DrawParticles` (reimplemented), `CL_AllocDlight`/`CL_AllocElight`, `R_StudioLighting`, `R_StudioChrome`, `R_LightLambert`, `R_StudioSetupSkin`, `R_StudioGetSkin`, `GL_UnloadTexture`, `Draw_MiptexTexture`, `Draw_DecalTexture`, `Draw_CustomCacheGet`/`Draw_CacheGet`, `R_DrawSpriteModel`, `Mod_LoadSpriteFrame`, `SCR_BeginLoadingPlaque`, `R_LightStrength`, `R_RotateForEntity`, `R_AddTEntity`, `R_RenderFinalFog`, `NET_DrawRect` (engine-dependent), `Mod_LoadBrushModel`, `Mod_LoadModel`, `ClientPortalManager_ResetAll` (hook commented), `GameStudioRenderer_StudioDrawModel`, `R_StudioDrawModel`, and many `*Vars` globals (`cls_state`, `cls_signon`, `r_soundOrigin`, `gl_mtexable`, `mtexenabled`, `lightmap_textures`, `lightmap_rectchange`, `gDecalSurfs`, `modelorg`, `oldtarget`, `vid_d3d`, `g_ChromeOrigin`, `gSkyTexNumber`, `r_loading_skybox`, `lightmap_polys`, `lightmap_modified`, `chrome`, `chromeage`, `locallight`, `numlights`, scissor rect, `pmainwindow` consumers).
+- **Dead / resolved-only fields.** Many `gPrivateFuncs` fields are located but never hooked or called: `R_SetupGL`, `R_RenderScene`, `R_SetupFrame`, `R_PolyBlend` (reimplemented), `S_ExtraUpdate`, `GL_SelectTexture`, `R_TextureAnimation`, `R_DrawSequentialPoly[_HL25]`, `R_DrawBrushModel`, `R_DrawWorld` (reimplemented), `R_DrawViewModel`, `R_MarkLeaves`, `EmitWaterPolys`, `VID_UpdateWindowVars`, `R_DrawTEntitiesOnList`, `R_ClearParticles`, `V_InitLevel`, `R_BuildLightMap`, `R_AddDynamicLights`, `R_RenderDynamicLightmaps`, `R_DrawParticles` (reimplemented), `CL_AllocDlight`/`CL_AllocElight`, `R_StudioLighting`, `R_StudioChrome`, `R_LightLambert`, `R_StudioSetupSkin`, `R_StudioGetSkin`, `GL_UnloadTexture`, `Draw_MiptexTexture`, `Draw_DecalTexture`, `Draw_CustomCacheGet`/`Draw_CacheGet`, `R_DrawSpriteModel`, `Mod_LoadSpriteFrame`, `SCR_BeginLoadingPlaque`, `R_LightStrength`, `R_RotateForEntity`, `R_AddTEntity`, `R_RenderFinalFog`, `Mod_LoadBrushModel`, `Mod_LoadModel`, `ClientPortalManager_ResetAll` (hook commented), `GameStudioRenderer_StudioDrawModel`, `R_StudioDrawModel`, and many `*Vars` globals (`cls_state`, `cls_signon`, `r_soundOrigin`, `gl_mtexable`, `mtexenabled`, `lightmap_textures`, `lightmap_rectchange`, `gDecalSurfs`, `modelorg`, `oldtarget`, `vid_d3d`, `g_ChromeOrigin`, `gSkyTexNumber`, `r_loading_skybox`, `lightmap_polys`, `lightmap_modified`, `chrome`, `chromeage`, `locallight`, `numlights`, scissor rect, `pmainwindow` consumers).
 - **Inlined-function flags.** `R_ForceCVars_inlined`, `R_SetupFrame_inlined`, `R_RenderScene_inlined`, `R_LightStrength_inlined`, `R_GlowBlend_inlined` indicate the engine inlined the target; the plugin then uses call-site-sensitive logic instead of a direct hook.
 - **Duplicate resolution sites.** `r_blend` is resolved both by `Engine_FillAddress_R_DrawTEntitiesOnListVars` (gl_hooks) and `EngineStudio_FillAddress_StudioSetRenderamt` (exportfuncs); `R_RenderDynamicLightmaps` by the `R_DrawSequentialPoly` BFS and its own locator; `r_framecount` by `_GetTimes` and a shadowing local in `gl_hooks.cpp:8744`. Both `if (!field)`-guarded, so first wins.
 - **Hook/uninstall asymmetry.** `Host_ClearMemory` is installed but never unhooked; `ClientPortalManager_DrawPortalSurface`'s hook is installed but `EngineSurface_UninstallHooks` is empty; `GameStudioRenderer_StudioDrawPlayer` is installed but not uninstalled.
@@ -373,10 +373,10 @@ Baseline `26b17bd0`. All 76 dependencies the published catalog already covered
 
 | Group | Coverage | Rationale |
 | --- | --- | --- |
-| `ALL` (11 identities) | most engine functions/globals + patches | base symbol is published everywhere |
-| non-SvEngine | `D_FillRect`, `Draw_FillRGBA`, `Draw_FillRGBABlend`, base `Draw_SpriteFrame*`, `R_LoadSkys`, `R_RenderFinalFog`, `GL_SetMode_call_qwglCreateContext` | SvEngine uses a variant or the slot is unused |
+| `ALL` (11 identities) | most engine functions/globals + patches, incl. `Draw_FillRGBA` / `Draw_FillRGBABlend` | base symbol is published everywhere |
+| non-SvEngine | `D_FillRect`, base `Draw_SpriteFrame*`, `R_LoadSkys`, `R_RenderFinalFog`, `GL_SetMode_call_qwglCreateContext` | SvEngine uses a variant or the interface does not exist there |
 | `E8` (cof + 8 hl) | `GL_SelectPixelFormat`, `GlowBlend` | inlined on HL25 and SvEngine |
-| SvEngine only | `Draw_SpriteFrame*_SvEngine`, `NET_DrawRect`, `R_LoadSkyBox_SvEngine`, `allow_cheats` | variant symbols |
+| SvEngine only | `Draw_SpriteFrame*_SvEngine`, `Draw_FillRGBABuf`, `R_LoadSkyBox_SvEngine`, `allow_cheats` | variant symbols |
 | hl-10210 only | `CGame_DrawStartupVideo` | HL25-only startup video |
 | hl-10210 + hl-6153/8684 | `GL_SetMode` (SvEngine ABI split into `_SvEngine`/`_GoldSrc`) | SDL / six-arg ABI |
 | cof + hl-3248..4554 | `GL_SetModeLegacy` | non-SDL legacy ABI; CoF now reaches the legacy branch |
@@ -610,8 +610,9 @@ publish an engine-module `function` record for `Mod_UnloadSpriteTextures` —
 Windows on all 11, plus Linux on hl-8684, hl-10210, svencoop-8948 and
 svencoop-10257. The old comment ("SvEngine publishes no catalog record for
 `Mod_UnloadSpriteTextures`, `Draw_FillRGBA`, `Draw_FillRGBABlend` or
-`D_FillRect`") was stale for this one symbol only; it now covers just the other
-three and moved above `Engine_FillAddress_Draw_FillRGBA`.
+`D_FillRect`") was stale for this one symbol only; it then covered just the
+other three and moved above `Engine_FillAddress_Draw_FillRGBA`. That remaining
+comment is gone too — see the 2D fill migration below.
 
 **`SPR_Shutdown` is not an extra hook site.** `Mod_UnloadSpriteTextures` is
 *not* inlined into `SPR_Shutdown` on any supported identity, so the existing
@@ -656,3 +657,69 @@ Adding a `SPR_Shutdown` hook would not change that path either.
 **Verified**: 51/51 contract tests; `validate-gamedata.py` over the 21 packaged
 snapshots; `Renderer` `Release|Win32` builds with no new warnings. **Not
 verified**: in-game smoke tests on any engine family.
+
+## 2D fill migration: `Draw_FillRGBABuf` replaces `NET_DrawRect` (2026-09-19)
+
+The last three legacy signature scans in `Engine_FillAddress_*` are gone.
+Upstream GSV PRs #149 and #150 (issues #147 / #148) changed what the catalog
+publishes for SvEngine, and this is the consumer-side adoption.
+
+**`Draw_FillRGBA` / `Draw_FillRGBABlend` are now `ALL` (11 identities).** The old
+comment claimed SvEngine publishes no record for them. The real cause was
+different: SvEngine keeps `cl_enginefuncs` slots 11 and 130, but those entries
+only *forward* to the drawing body — a direct `JMP` thunk on Windows, an
+eight-int cdecl wrapper (plus PLT/GOT on 8948) on Linux. The upstream finder
+previously validated GL behaviour at the forwarding entry and therefore emitted
+nothing. It now resolves through the thunk, so all four SvEngine targets publish
+the real bodies and both `Engine_FillAddress_Draw_FillRGBA` and
+`Engine_FillAddress_Draw_FillRGBABlend` are one unconditional
+`GamedataResolvePtr`. `DRAW_FILLEDRGBA_SVENGINE` and
+`DRAW_FILLEDRGBABLEND_SVENGINE` were deleted.
+
+| Body RVA | 10257 Win | 10257 Linux | 8948 Win | 8948 Linux |
+| --- | --- | --- | --- | --- |
+| `Draw_FillRGBA` | `0x4f970` | `0x127f70` | `0x4f6d0` | `0x174a60` |
+| `Draw_FillRGBABlend` | `0x4faa0` | `0x1280c0` | `0x4f800` | `0x174bb0` |
+
+**`NET_DrawRect` was the wrong name and is retired without an alias.** The
+address the old `D_FILLRECT_SVENGINE` / `NET_DRAWRECT_SVENGINE` byte pattern hit
+is a *buffered* rectangle function taking eight integers
+`(x, y, w, h, r, g, b, a)`; it appends four 24-byte vertices to a 1024-entry
+buffer and flushes with `glDrawArrays(GL_QUADS, ...)` +
+`glBlendFunc(GL_SRC_ALPHA, GL_ONE)`. Linux 8948 carries the real symbol
+`_Z16Draw_FillRGBABufiiiiiiii`, so the catalog now publishes it as
+`Draw_FillRGBABuf` on all four SvEngine targets and **removed** the
+`NET_DrawRect` records. `gPrivateFuncs.NET_DrawRect`, its hook slot and the
+`gl_rmain.cpp` handler were renamed accordingly; the handler body is unchanged
+because the ABI and the additive blend state already matched.
+
+| `Draw_FillRGBABuf` | 10257 Win `0x51600` | 10257 Linux `0x12a590` | 8948 Win `0x513b0` | 8948 Linux `0x177080` |
+
+**The earlier `/OPT:ICF` theory was withdrawn upstream.** Two byte-identical
+patterns did *not* prove the linker folded `NET_DrawRect` with `D_FillRect` —
+there was only ever one body, and it never had `D_FillRect`'s two-pointer shape.
+
+**`D_FillRect` is now non-SvEngine-only.** SvEngine has no body with the legacy
+`(vrect_t*, unsigned char*)` interface: its connection-message rectangle calls
+the eight-int `Draw_FillRGBABlend(x, y, w, h, 0, 0, 0, 255)` instead, which this
+plugin already hooks separately. `Engine_FillAddress_D_FillRect` returns early on
+`ENGINE_SVENGINE` and `D_FILLRECT_SVENGINE` was deleted, so the SvEngine build no
+longer installs a two-pointer hook on an eight-int function. That mismatch
+existed before this change (both legacy patterns resolved to the same buffered
+body), so this removes a real latent ABI bug, not a newly introduced one.
+
+**Consumer gate.** `Draw_FillRGBA` / `Draw_FillRGBABlend` moved from
+`RENDERER_ENGINE_NON_SVENGINE_FUNCTIONS` into `RENDERER_ENGINE_ALL_FUNCTIONS`;
+`NET_DrawRect` was replaced by `Draw_FillRGBABuf` in
+`RENDERER_ENGINE_SVENGINE_FUNCTIONS`; `D_FillRect` stays non-SvEngine. Tests:
+`test_gate_requires_rgba_fill_bodies_on_every_identity`,
+`test_gate_requires_draw_fillrgbabuf_on_svengine_only`,
+`test_gate_no_longer_references_the_retired_net_drawrect_name`,
+`test_gate_skips_d_fillrect_on_svengine`.
+
+**Verified**: 88 contract tests pass (4 new); `validate-gamedata.py` passes over
+the 21 packaged snapshots, which were re-synced from the upstream index on
+2026-09-19 and carry the new records; `Renderer` `Release|Win32` builds with no
+new warnings. **Not verified**: in-game smoke tests on any engine family — in
+particular nobody has confirmed on a running SvEngine client that the netgraph
+rectangle still draws through the renamed hook.

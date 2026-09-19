@@ -6673,7 +6673,7 @@ void Draw_FillRGBABlend(int x, int y, int w, int h, int r, int g, int b, int a)
 	R_DrawFilledQuad(x, y, x + w, y + h, color, programState, "Draw_FillRGBABlend");
 }
 
-void NET_DrawRect(int x, int y, int w, int h, int r, int g, int b, int a)
+void Draw_FillRGBABuf(int x, int y, int w, int h, int r, int g, int b, int a)
 {
 	// Convert RGBA values from 0-255 to 0.0-1.0 range
 	float color[4] = {
@@ -6688,7 +6688,7 @@ void NET_DrawRect(int x, int y, int w, int h, int r, int g, int b, int a)
 	uint64_t programState = DRAW_FILLED_RECT_ALPHA_BASED_ADDITIVE_ENABLED;
 
 	// Use R_DrawFilledQuad for GL Core Profile compatibility
-	R_DrawFilledQuad(x, y, x + w, y + h, color, programState, "NET_DrawRect");
+	R_DrawFilledQuad(x, y, x + w, y + h, color, programState, "Draw_FillRGBABuf");
 }
 
 void Draw_Pic(int x, int y, qpic_t* pic)

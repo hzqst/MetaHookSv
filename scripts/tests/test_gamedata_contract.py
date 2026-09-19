@@ -612,6 +612,41 @@ class RendererGateTests(unittest.TestCase):
             self.assertTrue(any("Mod_UnloadSpriteTextures" in e for e in errors), (gv, errors))
         self.assertNotIn("Mod_UnloadSpriteTextures", validate.RENDERER_ENGINE_E8_FUNCTIONS)
 
+    def test_gate_requires_rgba_fill_bodies_on_every_identity(self):
+        for name in ("Draw_FillRGBA", "Draw_FillRGBABlend"):
+            for gv in validate.RENDERER_ALL_GAMES:
+                symbols = self.complete_engine_symbols(gv)
+                del symbols[name]
+                errors = validate.validate_renderer(symbols, gv)
+                self.assertTrue(any(name in e for e in errors), (name, gv, errors))
+            self.assertNotIn(name, validate.RENDERER_ENGINE_NON_SVENGINE_FUNCTIONS)
+
+    def test_gate_requires_draw_fillrgbabuf_on_svengine_only(self):
+        for gv in validate.RENDERER_SVENGINE_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            self.assertIn("Draw_FillRGBABuf", symbols)
+            del symbols["Draw_FillRGBABuf"]
+            errors = validate.validate_renderer(symbols, gv)
+            self.assertTrue(any("Draw_FillRGBABuf" in e for e in errors), (gv, errors))
+        for gv in validate.RENDERER_NON_SVENGINE_GAMES:
+            self.assertNotIn("Draw_FillRGBABuf", self.complete_engine_symbols(gv))
+
+    def test_gate_no_longer_references_the_retired_net_drawrect_name(self):
+        self.assertNotIn("NET_DrawRect", validate.RENDERER_ENGINE_SVENGINE_FUNCTIONS)
+        for gv in validate.RENDERER_ALL_GAMES:
+            self.assertNotIn("NET_DrawRect", self.complete_engine_symbols(gv))
+
+    def test_gate_skips_d_fillrect_on_svengine(self):
+        for gv in validate.RENDERER_SVENGINE_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            self.assertNotIn("D_FillRect", symbols)
+            self.assertEqual([], validate.validate_renderer(symbols, gv))
+        for gv in validate.RENDERER_NON_SVENGINE_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            del symbols["D_FillRect"]
+            errors = validate.validate_renderer(symbols, gv)
+            self.assertTrue(any("D_FillRect" in e for e in errors), (gv, errors))
+
     def test_gate_alias_poly_counter_follows_engine_family(self):
         symbols = self.complete_engine_symbols("hl-8684")
         self.assertIn("c_alias_polys", symbols)

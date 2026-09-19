@@ -185,6 +185,7 @@ RENDERER_CZDS_CLIENT_GAMES = BULLETPHYSICS_CZDS_CLIENT_GAMES
 RENDERER_ENGINE_ALL_FUNCTIONS = (
     "BuildGammaTable", "CL_AllocDlight", "CL_AllocElight", "CL_FxBlend",
     "CVideoMode_Common_DrawStartupGraphic", "Cache_Alloc", "Draw_DecalTexture",
+    "Draw_FillRGBA", "Draw_FillRGBABlend",
     "Draw_Frame", "Draw_Pic", "GL_BeginRendering",
     "GL_Bind", "GL_BuildLightmaps", "GL_EndRendering", "GL_Finish2D", "GL_Init",
     "GL_LoadFilterTexture", "GL_LoadTexture2", "GL_SelectTexture", "GL_Set2D", "GL_Shutdown",
@@ -211,17 +212,21 @@ RENDERER_ENGINE_ALL_GLOBALS = (
 )
 RENDERER_ENGINE_ALL_PATCHES = ("Sys_ShutdownGame_to_GL_Shutdown_callsite_0",)
 RENDERER_NUMBERED_PATCH_SETS = ("CL_LinkPacketEntities_to_R_ResetLatched_callsite",)
+#SvEngine has no body with D_FillRect's legacy (vrect_t*, color*) interface; its connection
+#message fills the rectangle through Draw_FillRGBABlend instead.
 RENDERER_ENGINE_NON_SVENGINE_FUNCTIONS = (
-    "D_FillRect", "Draw_FillRGBA", "Draw_FillRGBABlend", "Draw_SpriteFrameAdditive",
+    "D_FillRect", "Draw_SpriteFrameAdditive",
     "Draw_SpriteFrameGeneric", "Draw_SpriteFrameHoles", "R_LoadSkys", "R_RenderFinalFog",
 )
 RENDERER_ENGINE_NON_SVENGINE_PATCHES = ("GL_SetMode_call_qwglCreateContext",)
 #SvEngine renamed the alias-poly counter to c_model_polys.
 RENDERER_ENGINE_NON_SVENGINE_GLOBALS = ("c_alias_polys",)
 RENDERER_ENGINE_E8_FUNCTIONS = ("GL_SelectPixelFormat", "GlowBlend")
+#Draw_FillRGBABuf is SvEngine's buffered eight-integer rectangle body; the catalog used to
+#publish it under the wrong name NET_DrawRect and dropped that name without an alias.
 RENDERER_ENGINE_SVENGINE_FUNCTIONS = (
-    "Draw_SpriteFrameAdditive_SvEngine", "Draw_SpriteFrameGeneric_SvEngine",
-    "Draw_SpriteFrameHoles_SvEngine", "NET_DrawRect", "R_LoadSkyBox_SvEngine",
+    "Draw_FillRGBABuf", "Draw_SpriteFrameAdditive_SvEngine", "Draw_SpriteFrameGeneric_SvEngine",
+    "Draw_SpriteFrameHoles_SvEngine", "R_LoadSkyBox_SvEngine",
 )
 RENDERER_SVENGINE_GLOBALS = ("allow_cheats", "c_model_polys")
 RENDERER_MTEX_PROBE_FUNCTIONS = ("CheckMultiTextureExtensions",)
