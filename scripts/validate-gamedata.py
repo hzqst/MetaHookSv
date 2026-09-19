@@ -211,10 +211,10 @@ RENDERER_ENGINE_ALL_GLOBALS = (
     "cl_waterlevel", "cl_weaponsequence", "cl_weaponstarttime", "cl_worldmodel",
     "cshift_water", "currententity", "currenttexture", "d_lightstylevalue", "detTexSupported",
     "envmap", "filterBrightness", "filterColorBlue", "filterColorGreen", "filterColorRed",
-    "filterMode", "frustum", "gDecalSurfCount", "gDecalSurfs", "gTempEnts", "g_ChromeOrigin",
-    "lightmap_rectchange", "lightmap_textures", "lightmaps", "mod_known",
+    "filterMode", "frustum", "gDecalSurfCount", "gTempEnts",
+    "lightmaps", "mod_known",
     "mod_numknown", "modelorg", "pstudiohdr",
-    "r_model", "r_origin", "r_worldentity", "rtable",
+    "r_origin", "r_worldentity", "rtable",
 )
 RENDERER_ENGINE_ALL_PATCHES = ("Sys_ShutdownGame_to_GL_Shutdown_callsite_0",)
 RENDERER_NUMBERED_PATCH_SETS = ("CL_LinkPacketEntities_to_R_ResetLatched_callsite",)
@@ -255,7 +255,7 @@ RENDERER_CLIENT_STUDIO_VFUNCS = (
     "GameStudioRenderer_StudioRenderModel", "GameStudioRenderer_StudioSaveBones",
     "GameStudioRenderer_StudioSetupBones",
 )
-RENDERER_CLIENT_STUDIO_GLOBALS = ("g_iUser1", "g_iUser2", "g_pGameStudioRenderer")
+RENDERER_CLIENT_STUDIO_GLOBALS = ()  # was ("g_iUser1", "g_iUser2"); both were write-only in the plugin and deleted 2026-09-19
 
 # gameVersion -> engine family. Only these gameVersions are declared supported.
 # hl-4554 belongs to ENGINE_GOLDSRC: its hw.dll is a plain PE (isBlob false) with

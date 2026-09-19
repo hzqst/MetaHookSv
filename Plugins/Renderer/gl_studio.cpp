@@ -44,7 +44,6 @@ model_t* cl_sprite_shell = NULL;
 mstudiomodel_t** psubmodel = NULL;
 mstudiobodyparts_t** pbodypart = NULL;
 studiohdr_t** pstudiohdr = NULL;
-model_t** r_model = NULL;
 float* r_blend = NULL;
 auxvert_t** pauxverts = NULL;
 float** pvlightvalues = NULL;
@@ -53,16 +52,12 @@ vec3_t(*lightvalues)[MAXSTUDIOVERTS] = NULL;
 float(*pbonetransform)[MAXSTUDIOBONES][3][4] = NULL;
 float(*plighttransform)[MAXSTUDIOBONES][3][4] = NULL;
 float(*rotationmatrix)[3][4] = NULL;
-#if 0
-int(*g_NormalIndex)[MAXSTUDIOVERTS] = NULL;
-#endif
 int(*chrome)[MAXSTUDIOVERTS][2] = NULL;
 int(*chromeage)[MAXSTUDIOBONES] = NULL;
 cl_entity_t* cl_viewent = NULL;
 int* g_ForcedFaceFlags = NULL;
 int* lightgammatable = NULL;
 byte* texgammatable = NULL;
-float* g_ChromeOrigin = NULL;
 int* r_ambientlight = NULL;
 float* r_shadelight = NULL;
 vec3_t* r_blightvec = NULL;
@@ -76,14 +71,7 @@ int* numlights = NULL;
 int* r_topcolor = NULL;
 int* r_bottomcolor = NULL;
 
-extern void* g_pGameStudioRenderer;
 
-#if 0//unused
-player_model_t(*DM_PlayerState)[MAX_CLIENTS] = NULL;
-skin_t (*DM_RemapSkin)[64][MAX_SKINS] = NULL;
-skin_t* (*pDM_RemapSkin)[2528][MAX_SKINS] = NULL;
-int* r_remapindex = NULL;
-#endif
 
 //Cvars
 

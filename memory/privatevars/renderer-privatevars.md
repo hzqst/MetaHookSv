@@ -162,14 +162,14 @@ Entry point `EngineStudio_FillAddress(pstudio, DllInfo, RealDllInfo)` (`exportfu
 | `gPrivateFuncs.CL_FxBlend` (engine entity alpha-blend) | `int (*)(cl_entity_t*)` | `EngineStudio_FillAddress_StudioSetRenderamt` (529): anchor `pstudio->StudioSetRenderamt`; first 5-byte `E8` → target. | `Install_InlineHook(CL_FxBlend)`; wrapper `gl_rmain.cpp:1030`. |
 | `currententity` | `cl_entity_t**` | `_GetCurrentEntity` (143): `pstudio->GetCurrentEntity`; `DisasmRanges(+0x10)` first `MOV EAX,[.data]`. | Current entity for every Studio pass. |
 | `r_framecount` / `cl_time` / `cl_oldtime` | `int*` / `double*` / `double*` | `_GetTimes` (199): `pstudio->GetTimes`; `DisasmRanges(+0x50)` collects `.data` candidates — `candidates[0]` = `r_framecount`, first `FLD`/`MOVSD` = `cl_time`, second = `cl_oldtime`. | Frame counter and client time. |
-| `r_model` | `model_t**` | `_SetRenderModel` (309): `pstudio->SetRenderModel`; `DisasmRanges(+0x10)` first `MOV [.data],reg`. | Resolved only. |
+| ~~`r_model`~~ | `model_t**` | ~~`_SetRenderModel` (309): `pstudio->SetRenderModel`; `DisasmRanges(+0x10)` first `MOV [.data],reg`~~ | Deleted 2026-09-19 — resolved, never read (see last section). |
 | `pstudiohdr` | `studiohdr_t**` | `_StudioSetHeader` (358): `pstudio->StudioSetHeader`; `DisasmRanges(+0x10)` first `MOV [.data],reg`. | Studio bone/header paths. |
 | `g_ForcedFaceFlags` | `int*` | `_SetForceFaceFlags` (409): `pstudio->SetForceFaceFlags`; `DisasmRanges(+0x10)` first `MOV [.data],reg`. | `R_IsRenderingChrome`. |
 | `r_topcolor` / `r_bottomcolor` | `int*` / `int*` | `_StudioSetRemapColors` (462): `pstudio->StudioSetRemapColors`; `DisasmRanges(+0x50)` first two distinct `.data` stores. | Skin remap invalidation. |
 | `r_blend` | `float*` | Same as `CL_FxBlend` locator: `DisasmRanges(+0x50)` first `FSTP [abs]` (`base==0`). A second independent resolution exists in `gl_hooks.cpp:8460`; both `if (!r_blend)`-guarded. | Studio blend. |
 | `pauxverts`/`auxverts`, `pvlightvalues`/`lightvalues` | glow-shell vertex/light arrays | `_SetupRenderer` (585): `pstudio->SetupRenderer`; `DisasmRanges(+0x50)` first/second `C7 05 [imm32],imm32` (`len 10`), slot at `+2`, array base at `+6`. | Resolved only. |
 | `pbodypart` / `psubmodel` | `mstudiobodyparts_t**` / `mstudiomodel_t**` | `_StudioSetupModel` (652): `pstudio->StudioSetupModel`; `DisasmRanges(+0x50)` first/second `MOV [reg+0],imm32` with imm in `.data`. | `psubmodel` used in `R_StudioDrawSubmodel`; `pbodypart` resolved only. |
-| `r_origin` / `g_ChromeOrigin` | `float*` / `float*` | `_SetChromeOrigin` (715): `pstudio->SetChromeOrigin`; `DisasmRanges(+0x50)` collects `FLD`/`MOV`/`MOVQ`/`MOV imm` and `MOV`/`MOVQ`/`FSTP` store candidates; `qsort` ascending, lowest wins. | `r_origin` heavily used; `g_ChromeOrigin` resolved only. |
+| `r_origin` / ~~`g_ChromeOrigin`~~ | `float*` / ~~`float*`~~ | `_SetChromeOrigin` (715): `pstudio->SetChromeOrigin`; `DisasmRanges(+0x50)` collects `FLD`/`MOV`/`MOVQ`/`MOV imm` and `MOV`/`MOVQ`/`FSTP` store candidates; `qsort` ascending, lowest wins. | `r_origin` heavily used; ~~`g_ChromeOrigin` resolved only~~ → deleted 2026-09-19 (resolved, never read). |
 | `r_colormix` | `float*` (3 floats) | `_StudioSetupLighting` (870): `pstudio->StudioSetupLighting`; `DisasmRanges(+0x200)` arms after `AND reg,0xFF00`, collects `.data` stores, accepts last/first three 4-byte-consecutive. | Studio UBO colour. |
 
 ## Engine-private global variables
@@ -310,7 +310,7 @@ The engine VGUI2 surface (`EngineSurface007` → `IEngineSurface`/`IEngineSurfac
 | `gPrivateFuncs.R_StudioSetupBones` | engine image | string `"Bip01 Spine\0"` → `68 <str> ?? E8 … 83 C4 08 85 C0` + `ReverseSearchFunctionBeginEx(+0x1000)`. | Hooked; discriminator for `R_StudioSaveBones`. |
 | `gPrivateFuncs.R_StudioMergeBones` | engine image | `Search_Pattern_From_Size(EngineStudioDrawModelThunk,+0x250,"83 B8 08 03 00 00 0C")` + `DisasmRanges(+0x80)` first `E8`. | Hooked. |
 | `gPrivateFuncs.R_StudioSaveBones` | engine image | Second distinct `E8` target in the same walk. | Hooked. |
-| `g_pGameStudioRenderer` | client `.data` singleton | `DisasmRanges(client StudioDrawPlayer,+0x200)` first `MOV ECX,imm(.data)`. | Vtable base for all `GameStudioRenderer_*`. |
+| ~~`g_pGameStudioRenderer`~~ | client `.data` singleton | ~~`DisasmRanges(client StudioDrawPlayer,+0x200)` first `MOV ECX,imm(.data)`~~ | Deleted 2026-09-19 — the vtable is now resolved through gamedata `VIRTUAL_FUNCTION` records (see last section). |
 
 ## Boundary: public-API-derived pointers (not engine-private)
 
@@ -989,3 +989,90 @@ wire it up.
 `validate-gamedata.py` passes over 21 snapshots / 5 engine families; 91 passed /
 2 skipped / 26 subtests across `scripts/tests`. **Not verified**: in-game smoke
 tests on any engine family.
+
+## Dead-variable sweep (2026-09-19): 50 resolved-but-unread engine mirrors
+
+Systematic audit of every Renderer `extern` engine mirror and every Renderer
+file-scope global: for each symbol, count assignments against real reads,
+treating `decltype(x)` / `sizeof(x)` as unevaluated operands (not reads) and
+`Install_InlineHook(Name)` / `Uninstall_Hook(Name)` as macro uses of
+`g_phook_Name`. 50 symbols were assigned (or merely declared) and never read.
+
+**Methodology caveats worth keeping.** (1) `Install_InlineHook(fn)` is a
+token-paste macro (`g_phook_##fn`), so `grep g_phook_X` cannot prove a hook is
+unused — grep `Install_InlineHook(X)` instead. (2) Classify *per plugin*: a
+repo-wide scan counts another plugin's same-named global as a read. Renderer's
+`g_iUser1` / `g_iUser2` looked live only because BulletPhysics and SCCameraFix
+have their own `g_iUser1` / `g_iUser2` that are read. (3) `X = (decltype(X))expr;`
+is not a self-read; without this an entire class of write-only fields hides.
+
+**Engine cvar mirrors fetched via `gEngfuncs.pfnGetCvarPointer` then never dereferenced (27).**
+`gl_affinemodels`, `gl_finish`, `gl_flashblend`, `gl_flipmatrix`, `gl_fog`,
+`gl_lightholes`, `gl_max_size`, `gl_monolights`, `gl_nocolors`, `gl_overdraw`,
+`gl_picmip`, `gl_playermip`, `gl_polyblend`, `gl_reporttjunctions`,
+`gl_round_down`, `gl_smoothmodels`, `gl_texsort`, `gl_wateramp`, `gl_zmax`,
+`r_bmodelhighfrac`, `r_bmodelinterp`, `r_decals`, `r_dynamic`, `r_mirroralpha`,
+`r_mmx`, `r_wadtextures`, `r_wateralpha`. `ati_npatch`, `ati_subdiv` and
+`gl_watersides` were declared but never even resolved. Definitions, `gl_local.h`
+externs and the `R_InitCvars` resolve lines are all deleted.
+
+**Other engine / plugin globals (17).** `DM_RemapSkin`, `pDM_RemapSkin`,
+`r_remapindex`, `g_NormalIndex` — their definitions sat inside `#if 0`, so only
+the stale `gl_studio.h` externs and the disabled definitions remained.
+`currenttexid` (`gl_draw.h`), `gRenderMode`, `s_BlendBufferFBO` (`gl_local.h`),
+`pheader` (`enginedef.h`; BulletPhysics keeps its own `pheader`) and
+`g_OITBlendObjects[512]` + `g_iNumOITBlendObjects` (`gl_wsurf.h`) were extern-only
+declarations with no definition at all. `g_bIsHL1MMOD` was set to `true` for the
+HL1MMod game dir and never read, so the whole
+`if (!stricmp(gEngfuncs.pfnGetGameDirectory(), "HL1MMod")) { ... }` block is gone.
+`g_pGameStudioRenderer`, `r_screenaspect` and `NUM_MRT` complete the set.
+
+**`gPrivateFuncs` fields declared but never assigned nor called (6).**
+`BuildGlowShellVerts`, `CL_IsThirdPerson`, `GL_Upload16`, `R_DecalMPoly`,
+`R_DecalShootInternal`, `R_DrawDecals`. Note the same-named live entities stay:
+the client-export `gExportfuncs.CL_IsThirdPerson`, and the plugin's own
+`R_DrawDecals(cl_entity_t*)` / `R_DecalShootInternal(...)` functions are different
+symbols from the deleted struct fields.
+
+**Gate change.** `g_pGameStudioRenderer` left `RENDERER_CLIENT_STUDIO_GLOBALS`,
+which is now `("g_iUser1", "g_iUser2")`. (BulletPhysics had already dropped the
+same symbol on 2026-09-12 for the same reason.)
+
+**Still open / deliberately not touched.** The 12 `gPrivateFuncs.triapi_*`
+originals saved at `gl_hooks.cpp:6093-6107` (the plugin's triAPI wrappers
+reimplement everything and only `triapi_Fog` / `triapi_FogParams` /
+`triapi_SpriteTexture` call the saved originals). The five guard-only globals
+whose only "use" is `Sig_VarNotFound` (`r_soundOrigin`, `scissor_x`, `scissor_y`,
+`scissor_width`, `scissor_height`). And `g_StudioRendererRendermode` (`static`,
+write-only). All three groups were reported but excluded from this sweep.
+
+**Verified**: `Renderer` `Release|Win32` builds with the same 9 pre-existing
+warnings and 0 errors; `validate-gamedata.py` passes over 21 snapshots / 5 engine
+families; 91 passed / 2 skipped / 26 subtests. **Not verified**: in-game smoke
+tests.
+
+## Dead-variable sweep, follow-up (2026-09-19): 7 gated-but-dead globals + `DM_PlayerState`
+
+Second pass over the same audit's overflow: these were already *required by the
+release gate* yet never read by the plugin.
+
+| Symbol | Gate table | Note |
+| --- | --- | --- |
+| `gDecalSurfs`, `lightmap_rectchange`, `lightmap_textures` | `RENDERER_ENGINE_ALL_GLOBALS` | added by `144d10c7`, whose "16 symbols with consumers" claim did not hold for these three |
+| `g_ChromeOrigin`, `r_model` | `RENDERER_ENGINE_ALL_GLOBALS` | resolved at the top of `EngineStudio_FillAddress`, never dereferenced |
+| `g_iUser1`, `g_iUser2` | `RENDERER_CLIENT_STUDIO_GLOBALS` | resolved at the top of `Client_FillAddress`, never read |
+
+All seven left their gate tables; `RENDERER_CLIENT_STUDIO_GLOBALS` is now `()`.
+`test_gate_requires_lightmap_and_decal_symbols_on_every_identity` lost the three
+lightmap/decal names accordingly.
+
+Also deleted `DM_PlayerState`: Renderer's `gl_studio.h` extern plus the leftover
+`#if 0//unused` definition. The `DM_PlayerState` entry at `validate-gamedata.py:49`
+belongs to SCModelDownloader's `COMMON_REQUIRED` set and is untouched.
+
+Definitions, externs and the `GamedataResolvePtr` / `EngineStudio_FillAddress`
+resolve lines for all eight symbols are gone.
+
+**Verified**: build 0 errors, same 9 pre-existing warnings; `validate-gamedata.py`
+passes over 21 snapshots / 5 engine families; 91 passed / 2 skipped / 26 subtests.
+**Not verified**: in-game smoke tests.

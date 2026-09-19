@@ -291,8 +291,6 @@ extern float r_znear;
 extern float r_zfar;
 extern bool r_ortho;
 
-extern cl_entity_t *g_OITBlendObjects[512];
-extern int g_iNumOITBlendObjects;
 
 void R_InitWSurf(void);
 void R_FreeWorldResources(void);
@@ -304,8 +302,6 @@ void R_ClearWorldSurfaceWorldModels(void);
 
 //engine
 extern byte *lightmaps;
-extern int *lightmap_textures;
-extern void *lightmap_rectchange;
 extern int *lightmap_modified;
 extern glpoly_t **lightmap_polys;
 extern int *d_lightstylevalue;
@@ -313,7 +309,6 @@ extern dlight_t *cl_dlights;
 extern dlight_t* cl_elights;
 extern int *r_dlightactive;
 extern int *gDecalSurfCount;
-extern msurface_t **gDecalSurfs;
 extern decal_t *gDecalPool;
 extern decalcache_t *gDecalCache;
 

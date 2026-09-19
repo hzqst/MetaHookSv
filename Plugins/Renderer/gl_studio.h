@@ -317,7 +317,6 @@ public:
 extern mstudiomodel_t **psubmodel;
 extern mstudiobodyparts_t **pbodypart;
 extern studiohdr_t **pstudiohdr;
-extern model_t **r_model;
 extern float *r_blend;
 extern auxvert_t **pauxverts;
 extern float **pvlightvalues;
@@ -326,14 +325,12 @@ extern vec3_t(*lightvalues)[MAXSTUDIOVERTS];
 extern float (*pbonetransform)[MAXSTUDIOBONES][3][4];
 extern float (*plighttransform)[MAXSTUDIOBONES][3][4];
 extern float(*rotationmatrix)[3][4];
-extern int (*g_NormalIndex)[MAXSTUDIOVERTS];
 extern int (*chromeage)[MAXSTUDIOBONES];
 extern int(*chrome)[MAXSTUDIOVERTS][2];
 extern cl_entity_t *cl_viewent;
 extern int *g_ForcedFaceFlags;
 extern int *lightgammatable;
 extern byte *texgammatable;
-extern float *g_ChromeOrigin;
 extern int *r_ambientlight;
 extern float *r_shadelight;
 extern vec3_t *r_blightvec;
@@ -345,12 +342,7 @@ extern dlight_t *(*locallight)[3];
 extern int *numlights;
 extern int* r_topcolor;
 extern int* r_bottomcolor;
-#if 0
-extern player_model_t(*DM_PlayerState)[MAX_CLIENTS];
-extern skin_t(*DM_RemapSkin)[64][MAX_SKINS];
-extern skin_t* (*pDM_RemapSkin)[2528][MAX_SKINS];
-extern int* r_remapindex;
-#endif
+
 extern model_t *cl_sprite_white;
 extern model_t *cl_sprite_shell;
 

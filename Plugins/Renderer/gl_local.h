@@ -90,7 +90,6 @@ extern float r_xfov_viewmodel;
 extern float r_yfov_viewmodel;
 extern float r_xfov_currentpass;
 extern float r_yfov_currentpass;
-extern float r_screenaspect;
 
 extern bool r_fog_enabled;
 extern int r_fog_mode;
@@ -200,8 +199,6 @@ extern int *mod_numknown;
 
 //client dll
 
-extern int *g_iUser1;
-extern int *g_iUser2;
 
 extern float* g_iFogColor_SCClient;
 extern float* g_iStartDist_SCClient;
@@ -258,7 +255,6 @@ extern int* allow_cheats;
 
 extern int* allocated_textures;
 
-extern int *gRenderMode;
 
 extern int glx;
 extern int gly;
@@ -279,7 +275,6 @@ extern FBO_Container_t s_BackBufferFBO3;
 extern FBO_Container_t s_BackBufferFBO4;
 extern FBO_Container_t s_BackBufferFBO5;
 extern FBO_Container_t s_GBufferFBO;
-extern FBO_Container_t s_BlendBufferFBO;
 extern FBO_Container_t s_DownSampleFBO[DOWNSAMPLE_BUFFERS];
 extern FBO_Container_t s_LuminFBO[LUMIN_BUFFERS];
 extern FBO_Container_t s_Lumin1x1FBO[LUMIN1x1_BUFFERS];
@@ -299,61 +294,34 @@ extern FBO_Container_t *g_CurrentRenderingFBO;
 extern msurface_t **skychain;
 extern msurface_t **waterchain;
 
-extern cvar_t *r_bmodelinterp;
-extern cvar_t *r_bmodelhighfrac;
 extern cvar_t *r_norefresh;
 extern cvar_t *r_drawentities;
 extern cvar_t *r_drawviewmodel;
 extern cvar_t *r_speeds;
 extern cvar_t *r_fullbright;
-extern cvar_t *r_decals;
 extern cvar_t *r_lightmap;
 extern cvar_t *r_shadows;
-extern cvar_t *r_mirroralpha;
-extern cvar_t *r_wateralpha;
-extern cvar_t *r_dynamic;
 extern cvar_t* r_novis;
-extern cvar_t *r_mmx;
 extern cvar_t *r_traceglow;
-extern cvar_t *r_wadtextures;
 extern cvar_t *r_glowshellfreq;
 extern cvar_t *r_detailtextures;
 extern cvar_t *r_cullsequencebox;
 
 extern cvar_t *gl_vsync;
 extern cvar_t *gl_ztrick;
-extern cvar_t *gl_finish;
 extern cvar_t *gl_clear;
 extern cvar_t *gl_clearcolor;
 extern cvar_t *gl_cull;
-extern cvar_t *gl_texsort;
-extern cvar_t *gl_smoothmodels;
-extern cvar_t *gl_affinemodels;
-extern cvar_t *gl_flashblend;
-extern cvar_t *gl_playermip;
-extern cvar_t *gl_nocolors;
 extern cvar_t *gl_keeptjunctions;
-extern cvar_t *gl_reporttjunctions;
-extern cvar_t *gl_wateramp;
 extern cvar_t *gl_dither;
 extern cvar_t *gl_spriteblend;
 extern cvar_t *gl_polyoffset;
-extern cvar_t *gl_lightholes;
-extern cvar_t *gl_zmax;
 extern cvar_t *gl_alphamin;
-extern cvar_t *gl_overdraw;
-extern cvar_t *gl_watersides;
 extern cvar_t *gl_overbright;
 extern cvar_t *gl_envmapsize;
-extern cvar_t *gl_flipmatrix;
-extern cvar_t *gl_monolights;
-extern cvar_t *gl_fog;
 extern cvar_t *gl_wireframe;
 extern cvar_t *gl_ansio;
 extern cvar_t *developer;
-extern cvar_t *gl_round_down;
-extern cvar_t *gl_picmip;
-extern cvar_t *gl_max_size;
 
 extern cvar_t *v_texgamma;
 extern cvar_t *v_lightgamma;
@@ -834,4 +802,3 @@ extern bool g_bIsRenderingView;
 extern bool g_bIsSvenCoop;
 extern bool g_bIsCounterStrike;
 extern bool g_bIsAoMDC;
-extern bool g_bIsHL1MMOD;

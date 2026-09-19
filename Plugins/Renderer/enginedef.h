@@ -580,7 +580,6 @@ aliashdr_t;
 #define MAXALIASFRAMES 256
 #define MAXALIASTRIS 2048
 
-extern aliashdr_t *pheader;
 extern stvert_t stverts[MAXALIASVERTS];
 extern mtriangle_t triangles[MAXALIASTRIS];
 extern trivertx_t *poseverts[MAXALIASFRAMES];

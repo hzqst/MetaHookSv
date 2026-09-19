@@ -8,7 +8,6 @@ extern int *maxgltextures_SvEngine;
 extern int *peakgltextures_SvEngine;
 extern int *numgltextures;
 extern int *gHostSpawnCount;
-extern int *currenttexid;
 extern int *currenttexture;
 extern int *gl_filter_min;
 extern int *gl_filter_max;

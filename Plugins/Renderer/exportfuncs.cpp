@@ -14,12 +14,10 @@
 cl_enginefunc_t gEngfuncs = {0};
 engine_studio_api_t IEngineStudio = { 0 };
 r_studio_interface_t **gpStudioInterface = NULL;
-void *g_pGameStudioRenderer = NULL;
 
 bool g_bIsSvenCoop = false;
 bool g_bIsCounterStrike = false;
 bool g_bIsAoMDC = false;
-bool g_bIsHL1MMOD = false;
 
 static hook_t *g_phook_GameStudioRenderer_StudioDrawPlayer = NULL;
 static hook_t *g_phook_GameStudioRenderer_StudioSetupBones = NULL;
@@ -643,10 +641,8 @@ void EngineStudio_FillAddress(struct engine_studio_api_s* pstudio, const mh_dll_
 {
 	//Engine Studio global slots resolved from gamedata
 	currententity = (decltype(currententity))GamedataResolvePtr(RealDllInfo.ImageBase, "currententity", MH_GAMESYMBOL_KIND_GLOBAL);
-	r_model = (decltype(r_model))GamedataResolvePtr(RealDllInfo.ImageBase, "r_model", MH_GAMESYMBOL_KIND_GLOBAL);
 	pstudiohdr = (decltype(pstudiohdr))GamedataResolvePtr(RealDllInfo.ImageBase, "pstudiohdr", MH_GAMESYMBOL_KIND_GLOBAL);
 	r_origin = (decltype(r_origin))GamedataResolvePtr(RealDllInfo.ImageBase, "r_origin", MH_GAMESYMBOL_KIND_GLOBAL);
-	g_ChromeOrigin = (decltype(g_ChromeOrigin))GamedataResolvePtr(RealDllInfo.ImageBase, "g_ChromeOrigin", MH_GAMESYMBOL_KIND_GLOBAL);
 
 	EngineStudio_FillAddress_GetTimes(pstudio, DllInfo, RealDllInfo);
 	EngineStudio_FillAddress_SetForceFaceFlags(pstudio, DllInfo, RealDllInfo);
@@ -672,8 +668,7 @@ void ClientStudio_FillAddress(struct r_studio_interface_s** ppinterface)
 	auto clientBase = g_ClientDLLInfo.ImageBase;
 	auto engineBase = g_EngineDLLInfo.ImageBase;
 
-	//Client CGameStudioRenderer singleton, vtable and virtual functions resolved from gamedata
-	g_pGameStudioRenderer = GamedataResolvePtr(clientBase, "g_pGameStudioRenderer", MH_GAMESYMBOL_KIND_GLOBAL);
+	//Client CGameStudioRenderer vtable and virtual functions resolved from gamedata
 
 	gPrivateFuncs.GameStudioRenderer_StudioDrawModel = (decltype(gPrivateFuncs.GameStudioRenderer_StudioDrawModel))
 		GamedataResolvePtr(clientBase, "GameStudioRenderer_StudioDrawModel", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);

@@ -650,8 +650,8 @@ class RendererGateTests(unittest.TestCase):
     def test_gate_requires_lightmap_and_decal_symbols_on_every_identity(self):
         names = (
             "R_RenderDynamicLightmaps", "R_TextureAnimation",
-            "d_lightstylevalue", "frustum", "gDecalSurfCount", "gDecalSurfs",
-            "lightmap_rectchange", "lightmap_textures", "lightmaps", "rtable",
+            "d_lightstylevalue", "frustum", "gDecalSurfCount",
+            "lightmaps", "rtable",
         )
         for name in names:
             for gv in validate.RENDERER_ALL_GAMES:

@@ -65,7 +65,6 @@ typedef struct
 	texture_t* (*R_TextureAnimation)(msurface_t* fa);
 	void (*R_RenderDynamicLightmaps)(msurface_t* fa);
 	void(*R_RotateForEntity)(float* origin, cl_entity_t* ent);
-	void (*R_DrawDecals)(qboolean bMultitexture);
 	void (*Draw_MiptexTexture)(cachewad_t* wad, byte* data);
 	void (*GL_UnloadTexture)(const char* identifier);
 	void (*GL_UnloadTextures)(void);
@@ -75,11 +74,9 @@ typedef struct
 	void* (*Draw_CacheGet)(cachewad_t* wad, int index);
 	//int(*GL_LoadTexture)(char *identifier, int textureType, int width, int height, byte *data, qboolean mipmap, int iPalTextureType, byte *pPal);
 	int(*GL_LoadTexture2)(char* identifier, int textureType, int width, int height, byte* data, qboolean mipmap, int iPalTextureType, byte* pPal, int filter);
-	int(*GL_Upload16)(byte* data, int width, int height, int iType, byte* pPal, int a6, int a7, int a8);
 	void (*Mod_UnloadSpriteTextures)(model_t* mod);
 	void (*Mod_LoadSpriteModel)(model_t* mod, void* buffer);
 	void* (*Mod_LoadSpriteFrame)(void* pin, mspriteframe_t** ppframe, int framenum);
-	void (*R_DecalMPoly)(float* v, texture_t* ptexture, msurface_t* psurf, int vertCount);
 	void (*R_MarkLeaves)(void);
 	void (*R_DrawBrushModel)(cl_entity_t* e);
 	void (*R_DrawSpriteModel)(cl_entity_t* ent);
@@ -95,7 +92,6 @@ typedef struct
 	void(*R_DrawViewModel)(void);//inlined in SvEngine
 	void(*R_PolyBlend)(void);
 	int(*V_FadeAlpha)(void);
-	void(*R_DecalShootInternal)(texture_t* ptexture, int index, int entity, int modelIndex, vec3_t position, int flags, float flScale);
 	void(*R_ResetLatched)(cl_entity_t* ent, qboolean full_reset);
 	//One of CheckMultiTextureExtensions / InitMultitexturing / DT_Initialize, whichever
 	//the current engine publishes. See Engine_FillAddress_LegacyMultiTextureInit.
@@ -218,7 +214,6 @@ typedef struct
 	skin_t* (*R_StudioGetSkin)(int keynum, int index);
 	void (*R_LightLambert)(float (*light)[4], float* normal, float* src, float* lambert);
 
-	void (*BuildGlowShellVerts)(vec3_t* pstudioverts, auxvert_t* pauxverts);
 	void (*R_StudioChrome)(int* pchrome, int bone, vec3_t normal);
 
 	//Engine Studio Exported API
@@ -238,7 +233,6 @@ typedef struct
 	void(__fastcall* GameStudioRenderer_StudioRenderFinal)(void* pthis, int);
 
 	//Client DLL
-	int (*CL_IsThirdPerson)(void);
 
 	//Engine Studio
 	int (*R_StudioDrawModel)(int flags);

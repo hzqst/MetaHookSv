@@ -33,7 +33,6 @@ float r_xfov_viewmodel = 0;
 float r_yfov_viewmodel = 0;
 float r_xfov_currentpass = 0;
 float r_yfov_currentpass = 0;
-float r_screenaspect = 0;
 
 bool r_fog_enabled = false;
 int r_fog_mode = 0;
@@ -164,8 +163,6 @@ int* allocated_textures = nullptr;
 
 //client dll
 
-int* g_iUser1 = nullptr;
-int* g_iUser2 = nullptr;
 
 int* g_iWaterLevel = nullptr;
 bool* g_bRenderingPortals_SCClient = nullptr;
@@ -352,65 +349,36 @@ bool g_bUseLegacyTextureLoader = false;
 bool g_bHasOfficialFBOSupport = false;
 bool g_bHasOfficialGLTexAllocSupport = true;
 
-cvar_t* ati_subdiv = nullptr;
-cvar_t* ati_npatch = nullptr;
 
-cvar_t* r_bmodelinterp = nullptr;
-cvar_t* r_bmodelhighfrac = nullptr;
 cvar_t* r_norefresh = nullptr;
 cvar_t* r_drawentities = nullptr;
 cvar_t* r_drawviewmodel = nullptr;
 cvar_t* r_speeds = nullptr;
 cvar_t* r_fullbright = nullptr;
-cvar_t* r_decals = nullptr;
 cvar_t* r_lightmap = nullptr;
 cvar_t* r_shadows = nullptr;
-cvar_t* r_mirroralpha = nullptr;
-cvar_t* r_wateralpha = nullptr;
-cvar_t* r_dynamic = nullptr;
 cvar_t* r_novis = nullptr;
-cvar_t* r_mmx = nullptr;
 cvar_t* r_traceglow = nullptr;
-cvar_t* r_wadtextures = nullptr;
 cvar_t* r_glowshellfreq = nullptr;
 cvar_t* r_detailtextures = nullptr;
 cvar_t* r_cullsequencebox = nullptr;
 
 cvar_t* gl_vsync = nullptr;
 cvar_t* gl_ztrick = nullptr;
-cvar_t* gl_finish = nullptr;
 cvar_t* gl_clear = nullptr;
 cvar_t* gl_clearcolor = nullptr;
 cvar_t* gl_cull = nullptr;
-cvar_t* gl_texsort = nullptr;
-cvar_t* gl_smoothmodels = nullptr;
-cvar_t* gl_affinemodels = nullptr;
-cvar_t* gl_flashblend = nullptr;
-cvar_t* gl_playermip = nullptr;
-cvar_t* gl_nocolors = nullptr;
 cvar_t* gl_keeptjunctions = nullptr;
-cvar_t* gl_reporttjunctions = nullptr;
-cvar_t* gl_wateramp = nullptr;
 cvar_t* gl_dither = nullptr;
 cvar_t* gl_spriteblend = nullptr;
 cvar_t* gl_polyoffset = nullptr;
-cvar_t* gl_lightholes = nullptr;
-cvar_t* gl_zmax = nullptr;
 cvar_t* gl_alphamin = nullptr;
-cvar_t* gl_overdraw = nullptr;
 cvar_t* gl_overbright = nullptr;
 cvar_t* gl_envmapsize = nullptr;
-cvar_t* gl_flipmatrix = nullptr;
-cvar_t* gl_monolights = nullptr;
-cvar_t* gl_fog = nullptr;
 cvar_t* gl_wireframe = nullptr;
 cvar_t* gl_ansio = nullptr;
 cvar_t* developer = nullptr;
 cvar_t* sv_cheats = nullptr;
-cvar_t* gl_round_down = nullptr;
-cvar_t* gl_picmip = nullptr;
-cvar_t* gl_max_size = nullptr;
-cvar_t* gl_polyblend = nullptr;
 
 cvar_t* v_texgamma = nullptr;
 cvar_t* v_lightgamma = nullptr;
@@ -2547,8 +2515,6 @@ void R_PolyBlend(void)
 {
 	unsigned char	color[4]{};
 
-	//if (!gl_polyblend->value)
-	//	return;
 
 	auto alpha = gPrivateFuncs.V_FadeAlpha();
 
@@ -3678,22 +3644,14 @@ void DLL_SetModKey(void* pinfo, char* pkey, char* pvalue)
 
 void R_InitCvars(void)
 {
-	r_bmodelinterp = gEngfuncs.pfnGetCvarPointer("r_bmodelinterp");
-	r_bmodelhighfrac = gEngfuncs.pfnGetCvarPointer("r_bmodelhighfrac");
 	r_norefresh = gEngfuncs.pfnGetCvarPointer("r_norefresh");
 	r_drawentities = gEngfuncs.pfnGetCvarPointer("r_drawentities");
 	r_drawviewmodel = gEngfuncs.pfnGetCvarPointer("r_drawviewmodel");
 	r_speeds = gEngfuncs.pfnGetCvarPointer("r_speeds");
 	r_fullbright = gEngfuncs.pfnGetCvarPointer("r_fullbright");
-	r_decals = gEngfuncs.pfnGetCvarPointer("r_decals");
 	r_lightmap = gEngfuncs.pfnGetCvarPointer("r_lightmap");
 	r_shadows = gEngfuncs.pfnGetCvarPointer("r_shadows");
-	r_mirroralpha = gEngfuncs.pfnGetCvarPointer("r_mirroralpha");
-	r_wateralpha = gEngfuncs.pfnGetCvarPointer("r_wateralpha");
-	r_dynamic = gEngfuncs.pfnGetCvarPointer("r_dynamic");
-	r_mmx = gEngfuncs.pfnGetCvarPointer("r_mmx");
 	r_traceglow = gEngfuncs.pfnGetCvarPointer("r_traceglow");
-	r_wadtextures = gEngfuncs.pfnGetCvarPointer("r_wadtextures");
 	r_glowshellfreq = gEngfuncs.pfnGetCvarPointer("r_glowshellfreq");
 	r_novis = gEngfuncs.pfnGetCvarPointer("r_novis");
 
@@ -3712,7 +3670,6 @@ void R_InitCvars(void)
 	if (!gl_ztrick)
 		gl_ztrick = gEngfuncs.pfnGetCvarPointer("gl_ztrick_old");
 
-	gl_finish = gEngfuncs.pfnGetCvarPointer("gl_finish");
 	gl_clear = gEngfuncs.pfnGetCvarPointer("gl_clear");
 	gl_clearcolor = gEngfuncs.pfnGetCvarPointer("gl_clearcolor");
 	if (!gl_clearcolor)
@@ -3721,36 +3678,18 @@ void R_InitCvars(void)
 	dev_overview_color = gEngfuncs.pfnRegisterVariable("dev_overview_color", "0 255 0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	gl_cull = gEngfuncs.pfnGetCvarPointer("gl_cull");
-	gl_texsort = gEngfuncs.pfnGetCvarPointer("gl_texsort");
 
-	gl_smoothmodels = gEngfuncs.pfnGetCvarPointer("gl_smoothmodels");
-	gl_affinemodels = gEngfuncs.pfnGetCvarPointer("gl_affinemodels");
-	gl_flashblend = gEngfuncs.pfnGetCvarPointer("gl_flashblend");
-	gl_playermip = gEngfuncs.pfnGetCvarPointer("gl_playermip");
-	gl_nocolors = gEngfuncs.pfnGetCvarPointer("gl_nocolors");
 	gl_keeptjunctions = gEngfuncs.pfnGetCvarPointer("gl_keeptjunctions");
-	gl_reporttjunctions = gEngfuncs.pfnGetCvarPointer("gl_reporttjunctions");
-	gl_wateramp = gEngfuncs.pfnGetCvarPointer("gl_wateramp");
 	gl_dither = gEngfuncs.pfnGetCvarPointer("gl_dither");
 	gl_spriteblend = gEngfuncs.pfnGetCvarPointer("gl_spriteblend");
 	gl_polyoffset = gEngfuncs.pfnGetCvarPointer("gl_polyoffset");
-	gl_lightholes = gEngfuncs.pfnGetCvarPointer("gl_lightholes");
-	gl_zmax = gEngfuncs.pfnGetCvarPointer("gl_zmax");
 	gl_alphamin = gEngfuncs.pfnGetCvarPointer("gl_alphamin");
-	gl_overdraw = gEngfuncs.pfnGetCvarPointer("gl_overdraw");
 	gl_overbright = gEngfuncs.pfnGetCvarPointer("gl_overbright");
 	gl_envmapsize = gEngfuncs.pfnGetCvarPointer("gl_envmapsize");
-	gl_flipmatrix = gEngfuncs.pfnGetCvarPointer("gl_flipmatrix");
-	gl_monolights = gEngfuncs.pfnGetCvarPointer("gl_monolights");
-	gl_fog = gEngfuncs.pfnGetCvarPointer("gl_fog");
 
 	gl_wireframe = gEngfuncs.pfnGetCvarPointer("gl_wireframe");
 	gl_wireframe->flags &= ~FCVAR_SPONLY;
 
-	gl_round_down = gEngfuncs.pfnGetCvarPointer("gl_round_down");
-	gl_picmip = gEngfuncs.pfnGetCvarPointer("gl_picmip");
-	gl_max_size = gEngfuncs.pfnGetCvarPointer("gl_max_size");
-	gl_polyblend = gEngfuncs.pfnGetCvarPointer("gl_polyblend");
 
 	developer = gEngfuncs.pfnGetCvarPointer("developer");
 

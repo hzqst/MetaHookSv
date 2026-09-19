@@ -12,7 +12,6 @@ int last_luminance = 0;
 
 //HBAO
 #define AO_RANDOMTEX_SIZE 4
-static const int  NUM_MRT = 8;
 static const int  HBAO_RANDOM_SIZE = AO_RANDOMTEX_SIZE;
 static const int  HBAO_RANDOM_ELEMENTS = HBAO_RANDOM_SIZE * HBAO_RANDOM_SIZE;
 static const int  MAX_SAMPLES = 16;

@@ -6,8 +6,6 @@ msurface_t **waterchain = NULL;
 
 //engine
 byte *lightmaps = NULL;
-int *lightmap_textures = NULL;
-void *lightmap_rectchange = NULL;
 int *lightmap_modified = NULL;
 glpoly_t **lightmap_polys = NULL;
 int *d_lightstylevalue = NULL;
@@ -15,7 +13,6 @@ dlight_t *cl_dlights = NULL;
 dlight_t* cl_elights = NULL;
 int *r_dlightactive = NULL;
 int *gDecalSurfCount = NULL;
-msurface_t **gDecalSurfs = NULL;
 decal_t *gDecalPool = NULL;
 decalcache_t *gDecalCache = NULL;
 

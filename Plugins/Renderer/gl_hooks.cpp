@@ -1384,16 +1384,10 @@ void Engine_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const
 	/*
 		//Global pointers that link into engine vars
 		byte *lightmaps = NULL;
-		int *lightmap_textures = NULL;
-		void *lightmap_rectchange = NULL;
 		int *gDecalSurfCount = NULL;
-		msurface_t **gDecalSurfs = NULL;
 	*/
 	lightmaps = (decltype(lightmaps))GamedataResolvePtr(RealDllInfo.ImageBase, "lightmaps", MH_GAMESYMBOL_KIND_GLOBAL);
-	lightmap_textures = (decltype(lightmap_textures))GamedataResolvePtr(RealDllInfo.ImageBase, "lightmap_textures", MH_GAMESYMBOL_KIND_GLOBAL);
-	lightmap_rectchange = (decltype(lightmap_rectchange))GamedataResolvePtr(RealDllInfo.ImageBase, "lightmap_rectchange", MH_GAMESYMBOL_KIND_GLOBAL);
 	gDecalSurfCount = (decltype(gDecalSurfCount))GamedataResolvePtr(RealDllInfo.ImageBase, "gDecalSurfCount", MH_GAMESYMBOL_KIND_GLOBAL);
-	gDecalSurfs = (decltype(gDecalSurfs))GamedataResolvePtr(RealDllInfo.ImageBase, "gDecalSurfs", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Engine_FillAddress_R_RecursiveWorldNode(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -7235,8 +7229,6 @@ void Client_FillAddress_SCClient(const mh_dll_info_t& DllInfo, const mh_dll_info
 
 void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	g_iUser1 = (decltype(g_iUser1))GamedataResolvePtr(RealDllInfo.ImageBase, "g_iUser1", MH_GAMESYMBOL_KIND_GLOBAL);
-	g_iUser2 = (decltype(g_iUser2))GamedataResolvePtr(RealDllInfo.ImageBase, "g_iUser2", MH_GAMESYMBOL_KIND_GLOBAL);
 
 	Client_FillAddress_SCClient(DllInfo, RealDllInfo);
 
@@ -7255,10 +7247,6 @@ void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealD
 		g_bIsAoMDC = true;
 	}
 
-	if (!stricmp(gEngfuncs.pfnGetGameDirectory(), "HL1MMod"))
-	{
-		g_bIsHL1MMOD = true;
-	}
 }
 
 void Client_InstallHooks()
