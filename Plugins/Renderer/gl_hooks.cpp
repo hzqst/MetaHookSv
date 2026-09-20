@@ -3948,7 +3948,7 @@ void Engine_FillAddress_R_DrawTEntitiesOnListVars(const mh_dll_info_t& DllInfo, 
 			}
 		}
 
-		if (!gPrivateFuncs.ClientDLL_DrawTransparentTriangles || !gPrivateFuncs.pfnDrawTransparentTriangles)
+		if (!gPrivateFuncs.ClientDLL_DrawTransparentTriangles || !gPrivateFuncs.cl_funcs_pDrawTransparentTriangles)
 		{
 			if (!ctx->push2300_instcount)
 			{
@@ -3969,7 +3969,7 @@ void Engine_FillAddress_R_DrawTEntitiesOnListVars(const mh_dll_info_t& DllInfo, 
 					ctx->ClientDLL_DrawTransparentTriangles_candidate_instcount = instCount;
 				}
 
-				if (!gPrivateFuncs.pfnDrawTransparentTriangles && gPrivateFuncs.ClientDLL_DrawTransparentTriangles && instCount == ctx->ClientDLL_DrawTransparentTriangles_candidate_instcount + 1)
+				if (!gPrivateFuncs.cl_funcs_pDrawTransparentTriangles && gPrivateFuncs.ClientDLL_DrawTransparentTriangles && instCount == ctx->ClientDLL_DrawTransparentTriangles_candidate_instcount + 1)
 				{
 					/*
 						.text:01D88E15 E8 96 2C F8 FF                                      call    ClientDLL_DrawTransparentTriangles
@@ -4013,7 +4013,7 @@ void Engine_FillAddress_R_DrawTEntitiesOnListVars(const mh_dll_info_t& DllInfo, 
 						if (code[0] == 0xA1)
 						{
 							PVOID pfnDrawTransparentTriangles_VA = *(PVOID*)(code + 1);
-							gPrivateFuncs.pfnDrawTransparentTriangles = (decltype(gPrivateFuncs.pfnDrawTransparentTriangles))
+							gPrivateFuncs.cl_funcs_pDrawTransparentTriangles = (decltype(gPrivateFuncs.cl_funcs_pDrawTransparentTriangles))
 								ConvertDllInfoSpace(pfnDrawTransparentTriangles_VA, ctx->DllInfo, ctx->RealDllInfo);
 						}
 					}
@@ -4021,7 +4021,7 @@ void Engine_FillAddress_R_DrawTEntitiesOnListVars(const mh_dll_info_t& DllInfo, 
 			}
 		}
 
-		if (r_blend && cl_parsecount && ctx->r_entorigin_candidate_count >= 3 && gPrivateFuncs.ClientDLL_DrawTransparentTriangles && gPrivateFuncs.pfnDrawTransparentTriangles)
+		if (r_blend && cl_parsecount && ctx->r_entorigin_candidate_count >= 3 && gPrivateFuncs.ClientDLL_DrawTransparentTriangles && gPrivateFuncs.cl_funcs_pDrawTransparentTriangles)
 			return TRUE;
 
 		if (address[0] == 0xCC)
@@ -4035,7 +4035,7 @@ void Engine_FillAddress_R_DrawTEntitiesOnListVars(const mh_dll_info_t& DllInfo, 
 
 	Sig_VarNotFound(r_blend);
 	Sig_FuncNotFound(ClientDLL_DrawTransparentTriangles);
-	Sig_FuncNotFound(pfnDrawTransparentTriangles);
+	Sig_FuncNotFound(cl_funcs_pDrawTransparentTriangles);
 
 	if (ctx.r_entorigin_candidate_count >= 2)
 	{
@@ -4559,7 +4559,7 @@ void Engine_FillAddress_RenderSceneVars2(const mh_dll_info_t& DllInfo, const mh_
 				{
 					auto pfnDrawNormalTriangles = *(PVOID*)(candidate + 1);
 					auto pfnDrawNormalTriangles_RealDllBased = ConvertDllInfoSpace(pfnDrawNormalTriangles, ctx->DllInfo, ctx->RealDllInfo);
-					if ((ULONG_PTR)pfnDrawNormalTriangles_RealDllBased == (ULONG_PTR)gPrivateFuncs.pfnDrawTransparentTriangles - sizeof(ULONG_PTR))
+					if ((ULONG_PTR)pfnDrawNormalTriangles_RealDllBased == (ULONG_PTR)gPrivateFuncs.cl_funcs_pDrawTransparentTriangles - sizeof(ULONG_PTR))
 					{
 						gPrivateFuncs.ClientDLL_DrawNormalTriangles = (decltype(gPrivateFuncs.ClientDLL_DrawNormalTriangles))ConvertDllInfoSpace((PVOID)candidate, ctx->DllInfo, ctx->RealDllInfo);
 					}

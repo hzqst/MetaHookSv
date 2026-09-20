@@ -38,7 +38,7 @@ typedef struct
 	void (*R_FreeDeadParticles)(particle_t**);
 	void (*R_DrawTEntitiesOnList)(int onlyClientDraw);
 	void (*ClientDLL_DrawTransparentTriangles)(void);
-	ULONG_PTR pfnDrawTransparentTriangles;
+	ULONG_PTR cl_funcs_pDrawTransparentTriangles;
 	void (*R_AddTEntity)(cl_entity_t* pEnt);
 	void (*R_DrawWorld)(void);
 	void (*R_SetupFrame)(void);
