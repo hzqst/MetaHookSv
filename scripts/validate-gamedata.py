@@ -184,6 +184,7 @@ RENDERER_CZDS_CLIENT_GAMES = BULLETPHYSICS_CZDS_CLIENT_GAMES
 
 RENDERER_ENGINE_ALL_FUNCTIONS = (
     "BuildGammaTable", "CL_AllocDlight", "CL_AllocElight", "CL_FxBlend",
+    "CL_IsDevOverviewMode", "CL_SetDevOverView", "ClientDLL_DrawNormalTriangles",
     "CVideoMode_Common_DrawStartupGraphic", "Cache_Alloc", "Draw_DecalTexture",
     "Draw_FillRGBA", "Draw_FillRGBABlend",
     "Draw_Frame", "Draw_Pic", "GL_BeginRendering",
@@ -211,10 +212,10 @@ RENDERER_ENGINE_ALL_GLOBALS = (
     "cl_waterlevel", "cl_weaponsequence", "cl_weaponstarttime", "cl_worldmodel",
     "cshift_water", "currententity", "currenttexture", "d_lightstylevalue", "detTexSupported",
     "envmap", "filterBrightness", "filterColorBlue", "filterColorGreen", "filterColorRed",
-    "filterMode", "frustum", "gDecalSurfCount", "gTempEnts",
+    "filterMode", "frustum", "gDecalSurfCount", "gDevOverview", "gTempEnts", "gWaterColor",
     "lightmaps", "mod_known",
     "mod_numknown", "modelorg", "pstudiohdr",
-    "r_origin", "r_worldentity", "rtable",
+    "r_origin", "r_refdef", "r_worldentity", "rtable",
 )
 RENDERER_ENGINE_ALL_PATCHES = ("Sys_ShutdownGame_to_GL_Shutdown_callsite_0",)
 RENDERER_NUMBERED_PATCH_SETS = ("CL_LinkPacketEntities_to_R_ResetLatched_callsite",)
