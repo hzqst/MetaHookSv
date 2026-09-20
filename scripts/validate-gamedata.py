@@ -185,7 +185,8 @@ RENDERER_CZDS_CLIENT_GAMES = BULLETPHYSICS_CZDS_CLIENT_GAMES
 RENDERER_ENGINE_ALL_FUNCTIONS = (
     "BuildGammaTable", "CL_AllocDlight", "CL_AllocElight", "CL_FxBlend",
     "CL_IsDevOverviewMode", "CL_SetDevOverView", "ClientDLL_DrawNormalTriangles",
-    "CVideoMode_Common_DrawStartupGraphic", "Cache_Alloc", "Draw_DecalTexture",
+    "CVideoMode_Common_DrawStartupGraphic", "Cache_Alloc", "ClientDLL_DrawTransparentTriangles",
+    "Draw_DecalTexture",
     "Draw_FillRGBA", "Draw_FillRGBABlend",
     "Draw_Frame", "Draw_Pic", "GL_BeginRendering",
     "GL_Bind", "GL_BuildLightmaps", "GL_EndRendering", "GL_Finish2D", "GL_Init",
@@ -213,9 +214,12 @@ RENDERER_ENGINE_ALL_GLOBALS = (
     "cshift_water", "currententity", "currenttexture", "d_lightstylevalue", "detTexSupported",
     "envmap", "filterBrightness", "filterColorBlue", "filterColorGreen", "filterColorRed",
     "filterMode", "frustum", "gDecalSurfCount", "gDevOverview", "gTempEnts", "gWaterColor",
+    "gl_filter_max", "gl_filter_min",
     "lightmaps", "mod_known",
     "mod_numknown", "modelorg", "pstudiohdr",
-    "r_origin", "r_refdef", "r_worldentity", "rtable",
+    "r_blend", "r_entorigin", "r_framecount", "r_origin", "r_refdef", "r_visframecount",
+    "r_worldentity", "rtable",
+    "scr_fov_value",
 )
 RENDERER_ENGINE_ALL_PATCHES = ("Sys_ShutdownGame_to_GL_Shutdown_callsite_0",)
 RENDERER_NUMBERED_PATCH_SETS = ("CL_LinkPacketEntities_to_R_ResetLatched_callsite",)
