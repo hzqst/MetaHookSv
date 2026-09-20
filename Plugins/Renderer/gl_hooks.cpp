@@ -6703,92 +6703,11 @@ void Client_FillAddress_ClientPortalManager_ResetAll(const mh_dll_info_t &DllInf
 
 void Client_FillAddress_ClientPortalManager_GetOriginalSurfaceTexture_DrawPortalSurface(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	/*
-		.text:1004EED7 6A 01                                               push    1               ; alpha
-		.text:1004EED9 6A 01                                               push    1               ; blue
-		.text:1004EEDB 6A 01                                               push    1               ; green
-		.text:1004EEDD 6A 01                                               push    1               ; red
-		.text:1004EEDF FF 15 14 92 11 10                                   call    ds:glColorMask
-		.text:1004EEE5 68 E1 0D 00 00                                      push    0DE1h           ; cap
-		.text:1004EEEA FF 15 08 92 11 10                                   call    ds:glEnable
-		.text:1004EEF0
-		.text:1004EEF0                                     loc_1004EEF0:                           ; CODE XREF: sub_1004EA40+173↑j
-		.text:1004EEF0 8B 4C 24 20                                         mov     ecx, [esp+30h+var_10]
-		.text:1004EEF4 56                                                  push    esi
-		.text:1004EEF5 E8 66 EB FF FF                                      call    ClientPortalManager__GetOriginalSurfaceTexture
-	*/
+	gPrivateFuncs.ClientPortalManager_GetOriginalSurfaceTexture = (decltype(gPrivateFuncs.ClientPortalManager_GetOriginalSurfaceTexture))
+		GamedataResolvePtr(RealDllInfo.ImageBase, "ClientPortalManager_GetOriginalSurfaceTexture", MH_GAMESYMBOL_KIND_FUNCTION);
 
-	const char pattern[] = "\x6A\x01\x6A\x01\x6A\x01\x6A\x01\xFF\x15\x2A\x2A\x2A\x2A\x68\xE1\x0D\x00\x00";
-
-	PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
-	PUCHAR SearchLimit = SearchBegin + DllInfo.TextSize;
-
-	typedef struct ClientPortalManager_GetOriginalSurfaceTexture_SearchContext_s
-	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-	}ClientPortalManager_GetOriginalSurfaceTexture_SearchContext;
-
-	ClientPortalManager_GetOriginalSurfaceTexture_SearchContext ctx = { DllInfo, RealDllInfo };
-
-	while (SearchBegin < SearchLimit)
-	{
-		PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
-		if (pFound)
-		{
-			g_pMetaHookAPI->DisasmRanges(pFound + 4, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-				auto pinst = (cs_insn*)inst;
-				auto ctx = (ClientPortalManager_GetOriginalSurfaceTexture_SearchContext*)context;
-
-				if (address[0] == 0xE8)
-				{
-					gPrivateFuncs.ClientPortalManager_GetOriginalSurfaceTexture = (decltype(gPrivateFuncs.ClientPortalManager_GetOriginalSurfaceTexture))
-						ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].imm, ctx->DllInfo, ctx->RealDllInfo);
-
-					return TRUE;
-				}
-
-				if (address[0] == 0xCC)
-					return TRUE;
-
-				if (pinst->id == X86_INS_RET)
-					return TRUE;
-
-				return FALSE;
-
-			}, 0, &ctx);
-
-			if (gPrivateFuncs.ClientPortalManager_GetOriginalSurfaceTexture)
-			{
-				PVOID ClientPortalManager_DrawPortalSurface_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(pFound, 0x600, [](PUCHAR Candidate) {
-
-					if (Candidate[0] == 0x83 &&
-						Candidate[1] == 0xEC)
-						return TRUE;
-
-					return FALSE;
-				});
-
-				if (ClientPortalManager_DrawPortalSurface_VA)
-				{
-					gPrivateFuncs.ClientPortalManager_DrawPortalSurface = (decltype(gPrivateFuncs.ClientPortalManager_DrawPortalSurface))
-						ConvertDllInfoSpace(ClientPortalManager_DrawPortalSurface_VA, DllInfo, RealDllInfo);
-				}
-
-				break;
-			}
-
-			SearchBegin = pFound + Sig_Length(pattern);
-		}
-		else
-		{
-			break;
-		}
-	}
-
-	Sig_FuncNotFound(ClientPortalManager_GetOriginalSurfaceTexture);
-	Sig_FuncNotFound(ClientPortalManager_DrawPortalSurface);
+	gPrivateFuncs.ClientPortalManager_DrawPortalSurface = (decltype(gPrivateFuncs.ClientPortalManager_DrawPortalSurface))
+		GamedataResolvePtr(RealDllInfo.ImageBase, "ClientPortalManager_DrawPortalSurface", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void Client_FillAddress_ClientPortalManager_EnableClipPlane(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)

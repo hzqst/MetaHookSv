@@ -245,6 +245,7 @@ RENDERER_NOT_SVENGINE_10257_FUNCTIONS = ("R_RenderScene",)
 RENDERER_NOT_SVENGINE_8948_FUNCTIONS = ("R_DrawViewModel",)
 RENDERER_CLIENT_SVEN_FUNCTIONS = (
     "ClientPortalManager_RenderPortals", "ClientPortalManager_ResetAll", "UpdatePlayerPitch",
+    "ClientPortalManager_GetOriginalSurfaceTexture", "ClientPortalManager_DrawPortalSurface",
 )
 RENDERER_CLIENT_SVEN_GLOBALS = ("g_bRenderingPortals_SCClient",)
 RENDERER_CLIENT_10257_FUNCTIONS = ("ClientPortalManager_EnableClipPlane",)
