@@ -14,11 +14,6 @@
 #define S_EXTRAUPDATE_SVENGINE "\xE8\x2A\x2A\x2A\x2A\x85\xC0\x75\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xD9\x05"
 #define S_EXTRAUPDATE_BLOB "\xE8\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x2A\x2A\x2A\xE9\x2A\x2A\x2A\x2A\xC3"
 
-#define R_ROTATEFORENTITY_SVENGINE "\x83\xEC\x2A\x8B\x2A\x24\x2A\x8B\x2A\x24\x2A\xD9\x00"
-#define R_ROTATEFORENTITY_HL25     "\x55\x8B\xEC\x83\xEC\x20\x8B\x45\x08\x8B\x08\x8B\x50\x04\x8B\x40\x08"
-#define R_ROTATEFORENTITY_NEW      "\x55\x8B\xEC\x83\xEC\x20\x8B\x45\x08\x8B\x08\x8B\x50\x04\x8B\x40\x08"
-#define R_ROTATEFORENTITY_BLOB     "\x83\xEC\x20\x8B\x44\x24\x24\x8B\x08\x8B\x50\x04\x8B\x40\x08"
-
 #define R_DECALSHOTINTERNAL_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x2A\x8B\x54\x24\x2A\x8B\x4C\x24\x2A\x53\x8B\x5C\x24\x2A\x56\x69\xF2\xB8\x0B\x00\x00"
 
 
@@ -2997,55 +2992,6 @@ void Engine_FillAddress_R_LightStrength(const mh_dll_info_t& DllInfo, const mh_d
 	Sig_FuncNotFound(R_LightStrength);
 }
 
-void Engine_FillAddress_R_RotateForEntity(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (gPrivateFuncs.R_RotateForEntity)
-		return;
-
-	PVOID R_RotateForEntity_VA = 0;
-
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		//no impl
-	}
-	else
-	{
-#define R_ROTATEFORENTITY_GOLDSRC  "\xFF\x15\x2A\x2A\x2A\x2A\x8D\x2A\x48\x0B\x00\x00\x2A\x2A\xE8"
-		auto addr = Search_Pattern(R_ROTATEFORENTITY_GOLDSRC, DllInfo);
-		if (addr)
-		{
-			R_RotateForEntity_VA = GetCallAddress((PUCHAR)addr + Sig_Length(R_ROTATEFORENTITY_GOLDSRC) - 1);
-			gPrivateFuncs.R_RotateForEntity = (decltype(gPrivateFuncs.R_RotateForEntity))ConvertDllInfoSpace(R_RotateForEntity_VA, DllInfo, RealDllInfo);
-		}
-	}
-
-	if (!gPrivateFuncs.R_RotateForEntity)
-	{
-		if (g_iEngineType == ENGINE_SVENGINE)
-		{
-			R_RotateForEntity_VA = Search_Pattern(R_ROTATEFORENTITY_SVENGINE, DllInfo);
-			gPrivateFuncs.R_RotateForEntity = (decltype(gPrivateFuncs.R_RotateForEntity))ConvertDllInfoSpace(R_RotateForEntity_VA, DllInfo, RealDllInfo);
-		}
-		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-		{
-			R_RotateForEntity_VA = Search_Pattern(R_ROTATEFORENTITY_HL25, DllInfo);
-			gPrivateFuncs.R_RotateForEntity = (decltype(gPrivateFuncs.R_RotateForEntity))ConvertDllInfoSpace(R_RotateForEntity_VA, DllInfo, RealDllInfo);
-		}
-		else if (g_iEngineType == ENGINE_GOLDSRC)
-		{
-			R_RotateForEntity_VA = Search_Pattern(R_ROTATEFORENTITY_NEW, DllInfo);
-			gPrivateFuncs.R_RotateForEntity = (decltype(gPrivateFuncs.R_RotateForEntity))ConvertDllInfoSpace(R_RotateForEntity_VA, DllInfo, RealDllInfo);
-		}
-		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
-		{
-			R_RotateForEntity_VA = Search_Pattern(R_ROTATEFORENTITY_NEW, DllInfo);
-			gPrivateFuncs.R_RotateForEntity = (decltype(gPrivateFuncs.R_RotateForEntity))ConvertDllInfoSpace(R_RotateForEntity_VA, DllInfo, RealDllInfo);
-		}
-	}
-
-	Sig_FuncNotFound(R_RotateForEntity);
-}
-
 void Engine_FillAddress_GlowBlend(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.GlowBlend)
@@ -5149,8 +5095,6 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 	Engine_FillAddress_R_DrawSpriteModel(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_R_LightStrength(DllInfo, RealDllInfo);
-
-	Engine_FillAddress_R_RotateForEntity(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_GlowBlend(DllInfo, RealDllInfo);
 

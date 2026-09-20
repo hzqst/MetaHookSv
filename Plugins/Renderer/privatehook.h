@@ -61,7 +61,6 @@ typedef struct
 	void (*R_RecursiveWorldNode)(mnode_t* node);
 	void (*R_RecursiveWorldNode_HL25)(mnode_t* node, qboolean cleanUpShaderState);//HL25 added the second arg, it is propagated through recursion and into R_DrawSequentialPoly's cleanUpShaderState
 	texture_t* (*R_TextureAnimation)(msurface_t* fa);
-	void(*R_RotateForEntity)(float* origin, cl_entity_t* ent);
 	void (*Draw_MiptexTexture)(cachewad_t* wad, byte* data);
 	void (*GL_UnloadTexture)(const char* identifier);
 	void (*GL_UnloadTextures)(void);
