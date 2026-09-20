@@ -39,7 +39,6 @@ typedef struct
 	void (*R_DrawTEntitiesOnList)(int onlyClientDraw);
 	void (*ClientDLL_DrawTransparentTriangles)(void);
 	ULONG_PTR cl_funcs_pDrawTransparentTriangles;
-	void (*R_AddTEntity)(cl_entity_t* pEnt);
 	void (*R_DrawWorld)(void);
 	void (*R_SetupFrame)(void);
 	void (*R_SetupGL)(void);

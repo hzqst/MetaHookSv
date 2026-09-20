@@ -57,7 +57,7 @@ All of the following are resolved via `GamedataResolvePtr` (kind `FUNCTION` / `G
 3. Context: `GL_Init`, `GL_SetMode`, `GL_Shutdown`, `GL_Bind`, `GL_SelectTexture`, `GL_LoadTexture2`, `R_CullBox`, `R_SetupFrame`.
 4. View/scene: `R_SetupGL`, `R_RenderView`, `V_RenderView`, `R_RenderScene`, `R_NewMap`, `GL_LoadFilterTexture`, `GL_BuildLightmaps`, `R_BuildLightMap`, `R_AddDynamicLights`, `GL_Disable/EnableMultitexture`, `R_DrawSequentialPoly`, `R_TextureAnimation`, `R_DrawBrushModel`, `R_RecursiveWorldNode`, `R_DrawWorld`, `R_DrawViewModel`, `R_MarkLeaves`.
 5. 2D: `GL_Set2D`, `GL_Finish2D`, `GL_BeginRendering`, `GL_EndRendering`, `EmitWaterPolys`, `VID_UpdateWindowVars`, `Mod_PointInLeaf`, `R_DrawTEntitiesOnList`, `BuildGammaTable`.
-6. Effects/Studio: `R_DrawParticles`, `CL_AllocDlight`, `CL_AllocElight`, `R_GLStudioDrawPoints`, `R_StudioLighting`, ~~`R_StudioChrome`~~, `R_LightLambert`, `R_StudioSetupSkin`, `Host_ClearMemory`, `Cache_Alloc`, `Draw_MiptexTexture`, `Draw_DecalTexture`, `R_GetSpriteFrame`, `R_DrawSpriteModel`, `R_LightStrength`, `R_RotateForEntity`, `R_GlowBlend`, `SCR_BeginLoadingPlaque`, `Host_IsSinglePlayerGame`, `Mod_UnloadSpriteTextures`, `Mod_LoadSpriteModel`, `Mod_LoadSpriteFrame`, `R_AddTEntity`, `Hunk_AllocName`.
+6. Effects/Studio: `R_DrawParticles`, `CL_AllocDlight`, `CL_AllocElight`, `R_GLStudioDrawPoints`, `R_StudioLighting`, ~~`R_StudioChrome`~~, `R_LightLambert`, `R_StudioSetupSkin`, `Host_ClearMemory`, `Cache_Alloc`, `Draw_MiptexTexture`, `Draw_DecalTexture`, `R_GetSpriteFrame`, `R_DrawSpriteModel`, `R_LightStrength`, `R_RotateForEntity`, `R_GlowBlend`, `SCR_BeginLoadingPlaque`, `Host_IsSinglePlayerGame`, `Mod_UnloadSpriteTextures`, `Mod_LoadSpriteModel`, `Mod_LoadSpriteFrame`, ~~`R_AddTEntity`~~, `Hunk_AllocName`.
 7. Globals passes: `GL_EndRenderingVars`, `VisEdicts`, `R_AllocTransObjectsVars`, `R_RenderFinalFog`, `R_DrawTEntitiesOnListVars`, `R_RecursiveWorldNodeVars`, `R_LoadSkybox`, `GL_FilterMinMaxVars`, `ScrFov`, `RenderSceneVars`, `RenderSceneVars2`, `CL_IsDevOverviewModeVars`, `R_DecalInit`, `R_RenderDynamicLightmaps`, ~~`R_StudioChromeVars`~~, `CL_ViewEntityVars`, `CL_ReallocateDynamicData`, `TempEntsVars`, `WaterVars`, `ModKnown`, `Mod_NumKnown`, `Mod_LoadStudioModel`, `Mod_LoadBrushModel`, `Mod_LoadModel`, `BasePalette`, `R_LightStrengthVars`, `SetFilterMode`, `SetFilterColor`, `SetFilterBrightness`, `MoveVars`, `MissingTexture`, `NoTexture`, `LegacyMultiTextureInit`, `PVSNode`.
 8. VideoMode/draw: `DrawStartupGraphic`, `DrawStartupVideo`, `Draw_Frame`, `Draw_SpriteFrameHoles/Additive/Generic`, `Draw_FillRGBA/RGBABlend`, `Draw_FillRGBABuf`, `D_FillRect`, `Draw_Pic`.
 
@@ -102,7 +102,7 @@ All of the following are resolved via `GamedataResolvePtr` (kind `FUNCTION` / `G
 | `gPrivateFuncs.R_MarkLeaves` | `void (*)(void)` | Sig-only `R_MARKLEAVES_SIG_*`; also yields `r_viewleaf`, `r_oldviewleaf`. | Resolved only (plugin reimplements). |
 | `gPrivateFuncs.R_DrawViewModel` | `void (*)(void)` | `Engine_FillAddress_R_DrawViewModel`: SVEngine inlined; else in `R_RenderView+0x1000`, three consecutive `E8` where call #2 = `R_PolyBlend`, call #3 = `S_ExtraUpdate` → call #1. Also yields `envmap`, `cl_stats`, `cl_weaponstarttime`, `cl_weaponsequence`, `cl_light_level`. | Resolved only (plugin reimplements). |
 | `gPrivateFuncs.R_DrawParticles` / `R_FreeDeadParticles` / `R_TracerDraw` / `R_BeamDrawList` | `void (*)(void)` / `void (*)(particle_t**)` / `void (*)(void)` / `void (*)(void)` | `Engine_FillAddress_R_DrawParticles`: `83 C4 04 68 C0 0B 00 00` + `DisasmRanges(+0x100)` requiring `PUSH 0x2200/0x2300` and `PUSH 0x302/0x303` + reverse-search; fallback `R_DRAWPARTICLES_SIG_*`. `R_FreeDeadParticles` = `MOV ESI,[active_particles]` preceded by `E8`; `R_TracerDraw`/`R_BeamDrawList` from inline `R_TRACERDRAW_SIG` (`GetCallAddress(addr+6)`/`addr+11`). | Not hooked; plugin `R_DrawParticles` calls `R_FreeDeadParticles`/`R_TracerDraw`/`R_BeamDrawList`. |
-| `gPrivateFuncs.R_AddTEntity` | `void (*)(cl_entity_t*)` | `Engine_FillAddress_R_AddTEntity`: SVEngine string `"Can't add transparent entity. Too many"` + `50 68 <str> E8`; others `"AddTentity: Too many objects"` + `68 <str> E8`; `ReverseSearchFunctionBegin(+0x50)`. Also yields `transObjects`/`maxTransObjs`. | Resolved only (plugin reimplements). |
+| ~~`gPrivateFuncs.R_AddTEntity`~~ | `void (*)(cl_entity_t*)` | ~~`Engine_FillAddress_R_AddTEntity`: SVEngine string `"Can't add transparent entity. Too many"` + `50 68 <str> E8`; others `"AddTentity: Too many objects"` + `68 <str> E8`; `ReverseSearchFunctionBegin(+0x50)`.~~ | Deleted 2026-09-20 — never called, never hooked; the locator's own comment already said "engine's R_AddTEntity is not used by Renderer anymore" (see last section). |
 | ~~`gPrivateFuncs.R_AddDynamicLights`~~ | `void (*)(msurface_t*)` | ~~BFS call-site walk rooted at `R_BuildLightMap` matching `PUSH reg; E8; 83 C4 04`; fallback `R_ADDDYNAMICLIGHTS_SIG_*`~~ | Deleted 2026-09-19 — never called, never hooked (see last section). |
 | ~~`gPrivateFuncs.R_BuildLightMap`~~ | `void (*)(msurface_t*, byte*, int)` | ~~string `"Error: lightmap for texture %s too large"` → `68 <str> E8 83 C4 18` + `ReverseSearchFunctionBeginEx(+0x300)`; fallback `R_BUILDLIGHTMAP_SIG_*`~~ | Deleted 2026-09-19 — its only consumer was the `R_AddDynamicLights` BFS root (see last section). |
 | ~~`gPrivateFuncs.R_RenderDynamicLightmaps`~~ | `void (*)(msurface_t*)` | ~~Found during the `R_DrawSequentialPoly` BFS (callee with trailing imm `0x14` and `PUSH 0x200`), and re-resolved by `Engine_FillAddress_R_RenderDynamicLightmaps` (per-engine `R_RENDERDYNAMICLIGHTMAPS_SIG_*`) while null. Also yields `d_lightstylevalue`, `lightmap_polys`, `lightmap_modified`.~~ | Deleted 2026-09-19 — never called; it anchored a BFS for two write-only globals (see last section). |
@@ -149,7 +149,7 @@ All of the following are resolved via `GamedataResolvePtr` (kind `FUNCTION` / `G
 | `gPrivateFuncs.R_GlowBlend` (+ `R_GlowBlend_inlined`) | `float (*)(cl_entity_t*)` | SVEngine/HL25 inlined; GoldSrc `R_GLOW_BLEND_SIG_NEW`/`_NEW2`; BLOB `_BLOB`. | Wrapper calls original when non-null. |
 | `gPrivateFuncs.SCR_BeginLoadingPlaque` | `void (*)(qboolean reconnect)` | Single sig `SCR_BEGIN_LOADING_PLAQUE` (`6A 01 E8 … A1 … 83 C4 04 83 F8 03`); also yields `scr_drawloading`. | Resolved only. |
 | `gPrivateFuncs.Host_IsSinglePlayerGame` | `qboolean (*)(void)` | String `"setpause;"` → `68 <str> E8 … 83 C4` + `ReverseSearchPattern(+0x50,"55 8B EC E8",4)`; the `E8` followed by `85 C0` is the target; fallback `HOST_IS_SINGLE_PLAYER_GAME_*`. | Wrapper `gl_rmain.cpp:824`. |
-| `gPrivateFuncs.R_AddTEntity` | `void (*)(cl_entity_t*)` | See render-view table. | Resolved only. |
+| ~~`gPrivateFuncs.R_AddTEntity`~~ | `void (*)(cl_entity_t*)` | ~~See render-view table.~~ | Deleted 2026-09-20 (see last section). |
 | `gPrivateFuncs.R_RenderFinalFog` | `void (*)(void)` | SvEngine `R_RenderFinalFog_VA` is the `push 0B60h` instruction inside the render-view body; HL25/GoldSrc `GetCallAddress(addr+9)`; `VA_from_RVA`. Also yields `g_bUserFogOn`, `g_UserFogDensity/Color/Start/End`. | Resolved only. |
 | `gPrivateFuncs.Draw_Frame` / `Draw_SpriteFrameHoles[_SvEngine]` / `Draw_SpriteFrameAdditive[_SvEngine]` / `Draw_SpriteFrameGeneric[_SvEngine]` / `Draw_FillRGBA` / `Draw_FillRGBABlend` / `Draw_FillRGBABuf` / `D_FillRect` / `Draw_Pic` | 2D draw helpers | `Engine_FillAddress_*`: gamedata-only, engine-gated where the identity set differs; `Draw_Frame` also yields `giScissorTest`, `scissor_x/y/width/height`; `Draw_FillRGBABuf` is SvEngine-only, `D_FillRect` is non-SvEngine-only. | `Install_InlineHook` each; handlers in `gl_rmain.cpp`. |
 
@@ -336,7 +336,7 @@ Stored in `gPrivateFuncs` but sourced from public interfaces, so excluded from t
 
 ## Notes
 
-- **Dead / resolved-only fields.** Many `gPrivateFuncs` fields are located but never hooked or called (the multitexture pair and its globals were removed on 2026-09-19 — see the last section): `R_SetupGL`, `R_RenderScene`, `R_SetupFrame`, `R_PolyBlend` (reimplemented), `S_ExtraUpdate`, `GL_SelectTexture`, `R_TextureAnimation`, `R_DrawSequentialPoly[_HL25]`, `R_DrawBrushModel`, `R_DrawWorld` (reimplemented), `R_DrawViewModel`, `R_MarkLeaves`, `EmitWaterPolys`, `VID_UpdateWindowVars`, `R_DrawTEntitiesOnList`, `R_ClearParticles`, `V_InitLevel`, ~~`R_BuildLightMap`~~, ~~`R_AddDynamicLights`~~, `R_RenderDynamicLightmaps`, `R_DrawParticles` (reimplemented), `CL_AllocDlight`/`CL_AllocElight`, `R_StudioLighting`, ~~`R_StudioChrome`~~, `R_LightLambert`, `R_StudioSetupSkin`, `R_StudioGetSkin`, `GL_UnloadTexture`, `Draw_MiptexTexture`, `Draw_DecalTexture`, `Draw_CustomCacheGet`/`Draw_CacheGet`, `R_DrawSpriteModel`, `Mod_LoadSpriteFrame`, `SCR_BeginLoadingPlaque`, `R_LightStrength`, `R_RotateForEntity`, `R_AddTEntity`, `R_RenderFinalFog`, `Mod_LoadBrushModel`, `Mod_LoadModel`, `ClientPortalManager_ResetAll` (hook commented), `GameStudioRenderer_StudioDrawModel`, `R_StudioDrawModel`, and many `*Vars` globals (`cls_state`, `cls_signon`, `r_soundOrigin`, `lightmap_textures`, `lightmap_rectchange`, `gDecalSurfs`, `modelorg`, `vid_d3d`, `g_ChromeOrigin`, ~~`gSkyTexNumber`~~, ~~`r_loading_skybox`~~, `lightmap_polys`, `lightmap_modified`, ~~`chrome`~~, ~~`chromeage`~~, `locallight`, `numlights`, scissor rect, `pmainwindow` consumers).
+- **Dead / resolved-only fields.** Many `gPrivateFuncs` fields are located but never hooked or called (the multitexture pair and its globals were removed on 2026-09-19 — see the last section): `R_SetupGL`, `R_RenderScene`, `R_SetupFrame`, `R_PolyBlend` (reimplemented), `S_ExtraUpdate`, `GL_SelectTexture`, `R_TextureAnimation`, `R_DrawSequentialPoly[_HL25]`, `R_DrawBrushModel`, `R_DrawWorld` (reimplemented), `R_DrawViewModel`, `R_MarkLeaves`, `EmitWaterPolys`, `VID_UpdateWindowVars`, `R_DrawTEntitiesOnList`, `R_ClearParticles`, `V_InitLevel`, ~~`R_BuildLightMap`~~, ~~`R_AddDynamicLights`~~, `R_RenderDynamicLightmaps`, `R_DrawParticles` (reimplemented), `CL_AllocDlight`/`CL_AllocElight`, `R_StudioLighting`, ~~`R_StudioChrome`~~, `R_LightLambert`, `R_StudioSetupSkin`, `R_StudioGetSkin`, `GL_UnloadTexture`, `Draw_MiptexTexture`, `Draw_DecalTexture`, `Draw_CustomCacheGet`/`Draw_CacheGet`, `R_DrawSpriteModel`, `Mod_LoadSpriteFrame`, `SCR_BeginLoadingPlaque`, `R_LightStrength`, `R_RotateForEntity`, ~~`R_AddTEntity`~~, `R_RenderFinalFog`, `Mod_LoadBrushModel`, `Mod_LoadModel`, `ClientPortalManager_ResetAll` (hook commented), `GameStudioRenderer_StudioDrawModel`, `R_StudioDrawModel`, and many `*Vars` globals (`cls_state`, `cls_signon`, `r_soundOrigin`, `lightmap_textures`, `lightmap_rectchange`, `gDecalSurfs`, `modelorg`, `vid_d3d`, `g_ChromeOrigin`, ~~`gSkyTexNumber`~~, ~~`r_loading_skybox`~~, `lightmap_polys`, `lightmap_modified`, ~~`chrome`~~, ~~`chromeage`~~, `locallight`, `numlights`, scissor rect, `pmainwindow` consumers).
 - **Inlined-function flags.** `R_ForceCVars_inlined`, `R_SetupFrame_inlined`, `R_RenderScene_inlined`, `R_LightStrength_inlined`, `R_GlowBlend_inlined` indicate the engine inlined the target; the plugin then uses call-site-sensitive logic instead of a direct hook.
 - **Duplicate resolution sites.** `r_blend` is resolved both by `Engine_FillAddress_R_DrawTEntitiesOnListVars` (gl_hooks) and `EngineStudio_FillAddress_StudioSetRenderamt` (exportfuncs); `R_RenderDynamicLightmaps` by the `R_DrawSequentialPoly` BFS and its own locator; `r_framecount` by `_GetTimes` and a shadowing local in `gl_hooks.cpp:8744`. Both `if (!field)`-guarded, so first wins.
 - **Hook/uninstall asymmetry.** `Host_ClearMemory` is installed but never unhooked; `ClientPortalManager_DrawPortalSurface`'s hook is installed but `EngineSurface_UninstallHooks` is empty; `GameStudioRenderer_StudioDrawPlayer` is installed but not uninstalled.
@@ -430,8 +430,8 @@ section), ~~`R_LoadSkyboxInt_SvEngine`~~, `realloc_SvEngine`,
 `particletexture`, the `gl_extensions` / `vid_d3d` / texture-array / fog /
 scissor / viewmodel / sky / view-leaf / lightmap variable slots,
 `CL_FxBlend`'s sibling `r_blend`, and every symbol outside the list
-(EngineSurface virtuals, portal/DrawNormalTriangles scans, `R_AddTEntity`,
-`R_TextureAnimation`, `R_LightStrength`, `R_Studio*` engine vars, etc.).
+(EngineSurface virtuals, portal/DrawNormalTriangles scans,
+~~`R_AddTEntity`~~, `R_TextureAnimation`, `R_LightStrength`, `R_Studio*` engine vars, etc.).
 
 **Release gate**: `scripts/validate-gamedata.py` now carries a Renderer consumer
 gate (`RENDERER_*` tables + `validate_renderer`) covering the 46 + 76 required
@@ -1170,6 +1170,44 @@ early exit — a locator-internal mechanism, not a consumer.
 - The two entries in the locator's doc-comment listing the globals it finds.
 
 No gate change: neither symbol is in gamedata or any `RENDERER_*` table.
+
+**Verified**: build 0 errors, same 9 pre-existing warnings; `validate-gamedata.py`
+passes over 21 snapshots / 5 engine families; 91 passed / 2 skipped / 26 subtests.
+**Not verified**: in-game smoke tests.
+
+## Dead-code removal (2026-09-20): the engine-side `R_AddTEntity` locator
+
+Review question: is `gPrivateFuncs.R_AddTEntity` used? No — and the locator's own
+comment already said so (`//though engine's R_AddTEntity is not used by Renderer
+anymore`, gl_hooks.cpp:3206).
+
+**Name collision, third instance.** The plugin has its *own* `R_AddTEntity` — a
+live reimplementation at gl_rmain.cpp:2146, declared at gl_local.h:432 and called
+from gl_rmain.cpp:4584/4593/4611. Only the engine field is dead; the plugin
+function stays.
+
+| Symbol | Every reference before this change | Verdict |
+| --- | --- | --- |
+| `gPrivateFuncs.R_AddTEntity` | field `privatehook.h:42`, guard + assignment in `Engine_FillAddress_R_AddTEntity`, `Sig_FuncNotFound` | never called, never hooked |
+| plugin `R_AddTEntity` | def `gl_rmain.cpp:2146`, decl `gl_local.h:432`, calls `4584/4593/4611` | **live** |
+
+**Deleted**
+
+- `Engine_FillAddress_R_AddTEntity` (49 lines) and its dispatch call.
+- The `private_funcs_t::R_AddTEntity` field.
+
+**Memory correction.** The `gPrivateFuncs.R_AddTEntity` table row claimed the
+locator "Also yields `transObjects`/`maxTransObjs`"; it never did. Those three
+globals (`transObjects`, `maxTransObjs`, `numTransObjs`) are resolved by
+`Engine_FillAddress_R_AllocTransObjectsVars` and are all live (read/written at
+gl_rmain.cpp:1969/2105/2134/2164/2172-2174/2196-2207). That resolver and its
+globals are untouched.
+
+No gate change: `R_AddTEntity` is not in gamedata or any `RENDERER_*` table.
+
+**Verified**: build 0 errors, same 9 pre-existing warnings; `validate-gamedata.py`
+passes over 21 snapshots / 5 engine families; 91 passed / 2 skipped / 26 subtests.
+**Not verified**: in-game smoke tests.
 
 **Verified**: build 0 errors, same 9 pre-existing warnings; `validate-gamedata.py`
 passes over 21 snapshots / 5 engine families; 91 passed / 2 skipped / 26 subtests.

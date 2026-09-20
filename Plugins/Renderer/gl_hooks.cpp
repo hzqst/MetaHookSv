@@ -3195,56 +3195,6 @@ void Engine_FillAddress_Mod_LoadSpriteFrame(const mh_dll_info_t& DllInfo, const 
 	Sig_VarNotFound(gSpriteMipMap);
 }
 
-void Engine_FillAddress_R_AddTEntity(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (gPrivateFuncs.R_AddTEntity)
-		return;
-
-	ULONG_PTR R_AddTEntity_VA = 0;
-	ULONG R_AddTEntity_RVA = 0;
-
-	//though engine's R_AddTEntity is not used by Renderer anymore
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		const char sigs1[] = "Can't add transparent entity. Too many";
-		auto R_AddTEntity_String = Search_Pattern_Data(sigs1, DllInfo);
-		if (!R_AddTEntity_String)
-			R_AddTEntity_String = Search_Pattern_Rdata(sigs1, DllInfo);
-		Sig_VarNotFound(R_AddTEntity_String);
-
-		char pattern[] = "\x50\x68\x2A\x2A\x2A\x2A\xE8";
-		*(DWORD*)(pattern + 2) = (DWORD)R_AddTEntity_String;
-		auto R_AddTEntity_Call = Search_Pattern(pattern, DllInfo);
-		Sig_VarNotFound(R_AddTEntity_Call);
-
-		R_AddTEntity_VA = (ULONG_PTR)g_pMetaHookAPI->ReverseSearchFunctionBegin(R_AddTEntity_Call, 0x50);
-		Convert_VA_to_RVA(R_AddTEntity, DllInfo);
-	}
-	else
-	{
-		const char sigs1[] = "AddTentity: Too many objects";
-		auto R_AddTEntity_String = Search_Pattern_Data(sigs1, DllInfo);
-		if (!R_AddTEntity_String)
-			R_AddTEntity_String = Search_Pattern_Rdata(sigs1, DllInfo);
-		Sig_VarNotFound(R_AddTEntity_String);
-
-		char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8";
-		*(DWORD*)(pattern + 1) = (DWORD)R_AddTEntity_String;
-		auto R_AddTEntity_Call = Search_Pattern(pattern, DllInfo);
-		Sig_VarNotFound(R_AddTEntity_Call);
-
-		R_AddTEntity_VA = (ULONG_PTR)g_pMetaHookAPI->ReverseSearchFunctionBegin(R_AddTEntity_Call, 0x50);
-		Convert_VA_to_RVA(R_AddTEntity, DllInfo);
-	}
-
-	if (R_AddTEntity_RVA)
-	{
-		gPrivateFuncs.R_AddTEntity = (decltype(gPrivateFuncs.R_AddTEntity))VA_from_RVA(R_AddTEntity, RealDllInfo);
-	}
-
-	Sig_FuncNotFound(R_AddTEntity);
-}
-
 void Engine_FillAddress_Hunk_AllocName(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.Hunk_AllocName)
@@ -5993,7 +5943,6 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 
 	Engine_FillAddress_Mod_LoadSpriteFrame(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_AddTEntity(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_Hunk_AllocName(DllInfo, RealDllInfo);
 
