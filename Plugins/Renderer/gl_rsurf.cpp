@@ -1,8 +1,6 @@
 #include "gl_local.h"
 #include <algorithm>
 
-msurface_t **skychain = NULL;
-msurface_t **waterchain = NULL;
 
 //engine
 byte *lightmaps = NULL;

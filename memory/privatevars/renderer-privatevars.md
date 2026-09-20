@@ -108,7 +108,7 @@ All of the following are resolved via `GamedataResolvePtr` (kind `FUNCTION` / `G
 | ~~`gPrivateFuncs.R_RenderDynamicLightmaps`~~ | `void (*)(msurface_t*)` | ~~Found during the `R_DrawSequentialPoly` BFS (callee with trailing imm `0x14` and `PUSH 0x200`), and re-resolved by `Engine_FillAddress_R_RenderDynamicLightmaps` (per-engine `R_RENDERDYNAMICLIGHTMAPS_SIG_*`) while null. Also yields `d_lightstylevalue`, `lightmap_polys`, `lightmap_modified`.~~ | Deleted 2026-09-19 — never called; it anchored a BFS for two write-only globals (see last section). |
 | `gPrivateFuncs.R_TextureAnimation` | `texture_t* (*)(msurface_t*)` | Sig-only `R_TEXTUREANIMATION_SIG_*`; also yields `rtable`. | Resolved only. |
 | `gPrivateFuncs.R_DrawSequentialPoly` / `R_DrawSequentialPoly_HL25` | `void (*)(msurface_t*, int)` / `void (*)(msurface_t*, int, qboolean cleanUpShaderState)` | Sig-only `R_DRAWSEQUENTIALPOLY_SIG_*`; HL25 stores its own three-arg field (HL25 callers push a third 32-bit bool and the callee reads it to gate shader/program cleanup); also root of the lightmap/decal BFS (`lightmap_textures`, `lightmap_rectchange`, `lightmaps`, `gDecalSurfs`, `gDecalSurfCount`). The HL25 field is also the disassembly anchor for `R_RecursiveWorldNode` and `R_DrawWorld`. | Resolved only. |
-| `gPrivateFuncs.R_RecursiveWorldNode` / `R_RecursiveWorldNode_HL25` | `void (*)(mnode_t*)` / `void (*)(mnode_t*, qboolean cleanUpShaderState)` | SvEngine sig; HL25 from `R_DrawSequentialPoly_HL25` (two-arg ABI, the callee propagates the second arg through recursion and into `R_DrawSequentialPoly`'s `cleanUpShaderState`); GoldSrc/BLOB from `R_DrawBrushModel`; fallback `R_RECURSIVEWORLDNODE_SIG_*`. Also yields `r_framecount`/`r_visframecount`/`skychain`/`waterchain` (the Vars BFS anchors the per-engine field). | Called by the plugin wrapper (`gl_rsurf.cpp` `R_RecursiveWorldNode`); the HL25 branch forwards `true` (engine default, `gl_reduce_shader_changes == 0`). |
+| `gPrivateFuncs.R_RecursiveWorldNode` / `R_RecursiveWorldNode_HL25` | `void (*)(mnode_t*)` / `void (*)(mnode_t*, qboolean cleanUpShaderState)` | SvEngine sig; HL25 from `R_DrawSequentialPoly_HL25` (two-arg ABI, the callee propagates the second arg through recursion and into `R_DrawSequentialPoly`'s `cleanUpShaderState`); GoldSrc/BLOB from `R_DrawBrushModel`; fallback `R_RECURSIVEWORLDNODE_SIG_*`. Also yields `r_framecount`/`r_visframecount` (the Vars BFS anchors the per-engine field); `skychain`/`waterchain` were dropped from the same BFS on 2026-09-19 (see last section). | Called by the plugin wrapper (`gl_rsurf.cpp` `R_RecursiveWorldNode`); the HL25 branch forwards `true` (engine default, `gl_reduce_shader_changes == 0`). |
 | `gPrivateFuncs.R_DrawWorld` | `void (*)(void)` | `Engine_FillAddress_R_DrawWorld`: `68 B8 0B 00 00 8D` + `DisasmRanges(+5)` needing `LEA [ebp/esp+disp]` + `6A 00` + `ReverseSearchFunctionBeginEx(+0x300)`; fallback `R_DRAWWORLD_SIG_*`. Also yields `modelorg`. | Resolved only (plugin reimplements). |
 | `gPrivateFuncs.R_DrawBrushModel` | `void (*)(cl_entity_t*)` | Sig-only `R_DRAWBRUSHMODEL_SIG_*`. | Resolved only (base for `R_RecursiveWorldNode`/`R_DrawWorld`). |
 | `gPrivateFuncs.EmitWaterPolys` | `void (*)(msurface_t*, int)` | Sig-only `EMITWATERPOLYS_SIG_*`. | Resolved only. |
@@ -194,7 +194,7 @@ Entry point `EngineStudio_FillAddress(pstudio, DllInfo, RealDllInfo)` (`exportfu
 | `envmap` / `cl_stats` / `cl_weaponstarttime` / `cl_weaponsequence` / `cl_light_level` | `int*` / `float*` | `Engine_FillAddress_R_DrawViewModel`: per-engine patterns, operand offsets differ by engine type. | Viewmodel/env-map selection. |
 | `pmovevars` | `movevars_t*` | `Engine_FillAddress_MoveVars`: SvEngine `56 8B 74 24 08 6A 2C 56 E8 … D9 05`; others `E8 <MSG_ReadFloat> D9 1D <gravity> …`. | `zmax`, `skyName`. |
 | `r_framecount` / `r_visframecount` | `int*` | `Engine_FillAddress_R_RecursiveWorldNodeVars`: `MOV reg,[reg+0]` (or `[reg+4]`) then `MOV/CMP reg,[.data]`. | Frame/leaf counters. |
-| `skychain` / `waterchain` | `msurface_t**` | Same walk: `TEST reg8,imm` `imm==4` → `skychain`, `imm==0x10` → `waterchain`. | World-surface chains. |
+| ~~`skychain` / `waterchain`~~ | `msurface_t**` | ~~Same walk: `TEST reg8,imm` `imm==4` → `skychain`, `imm==0x10` → `waterchain`.~~ | Deleted 2026-09-19 — write-only (see last section). |
 | `r_viewleaf` / `r_oldviewleaf` | `mleaf_t**` | `Engine_FillAddress_R_MarkLeaves`: `MOV ECX,[.data]` / `MOV [.data],ECX`. | PVS tracking. |
 | `r_entorigin` / `r_blend` / `cl_parsecount` / `cl_frames` / `size_of_frame` | `vec_t*` / `float*` / `int*` / `void*` / `int` | `Engine_FillAddress_R_DrawTEntitiesOnListVars`: `r_blend` after fog-disable; `cl_parsecount` = `MOV EAX,[abs]` whose live value is `63`; `cl_frames` = `LEA` within `+20`; `size_of_frame` = `IMUL imm 0x4000..0xF000`; `r_entorigin` after `MOVSX [reg+0x2E8]`. Defaults `size_of_frame=0x42B8` for buildnum ≤ 8684. | `R_GetPlayerState` and sprite attachment origin. |
 | `rtable` | `int (*)[20][20]` | `Engine_FillAddress_R_TextureAnimation`: `MOV ESI,imm(.data)`. | Animated-texture random table. |
@@ -1139,6 +1139,41 @@ slimmed to its one live resolve rather than deleted.
 **Renamed.** `Engine_FillAddress_R_RenderDynamicLightmaps` →
 `Engine_FillAddress_LightstyleVars`, body reduced to the single
 `d_lightstylevalue` resolve. The original name no longer described what it does.
+
+**Verified**: build 0 errors, same 9 pre-existing warnings; `validate-gamedata.py`
+passes over 21 snapshots / 5 engine families; 91 passed / 2 skipped / 26 subtests.
+**Not verified**: in-game smoke tests.
+
+## Dead-code removal (2026-09-20): `skychain` / `waterchain` and the `test_cl` machinery
+
+Review question: can `skychain` and `waterchain` be cleaned up? Yes — they were
+write-only. The other two globals the same BFS finds are live.
+
+| Symbol | Every reference before this change | Verdict |
+| --- | --- | --- |
+| `skychain` | def `gl_rsurf.cpp:4`, extern `gl_local.h:294`, two writes in `Engine_FillAddress_R_RecursiveWorldNodeVars`, its own early-exit check, `Sig_VarNotFound` | **write-only** |
+| `waterchain` | def `gl_rsurf.cpp:5`, extern `gl_local.h:295`, same shape | **write-only** |
+| `r_framecount` | reads `gl_rmain.cpp:2988/3951/4532/4554/4557`, `gl_water.cpp:1102` | **live** |
+| `r_visframecount` | reads `gl_rmain.cpp:1199/4532/4554/4557` | **live** |
+
+The two chains were only ever read back by the locator's own
+`if (r_visframecount && r_framecount && skychain && waterchain) return TRUE;`
+early exit — a locator-internal mechanism, not a consumer.
+
+**Deleted**
+
+- The chain writes and the `TEST reg8,imm` / `MOV reg,[abs]` branches that
+  produced them; `ctx->test_cl_flag` / `ctx->test_cl_instcount` existed solely to
+  distinguish the two and went with them.
+- The early exit is now `if (r_visframecount && r_framecount)`.
+- Both `Sig_VarNotFound` calls, the two globals and their `gl_local.h` externs.
+- The two entries in the locator's doc-comment listing the globals it finds.
+
+No gate change: neither symbol is in gamedata or any `RENDERER_*` table.
+
+**Verified**: build 0 errors, same 9 pre-existing warnings; `validate-gamedata.py`
+passes over 21 snapshots / 5 engine families; 91 passed / 2 skipped / 26 subtests.
+**Not verified**: in-game smoke tests.
 
 **Verified**: build 0 errors, same 9 pre-existing warnings; `validate-gamedata.py`
 passes over 21 snapshots / 5 engine families; 91 passed / 2 skipped / 26 subtests.

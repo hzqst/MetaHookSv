@@ -291,8 +291,6 @@ extern FBO_Container_t s_PortalFBO;
 extern FBO_Container_t* g_CurrentSceneFBO;
 extern FBO_Container_t *g_CurrentRenderingFBO;
 
-extern msurface_t **skychain;
-extern msurface_t **waterchain;
 
 extern cvar_t *r_norefresh;
 extern cvar_t *r_drawentities;

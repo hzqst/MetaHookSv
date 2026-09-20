@@ -4062,8 +4062,6 @@ void Engine_FillAddress_R_RecursiveWorldNodeVars(const mh_dll_info_t& DllInfo, c
 		//Global pointers that link into engine vars.
 		int *r_framecount = NULL;
 		int *r_visframecount = NULL;
-		msurface_t **skychain = NULL;
-		msurface_t **waterchain = NULL;
 	*/
 
 	PVOID R_RecursiveWorldNode_VA = NULL;
@@ -4087,8 +4085,6 @@ void Engine_FillAddress_R_RecursiveWorldNodeVars(const mh_dll_info_t& DllInfo, c
 		int movexx_register{};
 		int cmp_register{};
 		ULONG_PTR cmp_candidateVA{};
-		int test_cl_instcount{};
-		int test_cl_flag{};
 	} R_RecursiveWorldNode_SearchContext;
 
 	R_RecursiveWorldNode_SearchContext ctx = { DllInfo, RealDllInfo };
@@ -4168,40 +4164,8 @@ void Engine_FillAddress_R_RecursiveWorldNodeVars(const mh_dll_info_t& DllInfo, c
 			else if (ctx->movexx_offset == 0 && !r_framecount)
 				r_framecount = (decltype(r_framecount))ConvertDllInfoSpace((PVOID)ctx->cmp_candidateVA, ctx->DllInfo, ctx->RealDllInfo);
 		}
-		else if (
-			pinst->id == X86_INS_TEST &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[0].size == 1 &&
-			pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-			pinst->detail->x86.operands[1].imm >= 4 &&
-			pinst->detail->x86.operands[1].imm <= 0x10)
-		{
-			//.text:01D493A7 F6 C1 04                                            test    cl, 4
 
-			ctx->test_cl_flag = pinst->detail->x86.operands[1].imm;
-			ctx->test_cl_instcount = instCount;
-		}
-		else if (ctx->test_cl_instcount &&
-			instCount < ctx->test_cl_instcount + 3 &&
-			pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[1].mem.base == 0 &&
-			(PUCHAR)pinst->detail->x86.operands[1].mem.disp >(PUCHAR)ctx->DllInfo.DataBase &&
-			(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize
-			)
-		{
-			//.text:01D5A66D A1 C4 54 F5 03                                      mov     eax, skychain
-
-			if (!skychain && ctx->test_cl_flag == 4)
-				skychain = (decltype(skychain))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-			else if (!waterchain && ctx->test_cl_flag == 0x10)
-				waterchain = (decltype(waterchain))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-		}
-
-		if (r_visframecount && r_framecount && skychain && waterchain)
+		if (r_visframecount && r_framecount)
 			return TRUE;
 
 		if (address[0] == 0xCC)
@@ -4215,8 +4179,6 @@ void Engine_FillAddress_R_RecursiveWorldNodeVars(const mh_dll_info_t& DllInfo, c
 
 	Sig_VarNotFound(r_framecount);
 	Sig_VarNotFound(r_visframecount);
-	Sig_VarNotFound(skychain);
-	Sig_VarNotFound(waterchain);
 }
 
 void Engine_FillAddress_R_LoadSkybox(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
