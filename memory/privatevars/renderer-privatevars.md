@@ -167,7 +167,7 @@ Entry point `EngineStudio_FillAddress(pstudio, DllInfo, RealDllInfo)` (`exportfu
 | `g_ForcedFaceFlags` | `int*` | `_SetForceFaceFlags` (409): `pstudio->SetForceFaceFlags`; `DisasmRanges(+0x10)` first `MOV [.data],reg`. | `R_IsRenderingChrome`. |
 | `r_topcolor` / `r_bottomcolor` | `int*` / `int*` | `_StudioSetRemapColors` (462): `pstudio->StudioSetRemapColors`; `DisasmRanges(+0x50)` first two distinct `.data` stores. | Skin remap invalidation. |
 | `r_blend` | `float*` | Same as `CL_FxBlend` locator: `DisasmRanges(+0x50)` first `FSTP [abs]` (`base==0`). A second independent resolution exists in `gl_hooks.cpp:8460`; both `if (!r_blend)`-guarded. | Studio blend. |
-| `pauxverts`/`auxverts`, `pvlightvalues`/`lightvalues` | glow-shell vertex/light arrays | `_SetupRenderer` (585): `pstudio->SetupRenderer`; `DisasmRanges(+0x50)` first/second `C7 05 [imm32],imm32` (`len 10`), slot at `+2`, array base at `+6`. | Resolved only. |
+| ~~`pauxverts`/`auxverts`, `pvlightvalues`/`lightvalues`~~ | ~~glow-shell vertex/light arrays~~ | ~~`_SetupRenderer` (585): `pstudio->SetupRenderer`; `DisasmRanges(+0x50)` first/second `C7 05 [imm32],imm32` (`len 10`), slot at `+2`, array base at `+6`.~~ | Deleted 2026-09-20 — write-only, never read (see last section). |
 | `pbodypart` / `psubmodel` | `mstudiobodyparts_t**` / `mstudiomodel_t**` | `_StudioSetupModel` (652): `pstudio->StudioSetupModel`; `DisasmRanges(+0x50)` first/second `MOV [reg+0],imm32` with imm in `.data`. | `psubmodel` used in `R_StudioDrawSubmodel`; `pbodypart` resolved only. |
 | `r_origin` / ~~`g_ChromeOrigin`~~ | `float*` / ~~`float*`~~ | `_SetChromeOrigin` (715): `pstudio->SetChromeOrigin`; `DisasmRanges(+0x50)` collects `FLD`/`MOV`/`MOVQ`/`MOV imm` and `MOV`/`MOVQ`/`FSTP` store candidates; `qsort` ascending, lowest wins. | `r_origin` heavily used; ~~`g_ChromeOrigin` resolved only~~ → deleted 2026-09-19 (resolved, never read). |
 | `r_colormix` | `float*` (3 floats) | `_StudioSetupLighting` (870): `pstudio->StudioSetupLighting`; `DisasmRanges(+0x200)` arms after `AND reg,0xFF00`, collects `.data` stores, accepts last/first three 4-byte-consecutive. | Studio UBO colour. |
@@ -1248,6 +1248,48 @@ results in the SvEngine/HL25/GoldSrc/BLOB branches were harmless: the null check
 `ConvertDllInfoSpace` rejects address 0, so the guard still fired.)
 
 No gate change: `R_RotateForEntity` is not in gamedata (0 matching records across the 21
+snapshots) or any `RENDERER_*` table.
+
+**Verified**: build 0 errors, same 9 pre-existing warnings; `validate-gamedata.py`
+passes over 21 snapshots / 5 engine families; 91 passed / 2 skipped / 26 subtests.
+**Not verified**: in-game smoke tests.
+
+## Dead-code removal (2026-09-20): the write-only `_SetupRenderer` locator
+
+Review question: are `pauxverts`/`auxverts` and `pvlightvalues`/`lightvalues` used? No — all
+four were write-only, and the locator that populated them existed only to fill them.
+
+**Not a name collision.** Unlike `R_RotateForEntity`/`R_AddTEntity`, there is no plugin-side
+homonym here. The four globals were plugin-owned (`gl_studio.cpp`) mirrors of the engine's
+`.data` slots — `pauxverts` held the address of the engine's `auxverts` pointer slot, `auxverts`
+the array base (likewise for `pvlightvalues`/`lightvalues`) — populated from the disassembly of
+`pstudio->SetupRenderer` and read nowhere in the repository.
+
+| Symbol | Every reference before this change | Verdict |
+| --- | --- | --- |
+| `pauxverts` / `auxverts` / `pvlightvalues` / `lightvalues` | defs `gl_studio.cpp:48-51`, decls `gl_studio.h:321-324`, assignments + `Sig_VarNotFound` in `EngineStudio_FillAddress_SetupRenderer` | never read anywhere |
+| `EngineStudio_FillAddress_SetupRenderer` | def `exportfuncs.cpp:344`, dispatch `exportfuncs.cpp:603` | sole purpose was the four assignments |
+| `gPrivateFuncs.studioapi_SetupRenderer` | field `privatehook.h:217`, `pstudio->SetupRenderer` at `exportfuncs.cpp:714`, hook `exportfuncs.cpp:611` | **live** — a separate engine-side entry point, untouched |
+
+**Deleted**
+
+- `EngineStudio_FillAddress_SetupRenderer` (66 lines, including its `pstudio->SetupRenderer`
+  anchor validation) and its dispatch call. The function had been reduced to a single
+  `DisasmRanges(SetupRenderer, 0x50)` pass looking for two `C7 05 [imm32],imm32` instructions.
+- The four globals: definitions in `gl_studio.cpp`, `extern` declarations in `gl_studio.h`.
+  The engine's own `auxverts`/`lightvalues` are untouched — only the plugin's never-read
+  mirrors are gone, so no rendering path changes. `auxvert_t` / `MAXSTUDIOVERTS` come from the
+  HLSDK headers and stay.
+
+**Behaviour change worth recording.** The locator ended in four `Sig_VarNotFound` calls, so a
+`C7 05 [imm32],imm32` miss within the first `0x50` bytes of `SetupRenderer` — any engine build
+whose compiler selected different instructions — was a fatal `Sys_Error` during plugin init,
+guarding four values no code ever read. `EngineStudio_FillAddress` is invoked unconditionally
+from `HUD_GetStudioModelInterface`, so that failure mode was live on every engine family.
+Removing the locator removes it. The anchor validation it also performed was dropped with it;
+the same pointer is still consumed at `exportfuncs.cpp:714` and hooked at `exportfuncs.cpp:611`.
+
+No gate change: none of the four symbols is in gamedata (0 matching records across the 21
 snapshots) or any `RENDERER_*` table.
 
 **Verified**: build 0 errors, same 9 pre-existing warnings; `validate-gamedata.py`

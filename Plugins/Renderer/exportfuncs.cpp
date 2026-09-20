@@ -339,121 +339,6 @@ void EngineStudio_FillAddress_StudioSetRemapColors(struct engine_studio_api_s* p
 void EngineStudio_FillAddress_StudioSetRenderamt(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	gPrivateFuncs.CL_FxBlend = (decltype(gPrivateFuncs.CL_FxBlend))GamedataResolvePtr(RealDllInfo.ImageBase, "CL_FxBlend", MH_GAMESYMBOL_KIND_FUNCTION);
-
-	//r_blend stays catalog-uncovered and is still read from the engine's
-	//StudioSetRenderamt body through the public studio API pointer.
-	if (!r_blend)
-	{
-		PVOID StudioSetRenderamt = ConvertDllInfoSpace(pstudio->StudioSetRenderamt, RealDllInfo, DllInfo);
-
-		if (!StudioSetRenderamt)
-		{
-			Sig_NotFound(StudioSetRenderamt);
-		}
-
-		typedef struct
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-		}StudioSetRenderamt_SearchContext;
-
-		StudioSetRenderamt_SearchContext ctx = { DllInfo, RealDllInfo };
-
-		g_pMetaHookAPI->DisasmRanges((void*)StudioSetRenderamt, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-			{
-				auto pinst = (cs_insn*)inst;
-				auto ctx = (StudioSetRenderamt_SearchContext*)context;
-
-				if (!r_blend &&
-					pinst->id == X86_INS_FSTP &&
-					pinst->detail->x86.op_count == 1 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[0].mem.base == 0)
-				{
-					r_blend = (decltype(r_blend))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-				}
-
-				if (r_blend)
-					return TRUE;
-
-				if (address[0] == 0xCC)
-					return TRUE;
-
-				if (pinst->id == X86_INS_RET)
-					return TRUE;
-
-				return FALSE;
-			}, 0, &ctx);
-	}
-
-	Sig_VarNotFound(r_blend);
-}
-
-void EngineStudio_FillAddress_SetupRenderer(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	PVOID SetupRenderer = ConvertDllInfoSpace(pstudio->SetupRenderer, RealDllInfo, DllInfo);
-
-	if (!SetupRenderer)
-	{
-		Sig_NotFound(SetupRenderer);
-	}
-	/*
-	//Global pointers that link into engine
-	auxvert_t** pauxverts = NULL;
-	float** pvlightvalues = NULL;
-	*/
-	{
-		typedef struct
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-		}SetupRenderer_SearchContext;
-
-		SetupRenderer_SearchContext ctx = { DllInfo, RealDllInfo };
-
-		g_pMetaHookAPI->DisasmRanges((void*)SetupRenderer, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-			{
-				auto pinst = (cs_insn*)inst;
-				auto ctx = (SetupRenderer_SearchContext*)context;
-
-				if (address[0] == 0xC7 && address[1] == 0x05 && instLen == 10)//C7 05 C0 7D 73 02 98 14 36 02 mov     pauxverts, offset auxverts
-				{
-					if (!pauxverts)
-					{
-						auto pauxverts_VA = *(ULONG_PTR*)(address + 2);
-						auto auxverts_VA = *(ULONG_PTR*)(address + 6);
-
-						pauxverts = (decltype(pauxverts))ConvertDllInfoSpace((PVOID)pauxverts_VA, ctx->DllInfo, ctx->RealDllInfo);
-						auxverts = (decltype(auxverts))ConvertDllInfoSpace((PVOID)auxverts_VA, ctx->DllInfo, ctx->RealDllInfo);
-					}
-					else if (!pvlightvalues)
-					{
-						auto pvlightvalues_VA = *(ULONG_PTR*)(address + 2);
-						auto lightvalues_VA = *(ULONG_PTR*)(address + 6);
-
-						pvlightvalues = (decltype(pvlightvalues))ConvertDllInfoSpace((PVOID)pvlightvalues_VA, ctx->DllInfo, ctx->RealDllInfo);
-						lightvalues = (decltype(lightvalues))ConvertDllInfoSpace((PVOID)lightvalues_VA, ctx->DllInfo, ctx->RealDllInfo);
-					}
-				}
-
-				if (pauxverts && auxverts && pvlightvalues && lightvalues)
-					return TRUE;
-
-				if (address[0] == 0xCC)
-					return TRUE;
-
-				if (pinst->id == X86_INS_RET)
-					return TRUE;
-
-				return FALSE;
-			}, 0, &ctx);
-
-	}
-
-	Sig_VarNotFound(pauxverts);
-	Sig_VarNotFound(auxverts);
-	Sig_VarNotFound(pvlightvalues);
-	Sig_VarNotFound(lightvalues);
 }
 
 void EngineStudio_FillAddress_StudioSetupModel(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -648,7 +533,6 @@ void EngineStudio_FillAddress(struct engine_studio_api_s* pstudio, const mh_dll_
 	EngineStudio_FillAddress_SetForceFaceFlags(pstudio, DllInfo, RealDllInfo);
 	EngineStudio_FillAddress_StudioSetRemapColors(pstudio, DllInfo, RealDllInfo);
 	EngineStudio_FillAddress_StudioSetRenderamt(pstudio, DllInfo, RealDllInfo);
-	EngineStudio_FillAddress_SetupRenderer(pstudio, DllInfo, RealDllInfo);
 	EngineStudio_FillAddress_StudioSetupModel(pstudio, DllInfo, RealDllInfo);
 	EngineStudio_FillAddress_StudioSetupLighting(pstudio, DllInfo, RealDllInfo);
 }
