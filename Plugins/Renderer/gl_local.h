@@ -83,7 +83,7 @@ extern refdef_t r_refdef;
 extern refdef_GoldSrc_t *r_refdef_GoldSrc;
 extern refdef_SvEngine_t *r_refdef_SvEngine;
 extern ref_params_t r_params;
-extern float *scrfov;
+extern float *scr_fov_value;
 extern float r_xfov;
 extern float r_yfov;
 extern float r_xfov_viewmodel;

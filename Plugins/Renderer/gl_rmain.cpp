@@ -26,7 +26,7 @@ GLuint r_empty_vao = 0;
 
 vec4_t g_GLColor{ 0 };
 
-float* scrfov = nullptr;
+float* scr_fov_value = nullptr;
 float r_xfov = 0;
 float r_yfov = 0;
 float r_xfov_viewmodel = 0;
@@ -4198,7 +4198,7 @@ void R_AdjustScopeFOVForViewModel(float& fov)
 		{
 			if (default_fov && fabs(viewmodel_fov->value - default_fov->value) > 1)
 			{
-				fov = (*scrfov) * viewmodel_fov->value / default_fov->value;
+				fov = (*scr_fov_value) * viewmodel_fov->value / default_fov->value;
 
 				if (fov < 15.0f)
 					fov = 15.0f;
@@ -4211,7 +4211,7 @@ void R_AdjustScopeFOVForViewModel(float& fov)
 		{
 			if (fabs(viewmodel_fov->value - 90.0f) > 1)
 			{
-				fov = (*scrfov) * viewmodel_fov->value / 90.0f;
+				fov = (*scr_fov_value) * viewmodel_fov->value / 90.0f;
 
 				if (fov < 15.0f)
 					fov = 15.0f;
@@ -4231,7 +4231,7 @@ void R_CalcMainViewFov(float& xfov, float& yfov)
 		auto width = (double)(*r_refdef.vrect).width;
 		auto aspect = height / width;
 
-		auto fov = (*scrfov);
+		auto fov = (*scr_fov_value);
 		if (fov < 1.0 || fov > 179.0)
 			fov = 90.0;
 
@@ -4246,7 +4246,7 @@ void R_CalcMainViewFov(float& xfov, float& yfov)
 		auto height = (double)(*r_refdef.vrect).height;
 		auto aspect = width / height;
 
-		auto fov = (*scrfov);
+		auto fov = (*scr_fov_value);
 		if (fov < 1.0 || fov > 179.0)
 			fov = 90.0;
 
@@ -4267,7 +4267,7 @@ void R_SetupGLForViewModel(void)
 		auto width = (double)(*r_refdef.vrect).width;
 		auto aspect = height / width;
 
-		auto fov = (viewmodel_fov->value > 0) ? (viewmodel_fov->value) : (*scrfov);
+		auto fov = (viewmodel_fov->value > 0) ? (viewmodel_fov->value) : (*scr_fov_value);
 		if (fov < 1.0 || fov > 179.0)
 			fov = 90.0;
 
@@ -4285,7 +4285,7 @@ void R_SetupGLForViewModel(void)
 		auto height = (double)(*r_refdef.vrect).height;
 		auto aspect = width / height;
 
-		auto fov = (viewmodel_fov->value > 0) ? (viewmodel_fov->value) : (*scrfov);
+		auto fov = (viewmodel_fov->value > 0) ? (viewmodel_fov->value) : (*scr_fov_value);
 		if (fov < 1.0 || fov > 179.0)
 			fov = 90.0;
 
@@ -4356,7 +4356,7 @@ void R_SetupGL(void)
 			auto width = (double)(*r_refdef.vrect).width;
 			auto aspect = height / width;
 
-			auto fov = (*scrfov);
+			auto fov = (*scr_fov_value);
 
 			if (fov < 1.0f || fov > 179.0f)
 				fov = 90.0f;
@@ -4402,7 +4402,7 @@ void R_SetupGL(void)
 			auto width = (double)(*r_refdef.vrect).width;
 			auto height = (double)(*r_refdef.vrect).height;
 			auto aspect = width / height;
-			auto fov = (*scrfov);
+			auto fov = (*scr_fov_value);
 
 			if (fov < 1.0f || fov > 179.0f)
 				fov = 90.0f;

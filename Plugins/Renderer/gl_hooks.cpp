@@ -4354,7 +4354,7 @@ void Engine_FillAddress_ScrFov(const mh_dll_info_t& DllInfo, const mh_dll_info_t
 {
 	/*
 	//Global pointers that link into engine vars.
-		float *scrfov = NULL;
+		float *scr_fov_value = NULL;
 	*/
 
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -4375,7 +4375,7 @@ void Engine_FillAddress_ScrFov(const mh_dll_info_t& DllInfo, const mh_dll_info_t
 			v1[0] = *((float *)dword_2723390 + 750 * dword_270AFBC + 722);
 			v1[1] = *((float *)dword_2723390 + 750 * dword_270AFBC + 723);
 			v1[2] = *((float *)dword_2723390 + 750 * dword_270AFBC + 724);
-			v1[7] = scrfov;
+			v1[7] = scr_fov_value;
 		*/
 
 		const char pattern[] = "\xD9\x05\x2A\x2A\x2A\x2A\xD9\x5C\x24\x1C\x89\x44\x24\x18";
@@ -4384,7 +4384,7 @@ void Engine_FillAddress_ScrFov(const mh_dll_info_t& DllInfo, const mh_dll_info_t
 		if (addr)
 		{
 			PVOID scrfov_VA = (PVOID)(*(ULONG_PTR*)(addr + 2));
-			scrfov = (decltype(scrfov))ConvertDllInfoSpace(scrfov_VA, DllInfo, RealDllInfo);
+			scr_fov_value = (decltype(scr_fov_value))ConvertDllInfoSpace(scrfov_VA, DllInfo, RealDllInfo);
 		}
 	}
 	else
@@ -4400,12 +4400,12 @@ void Engine_FillAddress_ScrFov(const mh_dll_info_t& DllInfo, const mh_dll_info_t
 			if (addr2)
 			{
 				PVOID scrfov_VA = (PVOID)(*(ULONG_PTR*)(addr2 + 2));
-				scrfov = (decltype(scrfov))ConvertDllInfoSpace(scrfov_VA, DllInfo, RealDllInfo);
+				scr_fov_value = (decltype(scr_fov_value))ConvertDllInfoSpace(scrfov_VA, DllInfo, RealDllInfo);
 			}
 		}
 	}
 
-	Sig_VarNotFound(scrfov);
+	Sig_VarNotFound(scr_fov_value);
 }
 
 //Got CL_IsDevOverviewMode, CL_SetDevOverView and refdef here
