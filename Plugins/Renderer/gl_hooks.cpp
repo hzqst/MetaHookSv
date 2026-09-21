@@ -2823,13 +2823,13 @@ void Engine_FillAddress_R_RenderFinalFog(const mh_dll_info_t& DllInfo, const mh_
 {
 	g_bUserFogOn = (decltype(g_bUserFogOn))GamedataResolvePtr(RealDllInfo.ImageBase, "g_bUserFogOn", MH_GAMESYMBOL_KIND_GLOBAL);
 
-	g_UserFogColor = (decltype(g_UserFogColor))GamedataResolvePtr(RealDllInfo.ImageBase, "flFinalFogColor", MH_GAMESYMBOL_KIND_GLOBAL);
+	flFinalFogColor = (decltype(flFinalFogColor))GamedataResolvePtr(RealDllInfo.ImageBase, "flFinalFogColor", MH_GAMESYMBOL_KIND_GLOBAL);
 
-	g_UserFogDensity = (decltype(g_UserFogDensity))GamedataResolvePtr(RealDllInfo.ImageBase, "flFogDensity", MH_GAMESYMBOL_KIND_GLOBAL);
+	flFogDensity = (decltype(flFogDensity))GamedataResolvePtr(RealDllInfo.ImageBase, "flFogDensity", MH_GAMESYMBOL_KIND_GLOBAL);
 
-	g_UserFogStart = (decltype(g_UserFogStart))GamedataResolvePtr(RealDllInfo.ImageBase, "flFogStart", MH_GAMESYMBOL_KIND_GLOBAL);
+	flFogStart = (decltype(flFogStart))GamedataResolvePtr(RealDllInfo.ImageBase, "flFogStart", MH_GAMESYMBOL_KIND_GLOBAL);
 
-	g_UserFogEnd = (decltype(g_UserFogEnd))GamedataResolvePtr(RealDllInfo.ImageBase, "flFogEnd", MH_GAMESYMBOL_KIND_GLOBAL);
+	flFogEnd = (decltype(flFogEnd))GamedataResolvePtr(RealDllInfo.ImageBase, "flFogEnd", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 

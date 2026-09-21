@@ -79,10 +79,10 @@ qboolean* vertical_fov_SvEngine = nullptr;
 vec_t* cl_simorg = nullptr;
 
 int* g_bUserFogOn = nullptr;
-float* g_UserFogColor = nullptr; //float flFinalFogColor[4]
-float* g_UserFogDensity = nullptr; //GLfloat flFogDensity
-float* g_UserFogStart = nullptr; //GLfloat flFogStart
-float* g_UserFogEnd = nullptr; //GLfloat flFogEnd
+float* flFinalFogColor = nullptr;
+float* flFogDensity = nullptr;
+float* flFogStart = nullptr;
+float* flFogEnd = nullptr;
 
 qboolean* giScissorTest = nullptr;
 int* scissor_x = nullptr;
@@ -4672,11 +4672,11 @@ void R_RenderSvenFog(void)
 
 void R_RenderUserFog(void)
 {
-	memcpy(r_fog_color, g_UserFogColor, sizeof(vec4_t));
+	memcpy(r_fog_color, flFinalFogColor, sizeof(vec4_t));
 
-	r_fog_control[0] = (*g_UserFogStart);
-	r_fog_control[1] = (*g_UserFogEnd);
-	r_fog_control[2] = (*g_UserFogDensity);
+	r_fog_control[0] = (*flFogStart);
+	r_fog_control[1] = (*flFogEnd);
+	r_fog_control[2] = (*flFogDensity);
 
 	r_fog_mode = GL_EXP2;
 	r_fog_enabled = true;

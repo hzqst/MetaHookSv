@@ -187,7 +187,7 @@ Entry point `EngineStudio_FillAddress(pstudio, DllInfo, RealDllInfo)` (`exportfu
 | `cl_simorg` | `vec_t*` | `Engine_FillAddress_CL_SimOrgVars`: per-engine patterns embedding the `[esi/edi+0B48h]` destination offsets; source slot at `addr+2`/`+4`. | Simulated origin. |
 | `cl_viewentity` | `int*` | `Engine_FillAddress_CL_ViewEntityVars`: SvEngine `CL_VIEWENTITY_SIG_SVENGINE` ptr at `+10`; GoldSrc `A1 <disp> 48 3B ?` + `DisasmRanges(+0x100)` requiring `CMP [.data],0x200`, ptr at `+1`. | Third-person camera / entity lookup. |
 | `scrfov` | `float*` | `Engine_FillAddress_ScrFov`: SvEngine `D9 05 <scrfov> D9 5C 24 1C …`; others `C7 05 <a> 00 00 16 43` (150.0f) then `C7 05 <scrfov> 00 00 20 41` (10.0f). | Viewmodel FOV. |
-| `g_bUserFogOn` / `g_UserFogColor` / `g_UserFogDensity` / `g_UserFogStart` / `g_UserFogEnd` | `int*` / `float*` | `Engine_FillAddress_R_RenderFinalFog`: gamedata GLOBAL `g_bUserFogOn`, `flFinalFogColor`, `flFogDensity`, `flFogStart`, `flFogEnd`. | User-fog upload. |
+| `g_bUserFogOn` / `flFinalFogColor` / `flFogDensity` / `flFogStart` / `flFogEnd` | `int*` / `float*` | `Engine_FillAddress_R_RenderFinalFog`: gamedata GLOBAL `g_bUserFogOn`, `flFinalFogColor`, `flFogDensity`, `flFogStart`, `flFogEnd`. | User-fog upload. |
 | `cls_state` / `cls_signon` / `scr_drawloading` | `cactive_t*` / `int*` / `qboolean*` | `cls_state`/`cls_signon` from `V_RenderView` (`CMP [.data],5`/`,2`); `scr_drawloading` from `SCR_BeginLoadingPlaque` (`MOV [.data],1`). | Client state. |
 | `r_soundOrigin` / `r_playerViewportAngles` | `vec_t*` | `V_RenderView`: zeroed-register stores plus `FLDZ`+`FST[P]` candidates; if six candidates, `qsort` → `[0]` and `[3]`. | `r_playerViewportAngles` used; `r_soundOrigin` resolved only. |
 | `frustum` / `vpn` / `vup` / `vright` | `mplane_t*` / `vec_t*` | `Engine_FillAddress_R_CullBox`: `MOV ESI,imm(.data)` → `frustum`; then `68 <frustum> 68 … 68 … E8` pattern gives `vpn`/`vup`; `68 <vpn> 68 … 68 <frustum+0x28>` gives `vright`. | `R_SetFrustum` culling. |
@@ -1548,3 +1548,5 @@ families); `pytest scripts/tests` 91 passed / 2 skipped / 26 subtests; the only 
 All five are published as engine GLOBALs on every identity (`g_bUserFogOn`, `flFinalFogColor`, `flFogDensity`, `flFogStart`, `flFogEnd`) and all five have live readers (`gl_rmain.cpp` `R_RenderUserFog` / fog-enable tests). The locator is now five `GamedataResolvePtr` calls; the catalog names join `RENDERER_ENGINE_ALL_GLOBALS`.
 
 `gPrivateFuncs.R_RenderFinalFog` was write-only (never called, never hooked). After the globals no longer need it as a disasm root it is deleted, and `R_RenderFinalFog` leaves `RENDERER_ENGINE_NON_SVENGINE_FUNCTIONS`. Catalog records `g_bFogSkybox` / `R_FogParams` / `R_RenderFog` have no plugin consumer and stay ungated.
+
+Plugin-side aliases `g_UserFogColor` / `g_UserFogDensity` / `g_UserFogStart` / `g_UserFogEnd` were renamed to the catalog names.

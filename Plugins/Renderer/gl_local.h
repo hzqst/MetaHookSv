@@ -181,10 +181,10 @@ extern int* gSpriteMipMap;
 
 //fog
 extern int *g_bUserFogOn;
-extern float *g_UserFogColor;
-extern float *g_UserFogDensity;
-extern float *g_UserFogStart;
-extern float *g_UserFogEnd;
+extern float *flFinalFogColor;
+extern float *flFogDensity;
+extern float *flFogStart;
+extern float *flFogEnd;
 
 extern qboolean* giScissorTest;
 extern int* scissor_x;
