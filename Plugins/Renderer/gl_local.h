@@ -175,7 +175,6 @@ extern int *cl_light_level;
 extern int *c_alias_polys;
 extern int *c_brush_polys;
 extern int(*rtable)[20][20];
-extern void *tmp_palette;
 
 extern int* gSpriteMipMap;
 

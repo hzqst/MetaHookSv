@@ -85,12 +85,6 @@
 #define BUILDNORMALINDEXTABLE_SIG_HL25 ""
 #define BUILDNORMALINDEXTABLE_SIG_SVENGINE ""
 
-#define R_STUDIOSETUPSKIN_SIG_BLOB "\xA0\x2A\x2A\x2A\x2A\x81\xEC\x0C\x01\x00\x00\xA8\x02\x53\x56\x57\x0F\x85"
-#define R_STUDIOSETUPSKIN_SIG_NEW "\x55\x8B\xEC\x81\xEC\x04\x01\x00\x00\xA0\x2A\x2A\x2A\x2A\x53\x56\x57\xA8\x02\x0F\x85\x2A\x2A\x2A\x2A\x8B\x5D\x0C"
-#define R_STUDIOSETUPSKIN_SIG_HL25 "\x55\x8B\xEC\x81\xEC\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\xF6\x05\x2A\x2A\x2A\x2A\x02\x8B\x45\x08"
-#define R_STUDIOSETUPSKIN_SIG_SVENGINE "\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x2A\x00\x00\xF6\x05"
-
-
 #define MOD_LOADSPRITEMODEL_BLOB		"\x53\x55\x56\x57\x8B\x7C\x24\x18\x8B\x47\x04\x50\xFF\x15"
 
 #define R_INITPARTICLETEXTURE_BLOB "\xA1\x2A\x2A\x2A\x2A\x81\xEC\x2A\x2A\x00\x00\x8B\xC8\x40"
@@ -135,7 +129,6 @@ static hook_t* g_phook_R_ForceCVars = NULL;
 static hook_t* g_phook_Mod_PointInLeaf = NULL;
 static hook_t* g_phook_R_GLStudioDrawPoints = NULL;
 static hook_t* g_phook_GL_UnloadTextures = NULL;
-static hook_t* g_phook_GL_UnloadTexture = NULL;
 static hook_t* g_phook_GL_LoadFilterTexture = NULL;
 static hook_t* g_phook_GL_LoadTexture2 = NULL;
 static hook_t* g_phook_GL_BuildLightmaps = NULL;
@@ -2152,209 +2145,6 @@ void Engine_FillAddress_R_StudioLighting(const mh_dll_info_t& DllInfo, const mh_
 	Sig_VarNotFound(lightgammatable);
 }
 
-void Engine_FillAddress_R_StudioSetupSkin(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (gPrivateFuncs.R_StudioSetupSkin)
-		return;
-
-	PVOID R_StudioSetupSkin_VA = 0;
-
-	if (1)
-	{
-		const char sigs[] = "DM_Base.bmp";
-		auto DM_Base_String = Search_Pattern_Data(sigs, DllInfo);
-		if (!DM_Base_String)
-			DM_Base_String = Search_Pattern_Rdata(sigs, DllInfo);
-
-		if (DM_Base_String)
-		{
-			char pattern[] = "\x68\x2A\x2A\x2A\x2A\x2A\xC7\x44\x24\x2A\x2A\x00\x00\x00";
-			*(DWORD*)(pattern + 1) = (DWORD)DM_Base_String;
-			auto DM_Base_PushString = Search_Pattern(pattern, DllInfo);
-			if (DM_Base_PushString)
-			{
-				R_StudioSetupSkin_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(DM_Base_PushString, 0x300, [](PUCHAR Candidate) {
-
-					if (Candidate[0] == 0x81 &&
-						Candidate[1] == 0xEC &&
-						Candidate[4] == 0x00 &&
-						Candidate[5] == 0x00)
-						return TRUE;
-
-					if (Candidate[0] == 0x55 &&
-						Candidate[1] == 0x8B &&
-						Candidate[2] == 0xEC)
-						return TRUE;
-
-					if (Candidate[0] == 0xA0 &&
-						Candidate[5] == 0x81 &&
-						Candidate[6] == 0xEC)
-						return TRUE;
-
-					return FALSE;
-					});
-				gPrivateFuncs.R_StudioSetupSkin = (decltype(gPrivateFuncs.R_StudioSetupSkin))ConvertDllInfoSpace((PVOID)R_StudioSetupSkin_VA, DllInfo, RealDllInfo);
-			}
-		}
-	}
-
-	if (!gPrivateFuncs.R_StudioSetupSkin)
-	{
-		if (g_iEngineType == ENGINE_SVENGINE)
-		{
-			R_StudioSetupSkin_VA = Search_Pattern(R_STUDIOSETUPSKIN_SIG_SVENGINE, DllInfo);
-			gPrivateFuncs.R_StudioSetupSkin = (decltype(gPrivateFuncs.R_StudioSetupSkin))ConvertDllInfoSpace((PVOID)R_StudioSetupSkin_VA, DllInfo, RealDllInfo);
-		}
-		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-		{
-			R_StudioSetupSkin_VA = Search_Pattern(R_STUDIOSETUPSKIN_SIG_HL25, DllInfo);
-			gPrivateFuncs.R_StudioSetupSkin = (decltype(gPrivateFuncs.R_StudioSetupSkin))ConvertDllInfoSpace((PVOID)R_StudioSetupSkin_VA, DllInfo, RealDllInfo);
-		}
-		else if (g_iEngineType == ENGINE_GOLDSRC)
-		{
-			R_StudioSetupSkin_VA = Search_Pattern(R_STUDIOSETUPSKIN_SIG_NEW, DllInfo);
-			gPrivateFuncs.R_StudioSetupSkin = (decltype(gPrivateFuncs.R_StudioSetupSkin))ConvertDllInfoSpace((PVOID)R_StudioSetupSkin_VA, DllInfo, RealDllInfo);
-		}
-		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
-		{
-			R_StudioSetupSkin_VA = Search_Pattern(R_STUDIOSETUPSKIN_SIG_BLOB, DllInfo);
-			gPrivateFuncs.R_StudioSetupSkin = (decltype(gPrivateFuncs.R_StudioSetupSkin))ConvertDllInfoSpace((PVOID)R_StudioSetupSkin_VA, DllInfo, RealDllInfo);
-		}
-	}
-
-	Sig_FuncNotFound(R_StudioSetupSkin);
-
-	PVOID R_StudioGetSkin_VA = 0;
-	PVOID GL_UnloadTexture_VA = 0;
-	PVOID tmp_palette_VA = 0;
-
-	{
-		typedef struct R_StudioSetupSkin_SearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-			ULONG_PTR candidateE8_VA{};
-			int candidateE8_instCount{};
-			int instCount_push300h{};
-		} R_StudioSetupSkin_SearchContext;
-
-		R_StudioSetupSkin_SearchContext ctx = { DllInfo, RealDllInfo };
-
-		g_pMetaHookAPI->DisasmRanges((void*)R_StudioSetupSkin_VA, 0x800, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (R_StudioSetupSkin_SearchContext*)context;
-
-			if (address[0] == 0xE8 && instLen == 5)
-			{
-				ctx->candidateE8_VA = (ULONG_PTR)pinst->detail->x86.operands[0].imm;
-				ctx->candidateE8_instCount = instCount;
-
-				if (!gPrivateFuncs.R_StudioGetSkin)
-				{
-					typedef struct R_StudioSetupSkin_SearchCmp0B_ctx_s
-					{
-						bool bFoundCmp0B{};
-					} R_StudioSetupSkin_SearchCmp0B_ctx;
-
-					R_StudioSetupSkin_SearchCmp0B_ctx ctx2 = {};
-
-					g_pMetaHookAPI->DisasmRanges((void*)ctx->candidateE8_VA, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-						auto pinst = (cs_insn*)inst;
-						auto ctx2 = (R_StudioSetupSkin_SearchCmp0B_ctx*)context;
-
-						if (pinst->id == X86_INS_CMP &&
-							pinst->detail->x86.op_count == 2 &&
-							pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-							pinst->detail->x86.operands[1].imm == 0xB)
-						{
-							ctx2->bFoundCmp0B = true;
-							return TRUE;
-						}
-
-						if (address[0] == 0xCC)
-							return TRUE;
-
-						if (pinst->id == X86_INS_RET)
-							return TRUE;
-
-						return FALSE;
-
-						}, 0, &ctx2);
-
-					if (ctx2.bFoundCmp0B)
-					{
-						gPrivateFuncs.R_StudioGetSkin = (decltype(gPrivateFuncs.R_StudioGetSkin))ConvertDllInfoSpace((PVOID)ctx->candidateE8_VA, ctx->DllInfo, ctx->RealDllInfo);
-					}
-				}
-			}
-
-			if (!gPrivateFuncs.GL_UnloadTexture && ctx->candidateE8_VA)
-			{
-				if (instCount > ctx->candidateE8_instCount && instCount < ctx->candidateE8_instCount + 10)
-				{
-					//.text:01D8B20C FF B7 20 01 00 00                                   push    dword ptr [edi+120h]
-					if (pinst->id == X86_INS_PUSH &&
-						pinst->detail->x86.op_count == 1 &&
-						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-						pinst->detail->x86.operands[0].mem.base &&
-						pinst->detail->x86.operands[0].mem.disp == 0x120)
-					{
-						gPrivateFuncs.GL_UnloadTexture = (decltype(gPrivateFuncs.GL_UnloadTexture))ConvertDllInfoSpace((PVOID)ctx->candidateE8_VA, ctx->DllInfo, ctx->RealDllInfo);
-					}
-					else if (pinst->id == X86_INS_MOV &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_REG &&
-						pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-						pinst->detail->x86.operands[1].mem.base &&
-						pinst->detail->x86.operands[1].mem.disp == 0x120)
-					{
-						gPrivateFuncs.GL_UnloadTexture = (decltype(gPrivateFuncs.GL_UnloadTexture))ConvertDllInfoSpace((PVOID)ctx->candidateE8_VA, ctx->DllInfo, ctx->RealDllInfo);
-					}
-				}
-			}
-
-			if (!tmp_palette)
-			{
-				if (!ctx->instCount_push300h &&
-					pinst->id == X86_INS_PUSH &&
-					pinst->detail->x86.op_count == 1 &&
-					pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-					pinst->detail->x86.operands[0].imm == 0x300)
-				{
-					ctx->instCount_push300h = instCount;
-				}
-
-				if (ctx->instCount_push300h &&
-					instCount > ctx->instCount_push300h &&
-					instCount < ctx->instCount_push300h + 8 &&
-					pinst->id == X86_INS_PUSH &&
-					pinst->detail->x86.op_count == 1 &&
-					pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-					(ULONG_PTR)pinst->detail->x86.operands[0].imm >(ULONG_PTR)ctx->DllInfo.DataBase &&
-					(ULONG_PTR)pinst->detail->x86.operands[0].imm < (ULONG_PTR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-				{
-					tmp_palette = (decltype(tmp_palette))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].imm, ctx->DllInfo, ctx->RealDllInfo);
-				}
-			}
-
-			if (gPrivateFuncs.GL_UnloadTexture && gPrivateFuncs.R_StudioGetSkin && tmp_palette)
-				return TRUE;
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-			}, 0, &ctx);
-	}
-
-	Sig_FuncNotFound(R_StudioGetSkin);
-	Sig_FuncNotFound(GL_UnloadTexture);
-	Sig_VarNotFound(tmp_palette);
-}
-
 void Engine_FillAddress_Cache_Alloc(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.Cache_Alloc)
@@ -3681,8 +3471,6 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 	gPrivateFuncs.R_GLStudioDrawPoints = (decltype(gPrivateFuncs.R_GLStudioDrawPoints))GamedataResolvePtr(RealDllInfo.ImageBase, "R_GLStudioDrawPoints", MH_GAMESYMBOL_KIND_FUNCTION);
 
 	Engine_FillAddress_R_StudioLighting(DllInfo, RealDllInfo);
-
-	Engine_FillAddress_R_StudioSetupSkin(DllInfo, RealDllInfo);
 
 	gPrivateFuncs.Host_ClearMemory = (decltype(gPrivateFuncs.Host_ClearMemory))GamedataResolvePtr(RealDllInfo.ImageBase, "Host_ClearMemory", MH_GAMESYMBOL_KIND_FUNCTION);
 
