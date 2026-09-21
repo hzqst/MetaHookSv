@@ -213,7 +213,7 @@ RENDERER_ENGINE_ALL_GLOBALS = (
     "cl_waterlevel", "cl_weaponsequence", "cl_weaponstarttime", "cl_worldmodel",
     "cshift_water", "currententity", "currenttexture", "d_lightstylevalue", "detTexSupported",
     "envmap", "filterBrightness", "filterColorBlue", "filterColorGreen", "filterColorRed",
-    "filterMode", "frustum", "gDecalCache", "gDecalPool", "gDecalSurfCount", "gDevOverview", "gTempEnts", "gWaterColor",
+    "filterMode", "flFinalFogColor", "flFogDensity", "flFogEnd", "flFogStart", "frustum", "gDecalCache", "gDecalPool", "gDecalSurfCount", "gDevOverview", "gTempEnts", "gWaterColor", "g_bUserFogOn",
     "gl_filter_max", "gl_filter_min",
     "lightmaps", "mod_known",
     "mod_numknown", "modelorg", "pstudiohdr",
@@ -227,7 +227,7 @@ RENDERER_NUMBERED_PATCH_SETS = ("CL_LinkPacketEntities_to_R_ResetLatched_callsit
 #message fills the rectangle through Draw_FillRGBABlend instead.
 RENDERER_ENGINE_NON_SVENGINE_FUNCTIONS = (
     "D_FillRect", "Draw_SpriteFrameAdditive",
-    "Draw_SpriteFrameGeneric", "Draw_SpriteFrameHoles", "R_LoadSkys", "R_RenderFinalFog",
+    "Draw_SpriteFrameGeneric", "Draw_SpriteFrameHoles", "R_LoadSkys",
 )
 RENDERER_ENGINE_NON_SVENGINE_PATCHES = ("GL_SetMode_call_qwglCreateContext",)
 #SvEngine renamed the alias-poly counter to c_model_polys.

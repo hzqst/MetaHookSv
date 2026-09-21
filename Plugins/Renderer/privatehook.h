@@ -25,7 +25,6 @@ typedef struct
 	void (*R_RenderView)(void);
 	void (*R_RenderView_SvEngine)(int viewIdx);
 	void (*R_RenderScene)(void);
-	void (*R_RenderFinalFog)(void);
 	void (*ClientDLL_DrawNormalTriangles)(void);
 	void (*R_NewMap)(void);
 	void (*R_ClearParticles)(void);

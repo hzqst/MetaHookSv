@@ -647,6 +647,19 @@ class RendererGateTests(unittest.TestCase):
             errors = validate.validate_renderer(symbols, gv)
             self.assertTrue(any("D_FillRect" in e for e in errors), (gv, errors))
 
+    def test_gate_requires_user_fog_globals_on_every_identity(self):
+        names = ("flFinalFogColor", "flFogDensity", "flFogEnd", "flFogStart",
+                 "g_bUserFogOn")
+        for name in names:
+            self.assertIn(name, validate.RENDERER_ENGINE_ALL_GLOBALS)
+            for gv in validate.RENDERER_ALL_GAMES:
+                symbols = self.complete_engine_symbols(gv)
+                del symbols[name]
+                errors = validate.validate_renderer(symbols, gv)
+                self.assertTrue(any(name in e for e in errors), (name, gv, errors))
+        self.assertNotIn("R_RenderFinalFog", validate.RENDERER_ENGINE_ALL_FUNCTIONS)
+        self.assertNotIn("R_RenderFinalFog", validate.RENDERER_ENGINE_NON_SVENGINE_FUNCTIONS)
+
     def test_gate_requires_lightmap_and_decal_symbols_on_every_identity(self):
         names = (
             "R_TextureAnimation",
