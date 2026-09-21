@@ -57,8 +57,8 @@ All of the following are resolved via `GamedataResolvePtr` (kind `FUNCTION` / `G
 3. Context: `GL_Init`, `GL_SetMode`, `GL_Shutdown`, `GL_Bind`, `GL_SelectTexture`, `GL_LoadTexture2`, `R_CullBox`, `R_SetupFrame`.
 4. View/scene: `R_SetupGL`, `R_RenderView`, `V_RenderView`, `R_RenderScene`, `R_NewMap`, `GL_LoadFilterTexture`, `GL_BuildLightmaps`, `R_BuildLightMap`, `R_AddDynamicLights`, `GL_Disable/EnableMultitexture`, `R_DrawSequentialPoly`, `R_TextureAnimation`, `R_DrawBrushModel`, `R_RecursiveWorldNode`, `R_DrawWorld`, `R_DrawViewModel`, `R_MarkLeaves`.
 5. 2D: `GL_Set2D`, `GL_Finish2D`, `GL_BeginRendering`, `GL_EndRendering`, `EmitWaterPolys`, `VID_UpdateWindowVars`, `Mod_PointInLeaf`, `R_DrawTEntitiesOnList`, `BuildGammaTable`.
-6. Effects/Studio: `R_DrawParticles`, `CL_AllocDlight`, `CL_AllocElight`, `R_GLStudioDrawPoints`, `R_StudioLighting`, ~~`R_StudioChrome`~~, `R_LightLambert`, `R_StudioSetupSkin`, `Host_ClearMemory`, `Cache_Alloc`, `Draw_MiptexTexture`, `Draw_DecalTexture`, `R_GetSpriteFrame`, `R_DrawSpriteModel`, `R_LightStrength`, ~~`R_RotateForEntity`~~, `R_GlowBlend`, `SCR_BeginLoadingPlaque`, `Host_IsSinglePlayerGame`, `Mod_UnloadSpriteTextures`, `Mod_LoadSpriteModel`, `Mod_LoadSpriteFrame`, ~~`R_AddTEntity`~~, `Hunk_AllocName`.
-7. Globals passes: `GL_EndRenderingVars`, `VisEdicts`, `R_AllocTransObjectsVars`, `R_RenderFinalFog`, `R_DrawTEntitiesOnListVars`, `R_RecursiveWorldNodeVars`, `R_LoadSkybox`, `GL_FilterMinMaxVars`, `ScrFov`, `RenderSceneVars`, `RenderSceneVars2`, `CL_IsDevOverviewModeVars`, `R_DecalInit`, `R_RenderDynamicLightmaps`, ~~`R_StudioChromeVars`~~, `CL_ViewEntityVars`, `CL_ReallocateDynamicData`, `TempEntsVars`, `WaterVars`, `ModKnown`, `Mod_NumKnown`, `Mod_LoadStudioModel`, `Mod_LoadBrushModel`, `Mod_LoadModel`, `BasePalette`, `R_LightStrengthVars`, `SetFilterMode`, `SetFilterColor`, `SetFilterBrightness`, `MoveVars`, `MissingTexture`, `NoTexture`, `LegacyMultiTextureInit`, `PVSNode`.
+6. Effects/Studio: `R_DrawParticles`, `CL_AllocDlight`, `CL_AllocElight`, `R_GLStudioDrawPoints`, `R_StudioLighting`, ~~`R_StudioChrome`~~, `R_LightLambert`, `R_StudioSetupSkin`, `Host_ClearMemory`, `Cache_Alloc`, `Draw_MiptexTexture`, `Draw_DecalTexture`, `R_GetSpriteFrame`, `R_DrawSpriteModel`, ~~`R_LightStrength`~~, ~~`R_RotateForEntity`~~, `R_GlowBlend`, `SCR_BeginLoadingPlaque`, `Host_IsSinglePlayerGame`, `Mod_UnloadSpriteTextures`, `Mod_LoadSpriteModel`, `Mod_LoadSpriteFrame`, ~~`R_AddTEntity`~~, `Hunk_AllocName`.
+7. Globals passes: `GL_EndRenderingVars`, `VisEdicts`, `R_AllocTransObjectsVars`, `R_RenderFinalFog`, `R_DrawTEntitiesOnListVars`, `R_RecursiveWorldNodeVars`, `R_LoadSkybox`, `GL_FilterMinMaxVars`, `ScrFov`, `RenderSceneVars`, `RenderSceneVars2`, `CL_IsDevOverviewModeVars`, `R_DecalInit`, `R_RenderDynamicLightmaps`, ~~`R_StudioChromeVars`~~, `CL_ViewEntityVars`, `CL_ReallocateDynamicData`, `TempEntsVars`, `WaterVars`, `ModKnown`, `Mod_NumKnown`, `Mod_LoadStudioModel`, `Mod_LoadBrushModel`, `Mod_LoadModel`, `BasePalette`, `SetFilterMode`, `SetFilterColor`, `SetFilterBrightness`, `MoveVars`, `MissingTexture`, `NoTexture`, `LegacyMultiTextureInit`, `PVSNode`.
 8. VideoMode/draw: `DrawStartupGraphic`, `DrawStartupVideo`, `Draw_Frame`, `Draw_SpriteFrameHoles/Additive/Generic`, `Draw_FillRGBA/RGBABlend`, `Draw_FillRGBABuf`, `D_FillRect`, `Draw_Pic`.
 
 ## Engine-private functions
@@ -144,7 +144,7 @@ All of the following are resolved via `GamedataResolvePtr` (kind `FUNCTION` / `G
 | `gPrivateFuncs.Draw_DecalTexture` | `texture_t* (*)(int index)` | String `"Failed to load custom decal for player"` → `68 <str> E8 83 C4 0C` + `ReverseSearchFunctionBeginEx(+0x300)`; fallback `DRAW_DECALTEXTURE_SIG_*`. Also yields `decal_wad`, `Draw_CustomCacheGet` (4 pushes + `83 C4 10`), `Draw_CacheGet` (2 pushes + `83 C4 08`). | Wrapper `gl_draw.cpp:1820` forwards to it. |
 | `gPrivateFuncs.R_GetSpriteFrame` | `mspriteframe_t* (*)(msprite_t*, int)` | String `"Sprite:  no pSprite!!!"` → `68 <str> E8 83 C4` + `ReverseSearchFunctionBeginEx(+0x120)`; fallback `R_GETSPRITEFRAME_SIG`/`_SIG2`. | `Install_InlineHook(R_GetSpriteFrame)`; handler calls original from `R_SpriteLoadExternalFile_FrameTexture`. |
 | `gPrivateFuncs.R_DrawSpriteModel` | `void (*)(cl_entity_t*)` | String `"R_DrawSpriteModel:  couldn"` → `68 <str> E8 83 C4` + `ReverseSearchFunctionBeginEx(+0x300)`; fallback `R_DRAWSRPITEMODEL_SIG_*`. | Resolved only (plugin reimplements). |
-| `gPrivateFuncs.R_LightStrength` (+ `R_LightStrength_inlined`) | `void (*)(int bone, float* vert, float (*light)[4])` | SVEngine `R_LIGHTSTRENGTH_SIG_SVENGINE` (+10152); HL25 inlined; GoldSrc `_NEW`/`_NEW2`; BLOB `_BLOB`. Also yields `locallight`, `numlights`. | Resolved only. |
+| ~~`gPrivateFuncs.R_LightStrength` (+ `R_LightStrength_inlined`)~~ | `void (*)(int bone, float* vert, float (*light)[4])` | ~~SVEngine `R_LIGHTSTRENGTH_SIG_SVENGINE` (+10152); HL25 inlined; GoldSrc `_NEW`/`_NEW2`; BLOB `_BLOB`.~~ | Deleted 2026-09-21 — resolved, never called, never hooked (see last section). |
 | ~~`gPrivateFuncs.R_RotateForEntity`~~ | `void (*)(float*, cl_entity_t*)` | ~~GoldSrc inline `R_ROTATEFORENTITY_GOLDSRC` → `GetCallAddress(addr+len-1)`; fallback SVENGINE/HL25/NEW.~~ | Deleted 2026-09-20 — never called, never hooked (see last section). |
 | `gPrivateFuncs.R_GlowBlend` (+ `R_GlowBlend_inlined`) | `float (*)(cl_entity_t*)` | SVEngine/HL25 inlined; GoldSrc `R_GLOW_BLEND_SIG_NEW`/`_NEW2`; BLOB `_BLOB`. | Wrapper calls original when non-null. |
 | `gPrivateFuncs.SCR_BeginLoadingPlaque` | `void (*)(qboolean reconnect)` | Single sig `SCR_BEGIN_LOADING_PLAQUE` (`6A 01 E8 … A1 … 83 C4 04 83 F8 03`); also yields `scr_drawloading`. | Resolved only. |
@@ -336,8 +336,8 @@ Stored in `gPrivateFuncs` but sourced from public interfaces, so excluded from t
 
 ## Notes
 
-- **Dead / resolved-only fields.** Many `gPrivateFuncs` fields are located but never hooked or called (the multitexture pair and its globals were removed on 2026-09-19 — see the last section): `R_SetupGL`, `R_RenderScene`, `R_SetupFrame`, `R_PolyBlend` (reimplemented), `S_ExtraUpdate`, `GL_SelectTexture`, `R_TextureAnimation`, `R_DrawSequentialPoly[_HL25]`, `R_DrawBrushModel`, `R_DrawWorld` (reimplemented), `R_DrawViewModel`, `R_MarkLeaves`, `EmitWaterPolys`, `VID_UpdateWindowVars`, `R_DrawTEntitiesOnList`, `R_ClearParticles`, `V_InitLevel`, ~~`R_BuildLightMap`~~, ~~`R_AddDynamicLights`~~, `R_RenderDynamicLightmaps`, `R_DrawParticles` (reimplemented), `CL_AllocDlight`/`CL_AllocElight`, `R_StudioLighting`, ~~`R_StudioChrome`~~, `R_LightLambert`, `R_StudioSetupSkin`, `R_StudioGetSkin`, `GL_UnloadTexture`, `Draw_MiptexTexture`, `Draw_DecalTexture`, `Draw_CustomCacheGet`/`Draw_CacheGet`, `R_DrawSpriteModel`, `Mod_LoadSpriteFrame`, `SCR_BeginLoadingPlaque`, `R_LightStrength`, ~~`R_RotateForEntity`~~, ~~`R_AddTEntity`~~, `R_RenderFinalFog`, `Mod_LoadBrushModel`, `Mod_LoadModel`, `ClientPortalManager_ResetAll` (hook commented), `GameStudioRenderer_StudioDrawModel`, `R_StudioDrawModel`, and many `*Vars` globals (`cls_state`, `cls_signon`, `r_soundOrigin`, `lightmap_textures`, `lightmap_rectchange`, `gDecalSurfs`, `modelorg`, `vid_d3d`, `g_ChromeOrigin`, ~~`gSkyTexNumber`~~, ~~`r_loading_skybox`~~, `lightmap_polys`, `lightmap_modified`, ~~`chrome`~~, ~~`chromeage`~~, `locallight`, `numlights`, scissor rect, `pmainwindow` consumers).
-- **Inlined-function flags.** `R_ForceCVars_inlined`, `R_SetupFrame_inlined`, `R_RenderScene_inlined`, `R_LightStrength_inlined`, `R_GlowBlend_inlined` indicate the engine inlined the target; the plugin then uses call-site-sensitive logic instead of a direct hook.
+- **Dead / resolved-only fields.** Many `gPrivateFuncs` fields are located but never hooked or called (the multitexture pair and its globals were removed on 2026-09-19 — see the last section): `R_SetupGL`, `R_RenderScene`, `R_SetupFrame`, `R_PolyBlend` (reimplemented), `S_ExtraUpdate`, `GL_SelectTexture`, `R_TextureAnimation`, `R_DrawSequentialPoly[_HL25]`, `R_DrawBrushModel`, `R_DrawWorld` (reimplemented), `R_DrawViewModel`, `R_MarkLeaves`, `EmitWaterPolys`, `VID_UpdateWindowVars`, `R_DrawTEntitiesOnList`, `R_ClearParticles`, `V_InitLevel`, ~~`R_BuildLightMap`~~, ~~`R_AddDynamicLights`~~, `R_RenderDynamicLightmaps`, `R_DrawParticles` (reimplemented), `CL_AllocDlight`/`CL_AllocElight`, `R_StudioLighting`, ~~`R_StudioChrome`~~, `R_LightLambert`, `R_StudioSetupSkin`, `R_StudioGetSkin`, `GL_UnloadTexture`, `Draw_MiptexTexture`, `Draw_DecalTexture`, `Draw_CustomCacheGet`/`Draw_CacheGet`, `R_DrawSpriteModel`, `Mod_LoadSpriteFrame`, `SCR_BeginLoadingPlaque`, `R_LightStrength`, ~~`R_RotateForEntity`~~, ~~`R_AddTEntity`~~, `R_RenderFinalFog`, `Mod_LoadBrushModel`, `Mod_LoadModel`, `ClientPortalManager_ResetAll` (hook commented), `GameStudioRenderer_StudioDrawModel`, `R_StudioDrawModel`, and many `*Vars` globals (`cls_state`, `cls_signon`, `r_soundOrigin`, `lightmap_textures`, `lightmap_rectchange`, `gDecalSurfs`, `modelorg`, `vid_d3d`, `g_ChromeOrigin`, ~~`gSkyTexNumber`~~, ~~`r_loading_skybox`~~, `lightmap_polys`, `lightmap_modified`, ~~`chrome`~~, ~~`chromeage`~~, scissor rect, `pmainwindow` consumers).
+- **Inlined-function flags.** `R_ForceCVars_inlined`, `R_SetupFrame_inlined`, `R_RenderScene_inlined`, `R_GlowBlend_inlined` indicate the engine inlined the target; the plugin then uses call-site-sensitive logic instead of a direct hook.
 - **Duplicate resolution sites.** `r_blend` is resolved both by `Engine_FillAddress_R_DrawTEntitiesOnListVars` (gl_hooks) and `EngineStudio_FillAddress_StudioSetRenderamt` (exportfuncs); `R_RenderDynamicLightmaps` by the `R_DrawSequentialPoly` BFS and its own locator; `r_framecount` by `_GetTimes` and a shadowing local in `gl_hooks.cpp:8744`. Both `if (!field)`-guarded, so first wins.
 - **Hook/uninstall asymmetry.** `Host_ClearMemory` is installed but never unhooked; `ClientPortalManager_DrawPortalSurface`'s hook is installed but `EngineSurface_UninstallHooks` is empty; `GameStudioRenderer_StudioDrawPlayer` is installed but not uninstalled.
 - **Build-num gates.** `g_ViewEntityIndex_SCClient` requires buildnum ≥ 10182; `size_of_frame` defaults to `0x42B8` for buildnum ≤ 8684; `R_SetupGL`/`R_LoadSkybox` pick signatures by buildnum thresholds (10152, 9899).
@@ -1294,4 +1294,86 @@ snapshots) or any `RENDERER_*` table.
 
 **Verified**: build 0 errors, same 9 pre-existing warnings; `validate-gamedata.py`
 passes over 21 snapshots / 5 engine families; 91 passed / 2 skipped / 26 subtests.
+**Not verified**: in-game smoke tests.
+
+## Dead-code removal (2026-09-21): the `R_LightStrength` var scan and `locallight` / `numlights`
+
+Review question: are `locallight` / `numlights` used? No — both were write-only engine
+mirrors, and the locator that populated them had no other purpose.
+
+| Symbol | Every reference before this change | Verdict |
+| --- | --- | --- |
+| `locallight` (`dlight_t *(*)[3]`) / `numlights` (`int*`) | defs `gl_studio.cpp:63-64`, decls `gl_studio.h:335-336`, assigned (never dereferenced) in `Engine_FillAddress_R_LightStrengthVars`, `Sig_VarNotFound` at its end | never read anywhere |
+| `Engine_FillAddress_R_LightStrengthVars` | def `gl_hooks.cpp:3914`, dispatch `gl_hooks.cpp:5167` | sole purpose was the two assignments |
+| `gPrivateFuncs.R_LightStrength` (+ `R_LightStrength_inlined`) | field `privatehook.h:207`/`255`, locator `Engine_FillAddress_R_LightStrength` (`gl_hooks.cpp:2958`) | left in place — see below |
+
+**Nothing dereferenced them.** The only reads were the resolver's own `if (!locallight && …)`
+guards, an early-`return TRUE` once both were set, and the two closing `Sig_VarNotFound` calls —
+i.e. they worked as loop state and as a load-time assertion, never as data sources. No
+`locallight[i][j]`, no `*numlights` existed.
+
+**Not a name collision — a different, live dlight path.** The engine-internal `locallight`
+(per-bone `dlight_t*` slot array) / `numlights` mirror what vanilla `R_LightStrength` feeds into
+`R_StudioSetupLighting`. The plugin's studio dlight code instead walks `cl_dlights` /
+`cl_elights` / `r_dlightactive` (defs `gl_rsurf.cpp:8-10`, resolved at `gl_hooks.cpp:1850` /
+`1925`): `gl_studio.cpp:2220-2222` (elight loop), `gl_studio.cpp:3513-3545` (`r_studio_legacy_dlight 0`),
+`gl_studio.cpp:2558`/`2563`, `gl_rmain.cpp:5305`, `gl_light.cpp:1786`. The vanilla feed was
+superseded by the `r_studio_legacy_dlight` 1/2 shader path, which is why the two mirrors were
+left orphaned.
+
+**Deleted**
+
+- `Engine_FillAddress_R_LightStrengthVars` (384 lines) and its dispatch call — 387 lines total.
+  Both of its paths produced nothing but the two globals: a `DisasmRanges(R_LightStrength, 0x500)`
+  pass keyed on a zeroed `ebp` slot and a `XOR reg,reg`, and a `R_GLStudioDrawPoints`-rooted BFS
+  (1000 instructions, depth 16, branch fan-out) for the inlined builds.
+- The two globals: definitions in `gl_studio.cpp`, `extern` declarations in `gl_studio.h`.
+  `R_GLStudioDrawPoints` keeps its own hook and its other callers; only its use as this BFS root
+  is gone. No gamedata record exists for either symbol (0 matches in the packaged catalog), so
+  no resolution gate changes. The engine's own slots are untouched.
+
+**Behaviour change worth recording.** The deleted function ended in `Sig_VarNotFound(locallight)`
+/ `Sig_VarNotFound(numlights)`, so a miss in either scan — plausible on any build whose compiler
+picked different instructions or where the BFS exceeded its budget — was a fatal `Sys_Error`
+during plugin init, guarding two values no code read. Removing the locator removes that failure
+mode.
+
+**Follow-up in the same session.** `gPrivateFuncs.R_LightStrength` / `R_LightStrength_inlined`
+and the locator that filled them (`Engine_FillAddress_R_LightStrength` plus its six
+`R_LIGHTSTRENGTH_SIG_*` defines) lost their last reader with this deletion, so they were swept in
+the next section.
+
+**Verified**: build 0 errors / same 9 pre-existing warnings (Renderer.dll regenerated);
+`validate-gamedata.py` passes (21 snapshots, 5 engine families); `pytest scripts/tests`
+91 passed / 2 skipped / 26 subtests.
+**Not verified**: in-game smoke tests.
+
+## Dead-code removal (2026-09-21): the write-only `R_LightStrength` locator
+
+Follow-up to the section above. Once `Engine_FillAddress_R_LightStrengthVars` was gone,
+`gPrivateFuncs.R_LightStrength` had no reader left, so the locator that filled it became
+write-only by the same standard applied to `_SetupRenderer` / `R_RotateForEntity`.
+
+| Symbol | Every reference before this change | Verdict |
+| --- | --- | --- |
+| `gPrivateFuncs.R_LightStrength` (+ `R_LightStrength_inlined`) | field `privatehook.h:207`/`255`; assigned in `Engine_FillAddress_R_LightStrength`; its only outside reader was the deleted var scan | write-only |
+| `Engine_FillAddress_R_LightStrength` | def `gl_hooks.cpp:2958`, dispatch `gl_hooks.cpp:4712` | sole purpose was the two fields |
+| six `R_LIGHTSTRENGTH_SIG_*` defines | `gl_hooks.cpp:118-123` | used only by the locator (`_SIG_HL25` was already dead — an empty string, never referenced) |
+
+**Deleted**: the 36-line locator and its dispatch call; the six signature defines; both struct
+fields. The `_inlined` flag was set only in the HL25 branch and read only at the locator's own
+tail (`if (gPrivateFuncs.R_LightStrength_inlined) return;`), so it gated nothing.
+
+**Behaviour change worth recording.** The locator ended in `Sig_FuncNotFound(R_LightStrength)`, a
+fatal `Sys_Error` whenever the sig missed on SVEngine / GoldSrc / BLOB — removed with it. Worth
+noting the SVEngine patterns locate the *inlined call site*, not a function entry, and the deleted
+var scan was the only thing that ever consumed that address; nothing dereferenced or called it.
+
+**Untouched**: `R_SetupFrame_inlined` / `R_RenderScene_inlined` and their locators,
+`R_GLStudioDrawPoints` (still hooked), and the `Sig_*` machinery itself. No gamedata record exists
+for `R_LightStrength` (0 matches in the packaged catalog), so no resolution gate changes.
+
+**Verified**: build 0 errors / same 9 pre-existing warnings (Renderer.dll regenerated);
+`validate-gamedata.py` passes (21 snapshots, 5 engine families); `pytest scripts/tests`
+91 passed / 2 skipped / 26 subtests.
 **Not verified**: in-game smoke tests.

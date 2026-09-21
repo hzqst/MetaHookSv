@@ -60,8 +60,6 @@ float* r_colormix = NULL;
 void* tmp_palette = NULL;
 int* r_smodels_total = NULL;
 int* r_amodels_drawn = NULL;
-dlight_t* (*locallight)[3] = NULL;
-int* numlights = NULL;
 int* r_topcolor = NULL;
 int* r_bottomcolor = NULL;
 

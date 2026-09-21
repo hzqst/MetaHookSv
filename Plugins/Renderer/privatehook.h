@@ -204,7 +204,6 @@ typedef struct
 
 	//Engine Studio
 	void (*R_GLStudioDrawPoints)(void);
-	void (*R_LightStrength)(int bone, float* vert, float (*light)[4]);
 	void (*R_StudioLighting)(float* lv, int bone, int flags, vec3_t normal);
 	void (*R_StudioSetupSkin)(studiohdr_t* ptexturehdr, int index);
 	skin_t* (*R_StudioGetSkin)(int keynum, int index);
@@ -252,7 +251,6 @@ typedef struct
 
 	bool R_SetupFrame_inlined;
 	bool R_RenderScene_inlined;
-	bool R_LightStrength_inlined;
 
 }private_funcs_t;
 

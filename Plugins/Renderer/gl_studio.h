@@ -332,8 +332,6 @@ extern vec3_t *r_plightvec;
 extern float *r_colormix;
 extern int *r_smodels_total;
 extern int *r_amodels_drawn;
-extern dlight_t *(*locallight)[3];
-extern int *numlights;
 extern int* r_topcolor;
 extern int* r_bottomcolor;
 
