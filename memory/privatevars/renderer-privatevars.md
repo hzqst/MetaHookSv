@@ -1536,3 +1536,7 @@ all still referenced), so the gate is consistent again.
 families); `pytest scripts/tests` 91 passed / 2 skipped / 26 subtests; the only surviving
 `CL_AllocDlight` mentions are the two live `gEngfuncs.pEfxAPI` call sites; CRLF endings intact.
 **Not verified**: in-game dynamic-light smoke test.
+
+## Gamedata migration (2026-09-21): `gDecalPool` / `gDecalCache`
+
+`Engine_FillAddress_R_DecalInit` still scanned `"\x68\x00\xC0\x01\x00\x6A\x00"` (`push 0x1C000; push 0`) and walked the first `0x50` bytes of `R_DecalInit` for a data-segment `PUSH imm` (`gDecalPool`) and `MOV eax, imm` (`gDecalCache`). Both engine GLOBALs are published on every identity, and both have live readers in `gl_rsurf.cpp` (`EngineGetDecalByIndex` / `R_DecalIndex` / `R_DecalVertsNoclip`). The locator is now two `GamedataResolvePtr` calls; the names join `RENDERER_ENGINE_ALL_GLOBALS`. The engine `R_DecalInit` function itself is still catalog-uncovered and is not a plugin consumer.

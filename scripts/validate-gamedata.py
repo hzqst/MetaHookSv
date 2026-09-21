@@ -213,7 +213,7 @@ RENDERER_ENGINE_ALL_GLOBALS = (
     "cl_waterlevel", "cl_weaponsequence", "cl_weaponstarttime", "cl_worldmodel",
     "cshift_water", "currententity", "currenttexture", "d_lightstylevalue", "detTexSupported",
     "envmap", "filterBrightness", "filterColorBlue", "filterColorGreen", "filterColorRed",
-    "filterMode", "frustum", "gDecalSurfCount", "gDevOverview", "gTempEnts", "gWaterColor",
+    "filterMode", "frustum", "gDecalCache", "gDecalPool", "gDecalSurfCount", "gDevOverview", "gTempEnts", "gWaterColor",
     "gl_filter_max", "gl_filter_min",
     "lightmaps", "mod_known",
     "mod_numknown", "modelorg", "pstudiohdr",

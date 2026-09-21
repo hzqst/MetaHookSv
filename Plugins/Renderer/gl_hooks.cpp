@@ -3194,73 +3194,9 @@ void Engine_FillAddress_CL_IsDevOverviewModeVars(const mh_dll_info_t& DllInfo, c
 
 void Engine_FillAddress_R_DecalInit(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	/*
-		//Global pointers that link into engine vars
-		decal_t *gDecalPool = NULL;
-		decalcache_t *gDecalCache = NULL;
-	*/
-	PVOID R_DecalInit_VA = 0;
+	gDecalPool = (decltype(gDecalPool))GamedataResolvePtr(RealDllInfo.ImageBase, "gDecalPool", MH_GAMESYMBOL_KIND_GLOBAL);
 
-	const char pattern[] = "\x68\x00\xC0\x01\x00\x6A\x00";
-	R_DecalInit_VA = Search_Pattern(pattern, DllInfo);
-
-	if (!R_DecalInit_VA)
-	{
-		Sig_NotFound(R_DecalInit);
-	}
-
-	typedef struct R_DecalInit_SearchContext_s
-	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-	} R_DecalInit_SearchContext;
-
-	R_DecalInit_SearchContext ctx = { DllInfo, RealDllInfo };
-
-	g_pMetaHookAPI->DisasmRanges(R_DecalInit_VA, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (R_DecalInit_SearchContext*)context;
-
-		if (pinst->id == X86_INS_PUSH &&
-			pinst->detail->x86.op_count == 1 &&
-			pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-			(PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)ctx->DllInfo.DataBase &&
-			(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-		
-		{
-			//68 B8 5C 32 02 push    offset gDecalPool
-
-			gDecalPool = (decltype(gDecalPool))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].imm, ctx->DllInfo, ctx->RealDllInfo);
-		}
-		else if (pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[0].reg == X86_REG_EAX &&
-			pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-			(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->DllInfo.DataBase &&
-			(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-		{
-			//.text:01D49DBE B8 C0 96 BB 02 mov     eax, offset gDecalCache
-
-			gDecalCache = (decltype(gDecalCache))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].imm, ctx->DllInfo, ctx->RealDllInfo);
-		}
-
-		if (gDecalPool && gDecalCache)
-			return TRUE;
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-	}, 0, &ctx);
-
-	Sig_VarNotFound(gDecalPool);
-	Sig_VarNotFound(gDecalCache);
+	gDecalCache = (decltype(gDecalCache))GamedataResolvePtr(RealDllInfo.ImageBase, "gDecalCache", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Engine_FillAddress_LightstyleVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
