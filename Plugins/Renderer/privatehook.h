@@ -168,7 +168,6 @@ typedef struct
 	int index_BaseUISurface_DrawSetTexture;
 	int offset_BaseUISurface_m_CurrentTextureId;
 
-	void(*SCR_BeginLoadingPlaque)(qboolean reconnect);
 	qboolean(*Host_IsSinglePlayerGame)(void);
 	void* (*Hunk_AllocName)(int size, const char* name);
 	void* (*Cache_Alloc)(cache_user_t* c, int size, const char* name);

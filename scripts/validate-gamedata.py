@@ -219,7 +219,7 @@ RENDERER_ENGINE_ALL_GLOBALS = (
     "mod_numknown", "modelorg", "pstudiohdr",
     "r_blend", "r_entorigin", "r_framecount", "r_origin", "r_refdef", "r_visframecount",
     "r_worldentity", "rtable",
-    "scr_fov_value",
+    "scr_drawloading", "scr_fov_value",
 )
 RENDERER_ENGINE_ALL_PATCHES = ("Sys_ShutdownGame_to_GL_Shutdown_callsite_0",)
 RENDERER_NUMBERED_PATCH_SETS = ("CL_LinkPacketEntities_to_R_ResetLatched_callsite",)

@@ -669,6 +669,15 @@ class RendererGateTests(unittest.TestCase):
             self.assertTrue(any("gSpriteMipMap" in e for e in errors), (gv, errors))
         self.assertNotIn("Mod_LoadSpriteFrame", validate.RENDERER_ENGINE_ALL_FUNCTIONS)
 
+    def test_gate_requires_scr_drawloading_on_every_identity(self):
+        self.assertIn("scr_drawloading", validate.RENDERER_ENGINE_ALL_GLOBALS)
+        for gv in validate.RENDERER_ALL_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            del symbols["scr_drawloading"]
+            errors = validate.validate_renderer(symbols, gv)
+            self.assertTrue(any("scr_drawloading" in e for e in errors), (gv, errors))
+        self.assertNotIn("SCR_BeginLoadingPlaque", validate.RENDERER_ENGINE_ALL_FUNCTIONS)
+
     def test_gate_requires_lightmap_and_decal_symbols_on_every_identity(self):
         names = (
             "R_TextureAnimation",

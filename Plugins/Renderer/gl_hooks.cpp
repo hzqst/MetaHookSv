@@ -91,8 +91,6 @@
 #define R_STUDIOSETUPSKIN_SIG_SVENGINE "\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x2A\x00\x00\xF6\x05"
 
 
-#define SCR_BEGIN_LOADING_PLAQUE "\x6A\x01\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x83\xC4\x04\x83\xF8\x03"
-
 #define MOD_LOADSPRITEMODEL_BLOB		"\x53\x55\x56\x57\x8B\x7C\x24\x18\x8B\x47\x04\x50\xFF\x15"
 
 #define R_INITPARTICLETEXTURE_BLOB "\xA1\x2A\x2A\x2A\x2A\x81\xEC\x2A\x2A\x00\x00\x8B\xC8\x40"
@@ -2391,60 +2389,7 @@ void Engine_FillAddress_GlowBlend(const mh_dll_info_t& DllInfo, const mh_dll_inf
 
 void Engine_FillAddress_SCR_BeginLoadingPlaque(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.SCR_BeginLoadingPlaque)
-		return;
-
-	PVOID SCR_BeginLoadingPlaque_VA = 0;
-
-	//All engine use the same signature
-	SCR_BeginLoadingPlaque_VA = Search_Pattern(SCR_BEGIN_LOADING_PLAQUE, DllInfo);
-
-	gPrivateFuncs.SCR_BeginLoadingPlaque = (decltype(gPrivateFuncs.SCR_BeginLoadingPlaque))ConvertDllInfoSpace(SCR_BeginLoadingPlaque_VA, DllInfo, RealDllInfo);
-
-	Sig_FuncNotFound(SCR_BeginLoadingPlaque);
-
-	{
-		typedef struct SCR_BeginLoadingPlaque_SearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-		} SCR_BeginLoadingPlaque_SearchContext;
-
-		SCR_BeginLoadingPlaque_SearchContext ctx = { DllInfo, RealDllInfo };
-
-		g_pMetaHookAPI->DisasmRanges(SCR_BeginLoadingPlaque_VA, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (SCR_BeginLoadingPlaque_SearchContext*)context;
-
-			if (!scr_drawloading &&
-				pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base == 0 &&
-				pinst->detail->x86.operands[0].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
-				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				pinst->detail->x86.operands[1].imm == 1)
-			{
-				//C7 05 60 66 00 08 01 00 00 00                       mov     scr_drawloading, 1
-				scr_drawloading = (decltype(scr_drawloading))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-			}
-
-			if (scr_drawloading)
-				return TRUE;
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-			}, 0, &ctx);
-
-		Sig_VarNotFound(scr_drawloading);
-	}
+	scr_drawloading = (decltype(scr_drawloading))GamedataResolvePtr(RealDllInfo.ImageBase, "scr_drawloading", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Engine_FillAddress_Mod_LoadSpriteFrame(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
