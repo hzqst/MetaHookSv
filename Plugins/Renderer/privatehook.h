@@ -66,8 +66,6 @@ typedef struct
 	void (*GL_UnloadTextures)(void);
 	void (*GL_LoadFilterTexture)(void);
 	texture_t* (*Draw_DecalTexture)(int index);
-	void* (*Draw_CustomCacheGet)(cachewad_t* wad, void* raw, int rawsize, int index);
-	void* (*Draw_CacheGet)(cachewad_t* wad, int index);
 	//int(*GL_LoadTexture)(char *identifier, int textureType, int width, int height, byte *data, qboolean mipmap, int iPalTextureType, byte *pPal);
 	int(*GL_LoadTexture2)(char* identifier, int textureType, int width, int height, byte* data, qboolean mipmap, int iPalTextureType, byte* pPal, int filter);
 	void (*Mod_UnloadSpriteTextures)(model_t* mod);

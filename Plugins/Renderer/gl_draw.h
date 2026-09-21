@@ -11,7 +11,6 @@ extern int *gHostSpawnCount;
 extern int *currenttexture;
 extern int *gl_filter_min;
 extern int *gl_filter_max;
-extern cachewad_t **decal_wad;
 extern qboolean* gfCustomBuild;
 extern char(*szCustName)[10];
 

@@ -586,8 +586,6 @@ void D_FillRect(vrect_t* r, unsigned char* color);
 
 mspriteframe_t* R_GetSpriteFrame(msprite_t* pSprite, int frame);
 
-void* Draw_CustomCacheGet(cachewad_t* wad, void* raw, int rawsize, int index);
-void* Draw_CacheGet(cachewad_t* wad, int index);
 int SignbitsForPlane(mplane_t *out);
 colorVec R_LightPoint(vec3_t p);
 void *R_GetRefDef(void);

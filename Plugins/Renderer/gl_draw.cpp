@@ -13,7 +13,6 @@ int *peakgltextures_SvEngine = NULL;//for SvEngine
 int *numgltextures = NULL;
 int *gHostSpawnCount = NULL;
 int *currenttexture = NULL;
-cachewad_t **decal_wad = NULL;
 qboolean* gfCustomBuild = NULL;
 char (*szCustName)[10] = NULL;
 

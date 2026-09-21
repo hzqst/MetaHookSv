@@ -141,7 +141,7 @@ All of the following are resolved via `GamedataResolvePtr` (kind `FUNCTION` / `G
 | `gPrivateFuncs.R_LightLambert` | `void (*)(float (*light)[4], float* normal, float* src, float* lambert)` | Sig-only `R_LIGHTLAMBERT_SIG_*`. | Resolved only. |
 | `gPrivateFuncs.R_StudioSetupSkin` / `R_StudioGetSkin` | `void (*)(studiohdr_t*, int)` / `skin_t* (*)(int keynum, int index)` | `Engine_FillAddress_R_StudioSetupSkin`: string `"DM_Base.bmp"` → `68 <str> C7 44 24 …` + `ReverseSearchFunctionBeginEx(+0x300)`; `R_StudioGetSkin` = `E8` target in `+0x800` whose body contains `CMP reg,0xB`; `GL_UnloadTexture` from the same walk. Also yields `tmp_palette`. | Resolved only. |
 | `gPrivateFuncs.Draw_MiptexTexture` | `void (*)(cachewad_t*, byte*)` | String `"Draw_MiptexTexture: Bad cached wad %s\n"` → `68 <str> E8` + `ReverseSearchFunctionBeginEx(+0x80)`; fallback `DRAW_MIPTEXTEXTURE_SIG_*`. Also yields `gfCustomBuild`, `szCustName`. | Resolved only (hook declared but never installed). |
-| `gPrivateFuncs.Draw_DecalTexture` | `texture_t* (*)(int index)` | String `"Failed to load custom decal for player"` → `68 <str> E8 83 C4 0C` + `ReverseSearchFunctionBeginEx(+0x300)`; fallback `DRAW_DECALTEXTURE_SIG_*`. Also yields `decal_wad`, `Draw_CustomCacheGet` (4 pushes + `83 C4 10`), `Draw_CacheGet` (2 pushes + `83 C4 08`). | Wrapper `gl_draw.cpp:1820` forwards to it. |
+| `gPrivateFuncs.Draw_DecalTexture` | `texture_t* (*)(int index)` | `GamedataResolvePtr("Draw_DecalTexture", FUNCTION)`. The former string scan (`"Failed to load custom decal for player"`), its `DRAW_DECALTEXTURE_SIG_*` fallbacks (macros no longer in the tree) and the `decal_wad` / `Draw_CustomCacheGet` / `Draw_CacheGet` BFS (removed 2026-09-21, see last section) are all gone. | Wrapper `gl_draw.cpp:1808` forwards to it, and `R_DrawDecals` (`gl_rsurf.cpp:1109`) calls that wrapper — live. |
 | `gPrivateFuncs.R_GetSpriteFrame` | `mspriteframe_t* (*)(msprite_t*, int)` | String `"Sprite:  no pSprite!!!"` → `68 <str> E8 83 C4` + `ReverseSearchFunctionBeginEx(+0x120)`; fallback `R_GETSPRITEFRAME_SIG`/`_SIG2`. | `Install_InlineHook(R_GetSpriteFrame)`; handler calls original from `R_SpriteLoadExternalFile_FrameTexture`. |
 | ~~`gPrivateFuncs.R_DrawSpriteModel`~~ | `void (*)(cl_entity_t*)` | ~~String `"R_DrawSpriteModel:  couldn"` → `68 <str> E8 83 C4` + `ReverseSearchFunctionBeginEx(+0x300)`; fallback `R_DRAWSRPITEMODEL_SIG_*`.~~ | Deleted 2026-09-21 — resolved, never called or hooked; the plugin's own `R_DrawSpriteModel` (`gl_sprite.cpp`) is untouched (see last section). |
 | ~~`gPrivateFuncs.R_LightStrength` (+ `R_LightStrength_inlined`)~~ | `void (*)(int bone, float* vert, float (*light)[4])` | ~~SVEngine `R_LIGHTSTRENGTH_SIG_SVENGINE` (+10152); HL25 inlined; GoldSrc `_NEW`/`_NEW2`; BLOB `_BLOB`.~~ | Deleted 2026-09-21 — resolved, never called, never hooked (see last section). |
@@ -212,7 +212,7 @@ Entry point `EngineStudio_FillAddress(pstudio, DllInfo, RealDllInfo)` (`exportfu
 | `particletexture` / `active_particles` | `int*` / `particle_t**` | `Engine_FillAddress_R_DrawParticles`: first `PUSH [.data]` or `MOV reg,[.data]` not followed by `33 C5`/`33 C4`; `active_particles` = the `MOV ESI,[.data]` preceding `E8` that anchors `R_FreeDeadParticles`. | Particle rendering. |
 | `gTempEnts` | `TEMPENTITY*` | `Engine_FillAddress_TempEntsVars`: SvEngine `68 00 E0 5F 00 6A 00 68 <gTempEnts> A3`, others `68 30 68 17 00 6A 00 68 <gTempEnts> E8`; ptr at `addr+8`. | Temp-entity index lookup. |
 | `cl_dlights` / `r_dlightactive` / `cl_elights` | `dlight_t*` / `int*` / `dlight_t*` | From `CL_AllocDlight`/`CL_AllocElight`: after `PUSH 0x28`, a `PUSH imm(.data)` / `MOV reg,[.data]` / `OR [.data],1`. | Dynamic-light rendering. |
-| `decal_wad` / `gfCustomBuild` / `szCustName` | `cachewad_t**` / `qboolean*` / `char (*)[10]` | `Engine_FillAddress_Draw_DecalTexture` BFS / `_Draw_MiptexTexture` `DisasmRanges(+0x500)`. | Custom-decal WAD lookup. |
+| ~~`decal_wad`~~ / `gfCustomBuild` / `szCustName` | `cachewad_t**` / `qboolean*` / `char (*)[10]` | ~~`Engine_FillAddress_Draw_DecalTexture` BFS~~ / `_Draw_MiptexTexture` `DisasmRanges(+0x500)`. | Custom-WAD texture lookup. `decal_wad` deleted 2026-09-21 (see last section). `gfCustomBuild`/`szCustName` are still resolved, but their only reader is the plugin's `Draw_MiptexTexture`, which nothing installs or calls — see the open item in the last section. |
 | ~~`gSkyTexNumber` / `r_loading_skybox`~~ | `int*` / `int*` | ~~`Engine_FillAddress_R_LoadSkybox`: `MOV reg,imm(.data)` validated by `CMP [reg],reg`/`PUSH [reg+disp]`; `MOV eax,[.data]` or `CMP [.data],0`~~ | Deleted 2026-09-19 — write-only, no consumers (see last section). |
 | `giScissorTest` / `scissor_x` / `scissor_y` / `scissor_width` / `scissor_height` | `qboolean*` / `int*` | `Engine_FillAddress_Draw_Frame`: `MOV reg,[.data]`+`TEST`, or `CMP [.data],0`, or `CMP [.data],xor_reg`; four `PUSH/MOV [.data]` candidates `qsort`ed. | `giScissorTest` used; scissor rect resolved only. |
 | `mod_known` / `mod_numknown` | `model_t*` / `int*` | `Engine_FillAddress_ModKnown`: `.text` `B8 9D 82 97 53 81 E9`, ptr at `+7`; `_Mod_NumKnown`: string `"Cached models:\n"` → `57 68 <str> E8` + `DisasmRanges(+0x50)`. | Model index/count. |
@@ -336,7 +336,7 @@ Stored in `gPrivateFuncs` but sourced from public interfaces, so excluded from t
 
 ## Notes
 
-- **Dead / resolved-only fields.** Many `gPrivateFuncs` fields are located but never hooked or called (the multitexture pair and its globals were removed on 2026-09-19 — see the last section): `R_SetupGL`, `R_RenderScene`, `R_SetupFrame`, `R_PolyBlend` (reimplemented), `S_ExtraUpdate`, `GL_SelectTexture`, `R_TextureAnimation`, `R_DrawSequentialPoly[_HL25]`, `R_DrawBrushModel`, `R_DrawWorld` (reimplemented), `R_DrawViewModel`, `R_MarkLeaves`, `EmitWaterPolys`, `VID_UpdateWindowVars`, `R_DrawTEntitiesOnList`, `R_ClearParticles`, `V_InitLevel`, ~~`R_BuildLightMap`~~, ~~`R_AddDynamicLights`~~, `R_RenderDynamicLightmaps`, `R_DrawParticles` (reimplemented), `CL_AllocDlight`/`CL_AllocElight`, `R_StudioLighting`, ~~`R_StudioChrome`~~, `R_LightLambert`, `R_StudioSetupSkin`, `R_StudioGetSkin`, `GL_UnloadTexture`, `Draw_MiptexTexture`, `Draw_DecalTexture`, `Draw_CustomCacheGet`/`Draw_CacheGet`, ~~`R_DrawSpriteModel`~~, `Mod_LoadSpriteFrame`, `SCR_BeginLoadingPlaque`, `R_LightStrength`, ~~`R_RotateForEntity`~~, ~~`R_AddTEntity`~~, `R_RenderFinalFog`, `Mod_LoadBrushModel`, `Mod_LoadModel`, `ClientPortalManager_ResetAll` (hook commented), `GameStudioRenderer_StudioDrawModel`, `R_StudioDrawModel`, and many `*Vars` globals (`cls_state`, `cls_signon`, `r_soundOrigin`, `lightmap_textures`, `lightmap_rectchange`, `gDecalSurfs`, `modelorg`, `vid_d3d`, `g_ChromeOrigin`, ~~`gSkyTexNumber`~~, ~~`r_loading_skybox`~~, `lightmap_polys`, `lightmap_modified`, ~~`chrome`~~, ~~`chromeage`~~, scissor rect, `pmainwindow` consumers).
+- **Dead / resolved-only fields.** Many `gPrivateFuncs` fields are located but never hooked or called (the multitexture pair and its globals were removed on 2026-09-19 — see the last section): `R_SetupGL`, `R_RenderScene`, `R_SetupFrame`, `R_PolyBlend` (reimplemented), `S_ExtraUpdate`, `GL_SelectTexture`, `R_TextureAnimation`, `R_DrawSequentialPoly[_HL25]`, `R_DrawBrushModel`, `R_DrawWorld` (reimplemented), `R_DrawViewModel`, `R_MarkLeaves`, `EmitWaterPolys`, `VID_UpdateWindowVars`, `R_DrawTEntitiesOnList`, `R_ClearParticles`, `V_InitLevel`, ~~`R_BuildLightMap`~~, ~~`R_AddDynamicLights`~~, `R_RenderDynamicLightmaps`, `R_DrawParticles` (reimplemented), `CL_AllocDlight`/`CL_AllocElight`, `R_StudioLighting`, ~~`R_StudioChrome`~~, `R_LightLambert`, `R_StudioSetupSkin`, `R_StudioGetSkin`, `GL_UnloadTexture`, `Draw_MiptexTexture`, `Draw_DecalTexture`, ~~`Draw_CustomCacheGet`/`Draw_CacheGet`~~, ~~`R_DrawSpriteModel`~~, `Mod_LoadSpriteFrame`, `SCR_BeginLoadingPlaque`, `R_LightStrength`, ~~`R_RotateForEntity`~~, ~~`R_AddTEntity`~~, `R_RenderFinalFog`, `Mod_LoadBrushModel`, `Mod_LoadModel`, `ClientPortalManager_ResetAll` (hook commented), `GameStudioRenderer_StudioDrawModel`, `R_StudioDrawModel`, and many `*Vars` globals (`cls_state`, `cls_signon`, `r_soundOrigin`, `lightmap_textures`, `lightmap_rectchange`, `gDecalSurfs`, `modelorg`, `vid_d3d`, `g_ChromeOrigin`, ~~`gSkyTexNumber`~~, ~~`r_loading_skybox`~~, `lightmap_polys`, `lightmap_modified`, ~~`chrome`~~, ~~`chromeage`~~, scissor rect, `pmainwindow` consumers).
 - **Inlined-function flags.** `R_ForceCVars_inlined`, `R_SetupFrame_inlined`, `R_RenderScene_inlined`, `R_GlowBlend_inlined` indicate the engine inlined the target; the plugin then uses call-site-sensitive logic instead of a direct hook.
 - **Duplicate resolution sites.** `r_blend` is resolved both by `Engine_FillAddress_R_DrawTEntitiesOnListVars` (gl_hooks) and `EngineStudio_FillAddress_StudioSetRenderamt` (exportfuncs); `R_RenderDynamicLightmaps` by the `R_DrawSequentialPoly` BFS and its own locator; `r_framecount` by `_GetTimes` and a shadowing local in `gl_hooks.cpp:8744`. Both `if (!field)`-guarded, so first wins.
 - **Hook/uninstall asymmetry.** `Host_ClearMemory` is installed but never unhooked; `ClientPortalManager_DrawPortalSurface`'s hook is installed but `EngineSurface_UninstallHooks` is empty; `GameStudioRenderer_StudioDrawPlayer` is installed but not uninstalled.
@@ -1411,3 +1411,48 @@ and **not** added to the `RENDERER_*` gate; if a consumer ever appears, resoluti
 `validate-gamedata.py` passes (21 snapshots, 5 engine families); `pytest scripts/tests`
 91 passed / 2 skipped / 26 subtests.
 **Not verified**: in-game sprite rendering smoke test.
+
+## Dead-code removal (2026-09-21): the `decal_wad` / `Draw_CacheGet` / `Draw_CustomCacheGet` locator
+
+Review question: can the three symbols produced by the second half of `Engine_FillAddress_Draw_DecalTexture`
+go? Yes — same write-only class as the sweeps above, with one property the earlier ones lacked (no catalog record).
+
+| Symbol | Every reference before this change | Verdict |
+| --- | --- | --- |
+| `gPrivateFuncs.Draw_CustomCacheGet` | field `privatehook.h:69`; guards + assignment inside the locator; no reader, no hook | write-only |
+| `gPrivateFuncs.Draw_CacheGet` | field `privatehook.h:70`; same | write-only |
+| `decal_wad` | definition `gl_draw.cpp:16`, extern `gl_draw.h:14`; read only by the locator's own early-exit guards, written only by its BFS | write-only |
+| `Draw_CustomCacheGet` / `Draw_CacheGet` (plugin-side) | declarations `gl_local.h:589-590` with no definition and no call site | stale declarations |
+
+**Locator shape (deleted).** After the `GamedataResolvePtr("Draw_DecalTexture")` line, a BFS over the engine
+function's disassembly (`max_insts 300`, `max_depth 16`, following `jmp`/`jcc` targets): `decal_wad` was taken
+from any absolute data-section operand (`push` or `mov reg, moffs`), `Draw_CustomCacheGet` from a `call`
+preceded by exactly 4 pushes and followed by `83 C4 10`, `Draw_CacheGet` from a `call` preceded by 2 pushes and
+followed by `83 C4 08`. It ended in a fatal `Sig_VarNotFound(decal_wad)` plus two commented-out
+`Sig_FuncNotFound`. All of that is gone, along with the two `private_funcs_t` fields, the two stale
+declarations and the global.
+
+**What deliberately stayed.** `gPrivateFuncs.Draw_DecalTexture` is genuinely consumed: the plugin's own
+`Draw_DecalTexture` wrapper (`gl_draw.cpp:1808`) forwards to it, and that wrapper is called from `R_DrawDecals`
+(`gl_rsurf.cpp:1109`). So the locator survives as a 6-line gamedata-only resolver, matching the shape of
+`Engine_FillAddress_Cache_Alloc`.
+
+**Catalog.** None of the three has a record (0 matches across all 21 snapshots), unlike `R_DrawSpriteModel`.
+Deleting the locator therefore removes the only acquisition path; the pre-change locator is recoverable from
+git history if a custom-decal feature is ever built.
+
+**Adjacent finding — the miptex / custom-WAD apparatus is unwired (open item, deliberately not acted on).**
+`gfCustomBuild` / `szCustName` (from `Engine_FillAddress_Draw_MiptexTexture`) are read only inside the plugin's
+own `Draw_MiptexTexture` (`gl_draw.cpp:1815`), and nothing calls or installs it: `g_phook_Draw_MiptexTexture`
+(`gl_hooks.cpp:180`) is declared and never used, `pfnCacheBuild` (`enginedef.h:52`) is never assigned, and
+`gPrivateFuncs.Draw_MiptexTexture` has no reader. History: `Install_InlineHook(Draw_MiptexTexture);` was live in
+2022 (`ffa35764`), commented out by 2025-04-21 (`5b8f88cd`) and the comment itself deleted 2025-09-28
+(`c0da8d21`) during the texture-pipeline replacement (`0fc96e32` "replace texture") — the hook was disabled on
+purpose and its locator plus helpers were left behind. Removing the rest is a separate decision, because it
+would also drop the plugin's `Draw_MiptexTexture` implementation.
+
+**Verified**: Renderer rebuilds Release|Win32 with 0 errors and the same 9 pre-existing warnings
+(gl_light, gl_rsurf, gl_studio, gl_wsurf); `validate-gamedata.py` passes (21 snapshots, 5 engine families);
+`pytest scripts/tests` 91 passed / 2 skipped / 26 subtests.
+**Not verified**: in-game decal rendering smoke test.
+
