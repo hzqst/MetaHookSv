@@ -55,13 +55,11 @@ typedef struct
 	void (*GL_Finish2D)(void);
 	void (*GL_BeginRendering)(int* x, int* y, int* width, int* height);
 	void (*GL_EndRendering)(void);
-	void (*EmitWaterPolys)(msurface_t* fa, int direction);
 	void (*R_DrawSequentialPoly)(msurface_t* s, int face);
 	void (*R_DrawSequentialPoly_HL25)(msurface_t* s, int face, qboolean cleanUpShaderState);//HL25 added the third stack arg, callee gates shader/program cleanup on it
 	void (*R_RecursiveWorldNode)(mnode_t* node);
 	void (*R_RecursiveWorldNode_HL25)(mnode_t* node, qboolean cleanUpShaderState);//HL25 added the second arg, it is propagated through recursion and into R_DrawSequentialPoly's cleanUpShaderState
 	texture_t* (*R_TextureAnimation)(msurface_t* fa);
-	void (*Draw_MiptexTexture)(cachewad_t* wad, byte* data);
 	void (*GL_UnloadTexture)(const char* identifier);
 	void (*GL_UnloadTextures)(void);
 	void (*GL_LoadFilterTexture)(void);
@@ -204,7 +202,6 @@ typedef struct
 	void (*R_StudioLighting)(float* lv, int bone, int flags, vec3_t normal);
 	void (*R_StudioSetupSkin)(studiohdr_t* ptexturehdr, int index);
 	skin_t* (*R_StudioGetSkin)(int keynum, int index);
-	void (*R_LightLambert)(float (*light)[4], float* normal, float* src, float* lambert);
 
 	//Engine Studio Exported API
 	void (*studioapi_StudioDynamicLight)(struct cl_entity_s* ent, struct alight_s* plight);

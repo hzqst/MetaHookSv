@@ -7,7 +7,6 @@ byte *lightmaps = NULL;
 int *d_lightstylevalue = NULL;
 dlight_t *cl_dlights = NULL;
 dlight_t* cl_elights = NULL;
-int *r_dlightactive = NULL;
 int *gDecalSurfCount = NULL;
 decal_t *gDecalPool = NULL;
 decalcache_t *gDecalCache = NULL;

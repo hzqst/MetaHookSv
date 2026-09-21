@@ -546,9 +546,7 @@ int GL_LoadTexture2(char *identifier, GL_TEXTURETYPE textureType, int width, int
 void GL_InitShaders(void);
 void GL_FreeShaders(void);
 texture_t *Draw_DecalTexture(int index);
-void Draw_MiptexTexture(cachewad_t *wad, byte *data);
 mbasenode_t* PVSNode(mbasenode_t* basenode, vec3_t emins, vec3_t emaxs);
-void R_DecalShootInternal(texture_t *ptexture, int index, int entity, int modelIndex, vec3_t position, int flags, float flScale);
 
 void staticFreeTextureId(int id);
 void __fastcall enginesurface_pushMakeCurrent(void* pthis, int, int* insets, int* absExtents, int* clipRect, bool translateToScreenSpace);

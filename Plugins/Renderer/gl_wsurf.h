@@ -305,7 +305,6 @@ extern byte *lightmaps;
 extern int *d_lightstylevalue;
 extern dlight_t *cl_dlights;
 extern dlight_t* cl_elights;
-extern int *r_dlightactive;
 extern int *gDecalSurfCount;
 extern decal_t *gDecalPool;
 extern decalcache_t *gDecalCache;

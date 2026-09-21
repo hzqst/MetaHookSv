@@ -56,8 +56,8 @@ All of the following are resolved via `GamedataResolvePtr` (kind `FUNCTION` / `G
 2. Capability probes: `HasOfficialFBOSupport`, `HasOfficialGLTexAllocSupport`.
 3. Context: `GL_Init`, `GL_SetMode`, `GL_Shutdown`, `GL_Bind`, `GL_SelectTexture`, `GL_LoadTexture2`, `R_CullBox`, `R_SetupFrame`.
 4. View/scene: `R_SetupGL`, `R_RenderView`, `V_RenderView`, `R_RenderScene`, `R_NewMap`, `GL_LoadFilterTexture`, `GL_BuildLightmaps`, `R_BuildLightMap`, `R_AddDynamicLights`, `GL_Disable/EnableMultitexture`, `R_DrawSequentialPoly`, `R_TextureAnimation`, `R_DrawBrushModel`, `R_RecursiveWorldNode`, `R_DrawWorld`, `R_DrawViewModel`, `R_MarkLeaves`.
-5. 2D: `GL_Set2D`, `GL_Finish2D`, `GL_BeginRendering`, `GL_EndRendering`, `EmitWaterPolys`, `VID_UpdateWindowVars`, `Mod_PointInLeaf`, `R_DrawTEntitiesOnList`, `BuildGammaTable`.
-6. Effects/Studio: `R_DrawParticles`, `CL_AllocDlight`, `CL_AllocElight`, `R_GLStudioDrawPoints`, `R_StudioLighting`, ~~`R_StudioChrome`~~, `R_LightLambert`, `R_StudioSetupSkin`, `Host_ClearMemory`, `Cache_Alloc`, `Draw_MiptexTexture`, `Draw_DecalTexture`, `R_GetSpriteFrame`, ~~`R_DrawSpriteModel`~~, ~~`R_LightStrength`~~, ~~`R_RotateForEntity`~~, `R_GlowBlend`, `SCR_BeginLoadingPlaque`, `Host_IsSinglePlayerGame`, `Mod_UnloadSpriteTextures`, `Mod_LoadSpriteModel`, `Mod_LoadSpriteFrame`, ~~`R_AddTEntity`~~, `Hunk_AllocName`.
+5. 2D: `GL_Set2D`, `GL_Finish2D`, `GL_BeginRendering`, `GL_EndRendering`, ~~`EmitWaterPolys`~~, `VID_UpdateWindowVars`, `Mod_PointInLeaf`, `R_DrawTEntitiesOnList`, `BuildGammaTable`.
+6. Effects/Studio: `R_DrawParticles`, `CL_AllocDlight`, `CL_AllocElight`, `R_GLStudioDrawPoints`, `R_StudioLighting`, ~~`R_StudioChrome`~~, ~~`R_LightLambert`~~, `R_StudioSetupSkin`, `Host_ClearMemory`, `Cache_Alloc`, ~~`Draw_MiptexTexture`~~, `Draw_DecalTexture`, `R_GetSpriteFrame`, ~~`R_DrawSpriteModel`~~, ~~`R_LightStrength`~~, ~~`R_RotateForEntity`~~, `R_GlowBlend`, `SCR_BeginLoadingPlaque`, `Host_IsSinglePlayerGame`, `Mod_UnloadSpriteTextures`, `Mod_LoadSpriteModel`, `Mod_LoadSpriteFrame`, ~~`R_AddTEntity`~~, `Hunk_AllocName`.
 7. Globals passes: `GL_EndRenderingVars`, `VisEdicts`, `R_AllocTransObjectsVars`, `R_RenderFinalFog`, `R_DrawTEntitiesOnListVars`, `R_RecursiveWorldNodeVars`, `R_LoadSkybox`, `GL_FilterMinMaxVars`, `ScrFov`, `RenderSceneVars`, `RenderSceneVars2`, `CL_IsDevOverviewModeVars`, `R_DecalInit`, `R_RenderDynamicLightmaps`, ~~`R_StudioChromeVars`~~, `CL_ViewEntityVars`, `CL_ReallocateDynamicData`, `TempEntsVars`, `WaterVars`, `ModKnown`, `Mod_NumKnown`, `Mod_LoadStudioModel`, `Mod_LoadBrushModel`, `Mod_LoadModel`, `BasePalette`, `SetFilterMode`, `SetFilterColor`, `SetFilterBrightness`, `MoveVars`, `MissingTexture`, `NoTexture`, `LegacyMultiTextureInit`, `PVSNode`.
 8. VideoMode/draw: `DrawStartupGraphic`, `DrawStartupVideo`, `Draw_Frame`, `Draw_SpriteFrameHoles/Additive/Generic`, `Draw_FillRGBA/RGBABlend`, `Draw_FillRGBABuf`, `D_FillRect`, `Draw_Pic`.
 
@@ -111,7 +111,7 @@ All of the following are resolved via `GamedataResolvePtr` (kind `FUNCTION` / `G
 | `gPrivateFuncs.R_RecursiveWorldNode` / `R_RecursiveWorldNode_HL25` | `void (*)(mnode_t*)` / `void (*)(mnode_t*, qboolean cleanUpShaderState)` | SvEngine sig; HL25 from `R_DrawSequentialPoly_HL25` (two-arg ABI, the callee propagates the second arg through recursion and into `R_DrawSequentialPoly`'s `cleanUpShaderState`); GoldSrc/BLOB from `R_DrawBrushModel`; fallback `R_RECURSIVEWORLDNODE_SIG_*`. Also yields `r_framecount`/`r_visframecount` (the Vars BFS anchors the per-engine field); `skychain`/`waterchain` were dropped from the same BFS on 2026-09-19 (see last section). | Called by the plugin wrapper (`gl_rsurf.cpp` `R_RecursiveWorldNode`); the HL25 branch forwards `true` (engine default, `gl_reduce_shader_changes == 0`). |
 | `gPrivateFuncs.R_DrawWorld` | `void (*)(void)` | `Engine_FillAddress_R_DrawWorld`: `68 B8 0B 00 00 8D` + `DisasmRanges(+5)` needing `LEA [ebp/esp+disp]` + `6A 00` + `ReverseSearchFunctionBeginEx(+0x300)`; fallback `R_DRAWWORLD_SIG_*`. Also yields `modelorg`. | Resolved only (plugin reimplements). |
 | `gPrivateFuncs.R_DrawBrushModel` | `void (*)(cl_entity_t*)` | Sig-only `R_DRAWBRUSHMODEL_SIG_*`. | Resolved only (base for `R_RecursiveWorldNode`/`R_DrawWorld`). |
-| `gPrivateFuncs.EmitWaterPolys` | `void (*)(msurface_t*, int)` | Sig-only `EMITWATERPOLYS_SIG_*`. | Resolved only. |
+| ~~`gPrivateFuncs.EmitWaterPolys`~~ | `void (*)(msurface_t*, int)` | ~~Sig-only `EMITWATERPOLYS_SIG_*`.~~ | Deleted 2026-09-21 — resolved, never called, never hooked (see last section). |
 | `gPrivateFuncs.Mod_PointInLeaf` | `mleaf_t* (*)(vec3_t, model_t*)` | `Engine_FillAddress_Mod_PointInLeaf`: string `"Mod_PointInLeaf: bad model\0"` → `68 <str> E8 83 C4 04` + `ReverseSearchFunctionBeginEx(+0x100)`; fallback `MOD_POINTINLEAF_SIG_*`. | `Install_InlineHook(Mod_PointInLeaf)`. |
 | `gPrivateFuncs.PVSNode` (`R_PVSNode`) | `mnode_t* (*)(mnode_t*, vec3_t, vec3_t)` | `Engine_FillAddress_PVSNode`: `FF B0 A4 00 00 00 E8 ?? ?? ?? ?? 83 C4 0C` → `GetCallAddress(addr+6)`; fallback `PVSNODE_COMMON_GOLDSRC` (`addr+8`). | `Install_InlineHook(PVSNode)`. |
 | `gPrivateFuncs.VID_UpdateWindowVars` | `void (*)(RECT*, int, int)` | `Engine_FillAddress_VID_UpdateWindowVars`: SVEngine sig then `Search_Pattern_From_Size(+0x50,"50 E8")`; else per-engine `VID_UPDATEWINDOWVARS_SIG_*`. Also yields `window_rect`. | Resolved only. |
@@ -134,13 +134,13 @@ All of the following are resolved via `GamedataResolvePtr` (kind `FUNCTION` / `G
 
 | Local symbol / inferred engine symbol | Signature of field | Resolution mechanism | Subsequent use |
 | --- | --- | --- | --- |
-| `gPrivateFuncs.CL_AllocDlight` / `CL_AllocElight` | `dlight_t* (*)(int key)` | Anchor is the public `gEngfuncs.pEfxAPI->CL_AllocDlight`/`CL_AllocElight` mapped real→scan (`ConvertDllInfoSpace`), leading `E9` skipped; dead `if(0)` inline patterns; fallback `CL_ALLOC*_SIG_*`. `CL_AllocDlight` also yields `cl_dlights`, `r_dlightactive`; `CL_AllocElight` yields `cl_elights`. | Resolved only (plugin uses the public `pEfxAPI->CL_AllocDlight`). |
+| `gPrivateFuncs.CL_AllocDlight` / `CL_AllocElight` | `dlight_t* (*)(int key)` | `GamedataResolvePtr` FUNCTION, plus `cl_dlights` / `cl_elights` as GLOBAL. The former efx-API-anchored scan, the `CL_ALLOC*_SIG_*` fallbacks and the `r_dlightactive` walk (removed 2026-09-21, see last section) are gone. | Resolved only (plugin uses the public `pEfxAPI->CL_AllocDlight`); `cl_dlights` and `cl_elights` are read by the live dlight paths. |
 | `gPrivateFuncs.R_GLStudioDrawPoints` | `void (*)(void)` | `Engine_FillAddress_R_GLStudioDrawPoints`: `75 2A 68 44 0B 00 00 FF 15 …` + single-instruction `MOV [mem],1` + `ReverseSearchFunctionBeginEx(+0x1000)` (four prologue forms) + `DisasmRanges(+0x100)` requiring `[reg+0x54]` and `[reg+0x60]`; fallback `R_GLSTUDIODRAWPOINTS_SIG_*`. | `Install_InlineHook(R_GLStudioDrawPoints)`; handler re-implements, never calls original. |
 | `gPrivateFuncs.R_StudioLighting` | `void (*)(float* lv, int bone, int flags, vec3_t normal)` | Sig-only `R_STUDIOLIGHTING_SIG_*`; also yields `r_ambientlight`, `r_shadelight`, `r_blightvec`, `r_plightvec`, `lightgammatable` (BFS). | Resolved only. |
 | ~~`gPrivateFuncs.R_StudioChrome`~~ | `void (*)(int* pchrome, int bone, vec3_t normal)` | ~~Sig-only `R_STUDIOCHROME_SIG_*`~~ | Deleted 2026-09-19 — resolved, never called; its only consumer was the `R_StudioChromeVars` GOLDSRC disasm base (see last section). |
-| `gPrivateFuncs.R_LightLambert` | `void (*)(float (*light)[4], float* normal, float* src, float* lambert)` | Sig-only `R_LIGHTLAMBERT_SIG_*`. | Resolved only. |
+| ~~`gPrivateFuncs.R_LightLambert`~~ | `void (*)(float (*light)[4], float* normal, float* src, float* lambert)` | ~~Sig-only `R_LIGHTLAMBERT_SIG_*`.~~ | Deleted 2026-09-21 — resolved, never called, never hooked (see last section). |
 | `gPrivateFuncs.R_StudioSetupSkin` / `R_StudioGetSkin` | `void (*)(studiohdr_t*, int)` / `skin_t* (*)(int keynum, int index)` | `Engine_FillAddress_R_StudioSetupSkin`: string `"DM_Base.bmp"` → `68 <str> C7 44 24 …` + `ReverseSearchFunctionBeginEx(+0x300)`; `R_StudioGetSkin` = `E8` target in `+0x800` whose body contains `CMP reg,0xB`; `GL_UnloadTexture` from the same walk. Also yields `tmp_palette`. | Resolved only. |
-| `gPrivateFuncs.Draw_MiptexTexture` | `void (*)(cachewad_t*, byte*)` | String `"Draw_MiptexTexture: Bad cached wad %s\n"` → `68 <str> E8` + `ReverseSearchFunctionBeginEx(+0x80)`; fallback `DRAW_MIPTEXTEXTURE_SIG_*`. Also yields `gfCustomBuild`, `szCustName`. | Resolved only (hook declared but never installed). |
+| ~~`gPrivateFuncs.Draw_MiptexTexture`~~ | `void (*)(cachewad_t*, byte*)` | ~~String `"Draw_MiptexTexture: Bad cached wad %s\n"` → `68 <str> E8` + `ReverseSearchFunctionBeginEx(+0x80)`; fallback `DRAW_MIPTEXTEXTURE_SIG_*`. Also yielded `gfCustomBuild`, `szCustName`.~~ | Deleted 2026-09-21 with `gfCustomBuild` / `szCustName` and the plugin-side `Draw_MiptexTexture`: the hook had been disabled in the 2025-04 texture-pipeline replacement, so the whole apparatus was unreachable (see last section). |
 | `gPrivateFuncs.Draw_DecalTexture` | `texture_t* (*)(int index)` | `GamedataResolvePtr("Draw_DecalTexture", FUNCTION)`. The former string scan (`"Failed to load custom decal for player"`), its `DRAW_DECALTEXTURE_SIG_*` fallbacks (macros no longer in the tree) and the `decal_wad` / `Draw_CustomCacheGet` / `Draw_CacheGet` BFS (removed 2026-09-21, see last section) are all gone. | Wrapper `gl_draw.cpp:1808` forwards to it, and `R_DrawDecals` (`gl_rsurf.cpp:1109`) calls that wrapper — live. |
 | `gPrivateFuncs.R_GetSpriteFrame` | `mspriteframe_t* (*)(msprite_t*, int)` | String `"Sprite:  no pSprite!!!"` → `68 <str> E8 83 C4` + `ReverseSearchFunctionBeginEx(+0x120)`; fallback `R_GETSPRITEFRAME_SIG`/`_SIG2`. | `Install_InlineHook(R_GetSpriteFrame)`; handler calls original from `R_SpriteLoadExternalFile_FrameTexture`. |
 | ~~`gPrivateFuncs.R_DrawSpriteModel`~~ | `void (*)(cl_entity_t*)` | ~~String `"R_DrawSpriteModel:  couldn"` → `68 <str> E8 83 C4` + `ReverseSearchFunctionBeginEx(+0x300)`; fallback `R_DRAWSRPITEMODEL_SIG_*`.~~ | Deleted 2026-09-21 — resolved, never called or hooked; the plugin's own `R_DrawSpriteModel` (`gl_sprite.cpp`) is untouched (see last section). |
@@ -211,8 +211,8 @@ Entry point `EngineStudio_FillAddress(pstudio, DllInfo, RealDllInfo)` (`exportfu
 | `gltextures` / `gltextures_SvEngine` / `maxgltextures_SvEngine` / `peakgltextures_SvEngine` / `numgltextures` / `allocated_textures` / `gHostSpawnCount` | texture-array bookkeeping | `Engine_FillAddress_GL_LoadTexture2` `DisasmRanges` (non-SvEngine: `MOV reg,[.data]`/`MOV reg,imm` after a self-`XOR`; SvEngine: `8B 15 … 8B 1D` for `gltextures_SvEngine`, `6B C1 54 89 0D` for `maxgltextures`, `03 35 … 3B 15` for `peakgltextures`, `66 8B …` for `gHostSpawnCount`). `allocated_textures` chosen from the trailing `MOV [.data],reg` when `!g_bHasOfficialGLTexAllocSupport`. | Texture enumeration/unload/growth. |
 | `particletexture` / `active_particles` | `int*` / `particle_t**` | `Engine_FillAddress_R_DrawParticles`: first `PUSH [.data]` or `MOV reg,[.data]` not followed by `33 C5`/`33 C4`; `active_particles` = the `MOV ESI,[.data]` preceding `E8` that anchors `R_FreeDeadParticles`. | Particle rendering. |
 | `gTempEnts` | `TEMPENTITY*` | `Engine_FillAddress_TempEntsVars`: SvEngine `68 00 E0 5F 00 6A 00 68 <gTempEnts> A3`, others `68 30 68 17 00 6A 00 68 <gTempEnts> E8`; ptr at `addr+8`. | Temp-entity index lookup. |
-| `cl_dlights` / `r_dlightactive` / `cl_elights` | `dlight_t*` / `int*` / `dlight_t*` | From `CL_AllocDlight`/`CL_AllocElight`: after `PUSH 0x28`, a `PUSH imm(.data)` / `MOV reg,[.data]` / `OR [.data],1`. | Dynamic-light rendering. |
-| ~~`decal_wad`~~ / `gfCustomBuild` / `szCustName` | `cachewad_t**` / `qboolean*` / `char (*)[10]` | ~~`Engine_FillAddress_Draw_DecalTexture` BFS~~ / `_Draw_MiptexTexture` `DisasmRanges(+0x500)`. | Custom-WAD texture lookup. `decal_wad` deleted 2026-09-21 (see last section). `gfCustomBuild`/`szCustName` are still resolved, but their only reader is the plugin's `Draw_MiptexTexture`, which nothing installs or calls — see the open item in the last section. |
+| `cl_dlights` / ~~`r_dlightactive`~~ / `cl_elights` | `dlight_t*` / `int*` / `dlight_t*` | GLOBAL `GamedataResolvePtr`. `r_dlightactive` was the last catalog-uncovered one, walked from `CL_AllocDlight` (after `PUSH 0x28`, a `PUSH imm(.data)` / `MOV reg,[.data]` / `OR [.data],1`) — deleted 2026-09-21, it had no reader. | Dynamic-light rendering. `cl_dlights` (`gl_light.cpp:1786`, `gl_rmain.cpp:5305`, `gl_studio.cpp:3517-3543`) and `cl_elights` (`gl_studio.cpp:2222`) are read. |
+| ~~`decal_wad`~~ / ~~`gfCustomBuild`~~ / ~~`szCustName`~~ | `cachewad_t**` / `qboolean*` / `char (*)[10]` | ~~`Engine_FillAddress_Draw_DecalTexture` BFS~~ / ~~`_Draw_MiptexTexture` `DisasmRanges(+0x500)`~~. | Custom-WAD texture lookup. All three deleted 2026-09-21 (see last section). |
 | ~~`gSkyTexNumber` / `r_loading_skybox`~~ | `int*` / `int*` | ~~`Engine_FillAddress_R_LoadSkybox`: `MOV reg,imm(.data)` validated by `CMP [reg],reg`/`PUSH [reg+disp]`; `MOV eax,[.data]` or `CMP [.data],0`~~ | Deleted 2026-09-19 — write-only, no consumers (see last section). |
 | `giScissorTest` / `scissor_x` / `scissor_y` / `scissor_width` / `scissor_height` | `qboolean*` / `int*` | `Engine_FillAddress_Draw_Frame`: `MOV reg,[.data]`+`TEST`, or `CMP [.data],0`, or `CMP [.data],xor_reg`; four `PUSH/MOV [.data]` candidates `qsort`ed. | `giScissorTest` used; scissor rect resolved only. |
 | `mod_known` / `mod_numknown` | `model_t*` / `int*` | `Engine_FillAddress_ModKnown`: `.text` `B8 9D 82 97 53 81 E9`, ptr at `+7`; `_Mod_NumKnown`: string `"Cached models:\n"` → `57 68 <str> E8` + `DisasmRanges(+0x50)`. | Model index/count. |
@@ -336,7 +336,7 @@ Stored in `gPrivateFuncs` but sourced from public interfaces, so excluded from t
 
 ## Notes
 
-- **Dead / resolved-only fields.** Many `gPrivateFuncs` fields are located but never hooked or called (the multitexture pair and its globals were removed on 2026-09-19 — see the last section): `R_SetupGL`, `R_RenderScene`, `R_SetupFrame`, `R_PolyBlend` (reimplemented), `S_ExtraUpdate`, `GL_SelectTexture`, `R_TextureAnimation`, `R_DrawSequentialPoly[_HL25]`, `R_DrawBrushModel`, `R_DrawWorld` (reimplemented), `R_DrawViewModel`, `R_MarkLeaves`, `EmitWaterPolys`, `VID_UpdateWindowVars`, `R_DrawTEntitiesOnList`, `R_ClearParticles`, `V_InitLevel`, ~~`R_BuildLightMap`~~, ~~`R_AddDynamicLights`~~, `R_RenderDynamicLightmaps`, `R_DrawParticles` (reimplemented), `CL_AllocDlight`/`CL_AllocElight`, `R_StudioLighting`, ~~`R_StudioChrome`~~, `R_LightLambert`, `R_StudioSetupSkin`, `R_StudioGetSkin`, `GL_UnloadTexture`, `Draw_MiptexTexture`, `Draw_DecalTexture`, ~~`Draw_CustomCacheGet`/`Draw_CacheGet`~~, ~~`R_DrawSpriteModel`~~, `Mod_LoadSpriteFrame`, `SCR_BeginLoadingPlaque`, `R_LightStrength`, ~~`R_RotateForEntity`~~, ~~`R_AddTEntity`~~, `R_RenderFinalFog`, `Mod_LoadBrushModel`, `Mod_LoadModel`, `ClientPortalManager_ResetAll` (hook commented), `GameStudioRenderer_StudioDrawModel`, `R_StudioDrawModel`, and many `*Vars` globals (`cls_state`, `cls_signon`, `r_soundOrigin`, `lightmap_textures`, `lightmap_rectchange`, `gDecalSurfs`, `modelorg`, `vid_d3d`, `g_ChromeOrigin`, ~~`gSkyTexNumber`~~, ~~`r_loading_skybox`~~, `lightmap_polys`, `lightmap_modified`, ~~`chrome`~~, ~~`chromeage`~~, scissor rect, `pmainwindow` consumers).
+- **Dead / resolved-only fields.** Many `gPrivateFuncs` fields are located but never hooked or called (the multitexture pair and its globals were removed on 2026-09-19 — see the last section): `R_SetupGL`, `R_RenderScene`, `R_SetupFrame`, `R_PolyBlend` (reimplemented), `S_ExtraUpdate`, `GL_SelectTexture`, `R_TextureAnimation`, `R_DrawSequentialPoly[_HL25]`, `R_DrawBrushModel`, `R_DrawWorld` (reimplemented), `R_DrawViewModel`, `R_MarkLeaves`, ~~`EmitWaterPolys`~~, `VID_UpdateWindowVars`, `R_DrawTEntitiesOnList`, `R_ClearParticles`, `V_InitLevel`, ~~`R_BuildLightMap`~~, ~~`R_AddDynamicLights`~~, `R_RenderDynamicLightmaps`, `R_DrawParticles` (reimplemented), `CL_AllocDlight`/`CL_AllocElight`, `R_StudioLighting`, ~~`R_StudioChrome`~~, ~~`R_LightLambert`~~, `R_StudioSetupSkin`, `R_StudioGetSkin`, `GL_UnloadTexture`, ~~`Draw_MiptexTexture`~~, `Draw_DecalTexture`, ~~`Draw_CustomCacheGet`/`Draw_CacheGet`~~, ~~`R_DrawSpriteModel`~~, `Mod_LoadSpriteFrame`, `SCR_BeginLoadingPlaque`, `R_LightStrength`, ~~`R_RotateForEntity`~~, ~~`R_AddTEntity`~~, `R_RenderFinalFog`, `Mod_LoadBrushModel`, `Mod_LoadModel`, `ClientPortalManager_ResetAll` (hook commented), `GameStudioRenderer_StudioDrawModel`, `R_StudioDrawModel`, and many `*Vars` globals (`cls_state`, `cls_signon`, `r_soundOrigin`, `lightmap_textures`, `lightmap_rectchange`, `gDecalSurfs`, `modelorg`, `vid_d3d`, `g_ChromeOrigin`, ~~`gSkyTexNumber`~~, ~~`r_loading_skybox`~~, `lightmap_polys`, `lightmap_modified`, ~~`chrome`~~, ~~`chromeage`~~, scissor rect, `pmainwindow` consumers).
 - **Inlined-function flags.** `R_ForceCVars_inlined`, `R_SetupFrame_inlined`, `R_RenderScene_inlined`, `R_GlowBlend_inlined` indicate the engine inlined the target; the plugin then uses call-site-sensitive logic instead of a direct hook.
 - **Duplicate resolution sites.** `r_blend` is resolved both by `Engine_FillAddress_R_DrawTEntitiesOnListVars` (gl_hooks) and `EngineStudio_FillAddress_StudioSetRenderamt` (exportfuncs); `R_RenderDynamicLightmaps` by the `R_DrawSequentialPoly` BFS and its own locator; `r_framecount` by `_GetTimes` and a shadowing local in `gl_hooks.cpp:8744`. Both `if (!field)`-guarded, so first wins.
 - **Hook/uninstall asymmetry.** `Host_ClearMemory` is installed but never unhooked; `ClientPortalManager_DrawPortalSurface`'s hook is installed but `EngineSurface_UninstallHooks` is empty; `GameStudioRenderer_StudioDrawPlayer` is installed but not uninstalled.
@@ -489,10 +489,9 @@ every identity a hook target again.
 
 **Retained scans (still catalog-uncovered)**
 
-- `r_dlightactive` — now walked from the gamedata-resolved `CL_AllocDlight`
-  body on the real image: anchor on `push 0x28` (the
-  `memset(cl_dlights, 0, 0x28)` argument), then the first `MOV reg,[mem]`
-  within 8 instructions, with `OR [mem],1` as fallback.
+- ~~`r_dlightactive`~~ (deleted 2026-09-21 — see last section: it was walked from the
+  gamedata-resolved `CL_AllocDlight` body, anchor `push 0x28` / first `MOV reg,[mem]`
+  within 8 instructions / `OR [mem],1` fallback, but nothing ever read it).
 - `r_framecount` — first engine global the studio `GetTimes` thunk reads; the
   two MOV-candidate collectors in `EngineStudio_FillAddress_GetTimes` are kept.
 - `gWaterColor` — both `GWATERCOLOR_SIG_HL25` / `GWATERCOLOR_SIG` branches kept
@@ -797,7 +796,7 @@ catalog-uncovered.
 **Residual scanning after this pass** (unchanged from the #873 list except for
 the entries above): `R_SetupFrame`, `R_ClearParticles` / `R_DecalInit` /
 `V_InitLevel`, ~~`R_LoadSkyboxInt_SvEngine`~~, `realloc_SvEngine`,
-`particletexture`, `r_dlightactive`, `r_framecount`, `gWaterColor`,
+`particletexture`, ~~`r_dlightactive`~~, `r_framecount`, `gWaterColor`,
 `vpn` / `vup` / `vright`, `lightmap_polys` / `lightmap_modified`,
 `gl_extensions` / `vid_d3d` / texture-array / fog / scissor / viewmodel / sky /
 view-leaf slots, the EngineSurface virtuals and the portal / DrawNormalTriangles
@@ -1030,9 +1029,10 @@ HL1MMod game dir and never read, so the whole
 **`gPrivateFuncs` fields declared but never assigned nor called (6).**
 `BuildGlowShellVerts`, `CL_IsThirdPerson`, `GL_Upload16`, `R_DecalMPoly`,
 `R_DecalShootInternal`, `R_DrawDecals`. Note the same-named live entities stay:
-the client-export `gExportfuncs.CL_IsThirdPerson`, and the plugin's own
-`R_DrawDecals(cl_entity_t*)` / `R_DecalShootInternal(...)` functions are different
-symbols from the deleted struct fields.
+the client-export `gExportfuncs.CL_IsThirdPerson` and the plugin's own
+`R_DrawDecals(cl_entity_t*)` — different symbols from the deleted struct fields.
+(Correction 2026-09-21: there never was a plugin-side `R_DecalShootInternal`
+definition either; the orphaned `gl_local.h` declaration was deleted later.)
 
 **Gate change.** `g_pGameStudioRenderer` left `RENDERER_CLIENT_STUDIO_GLOBALS`,
 which is now `("g_iUser1", "g_iUser2")`. (BulletPhysics had already dropped the
@@ -1315,11 +1315,12 @@ i.e. they worked as loop state and as a load-time assertion, never as data sourc
 **Not a name collision — a different, live dlight path.** The engine-internal `locallight`
 (per-bone `dlight_t*` slot array) / `numlights` mirror what vanilla `R_LightStrength` feeds into
 `R_StudioSetupLighting`. The plugin's studio dlight code instead walks `cl_dlights` /
-`cl_elights` / `r_dlightactive` (defs `gl_rsurf.cpp:8-10`, resolved at `gl_hooks.cpp:1850` /
-`1925`): `gl_studio.cpp:2220-2222` (elight loop), `gl_studio.cpp:3513-3545` (`r_studio_legacy_dlight 0`),
+`cl_elights` (defs `gl_rsurf.cpp:8-9`; both come from `GamedataResolvePtr`):
+`gl_studio.cpp:2220-2222` (elight loop), `gl_studio.cpp:3513-3545` (`r_studio_legacy_dlight 0`),
 `gl_studio.cpp:2558`/`2563`, `gl_rmain.cpp:5305`, `gl_light.cpp:1786`. The vanilla feed was
 superseded by the `r_studio_legacy_dlight` 1/2 shader path, which is why the two mirrors were
-left orphaned.
+left orphaned. (`r_dlightactive` was wrongly grouped with those live readers here; it had no
+reader at all and was deleted on 2026-09-21 — see the last section.)
 
 **Deleted**
 
@@ -1455,4 +1456,52 @@ would also drop the plugin's `Draw_MiptexTexture` implementation.
 (gl_light, gl_rsurf, gl_studio, gl_wsurf); `validate-gamedata.py` passes (21 snapshots, 5 engine families);
 `pytest scripts/tests` 91 passed / 2 skipped / 26 subtests.
 **Not verified**: in-game decal rendering smoke test.
+
+
+## Dead-code sweep (2026-09-21, second pass): the miptex apparatus, `r_dlightactive`, `R_LightLambert`, `EmitWaterPolys`
+
+Seven symbols were requested and all seven confirmed dead. This pass also closes the open item
+recorded in the previous section (the unreachable custom-WAD miptex pipeline).
+
+| Symbol | Every reference before this change | Verdict |
+| --- | --- | --- |
+| `gPrivateFuncs.Draw_MiptexTexture` | locator only (guard, assignments, `Sig_FuncNotFound`); no reader, no hook | write-only |
+| `Draw_MiptexTexture` (plugin, `gl_draw.cpp:1815`) | its own definition only; never called, address never taken, never installed | unreachable |
+| `g_phook_Draw_MiptexTexture` (`gl_hooks.cpp:180`) | declared, never used anywhere | dead variable |
+| `gfCustomBuild` / `szCustName` | definitions `gl_draw.cpp:16-17`, externs `gl_draw.h:14-15`; read only inside the unreachable `Draw_MiptexTexture` | write-only |
+| `gPrivateFuncs.R_LightLambert` | locator only + field `privatehook.h:207` | write-only |
+| `gPrivateFuncs.EmitWaterPolys` | locator only + field `privatehook.h:58` | write-only |
+| `r_dlightactive` | definition `gl_rsurf.cpp:10`, extern `gl_wsurf.h:308`, walk inside `Engine_FillAddress_CL_AllocDlight` | write-only (see note) |
+| `R_DecalShootInternal` | `gl_local.h:551` declaration, no definition, no call site | orphaned declaration |
+
+**Deleted**: three whole locators (`Engine_FillAddress_Draw_MiptexTexture`, `_R_LightLambert`,
+`_EmitWaterPolys`) with their dispatch calls, the `EMITWATERPOLYS_SIG_*` (5), `R_LIGHTLAMBERT_SIG_*`
+(6) and `DRAW_MIPTEXTEXTURE_SIG_*` (3) macro families, the `DisasmRanges` walk inside
+`Engine_FillAddress_CL_AllocDlight`, the plugin-side `Draw_MiptexTexture` implementation, the
+`gfCustomBuild` / `szCustName` globals, the three `private_funcs_t` fields, `gl_local.h`'s two
+orphaned declarations, `r_dlightactive` (both definition and extern), `g_phook_Draw_MiptexTexture`,
+the commented-out `//Uninstall_Hook(Draw_MiptexTexture);`, and a stale
+`//xref string "Failed to load custom decal for player"` comment left over from the decal-string
+scan removed earlier.
+
+**`r_dlightactive` was never a dlight data source.** `cl_dlights` and `cl_elights` are read by the
+live paths (`gl_light.cpp:1786`, `gl_rmain.cpp:5305`, `gl_studio.cpp:2222`, `gl_studio.cpp:3517-3543`);
+`r_dlightactive` — the *count* of active dlights — was only ever assigned, from a walk over the
+gamedata-resolved `CL_AllocDlight` body (`push 0x28` = the `memset(cl_dlights, 0, 0x28)` size, then
+the first `MOV reg,[mem]` within 8 instructions, `OR [mem],1` as fallback). The earlier note that
+grouped it with the live readers is corrected above.
+
+**Kept on purpose.** `Engine_FillAddress_CL_AllocDlight` survives as a resolver for
+`gPrivateFuncs.CL_AllocDlight` + `cl_dlights` and `Engine_FillAddress_CL_AllocElight` for
+`CL_AllocElight` + `cl_elights`; both are now pure two-line `GamedataResolvePtr` bodies. The
+`Convert_VA_to_RVA` helper macro stays (used by `r_viewleaf`, `VID_UpdateWindowVars`,
+`window_rect`, `transObjects` and more). `gPrivateFuncs.CL_AllocDlight` / `CL_AllocElight` are
+themselves still write-only and are the next candidates.
+
+**Verified**: Renderer rebuilds Release|Win32 with 0 errors and the same 9 pre-existing warnings
+(gl_light, gl_rsurf, gl_studio, gl_wsurf); `validate-gamedata.py` passes (21 snapshots, 5 engine
+families); `pytest scripts/tests` 91 passed / 2 skipped / 26 subtests; a repo-wide grep for all
+seven symbols plus the three removed macro families returns nothing; every touched file still has
+CRLF endings.
+**Not verified**: in-game smoke test (water surfaces, legacy dlight path, decal rendering).
 

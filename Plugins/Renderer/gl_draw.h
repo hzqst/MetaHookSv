@@ -11,8 +11,6 @@ extern int *gHostSpawnCount;
 extern int *currenttexture;
 extern int *gl_filter_min;
 extern int *gl_filter_max;
-extern qboolean* gfCustomBuild;
-extern char(*szCustName)[10];
 
 extern float gl_max_ansio;
 
