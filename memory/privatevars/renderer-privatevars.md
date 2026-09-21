@@ -512,8 +512,8 @@ every identity a hook target again.
 
 `scripts/validate-gamedata.py`: `CL_AllocDlight` / `CL_AllocElight` added to
 `RENDERER_ENGINE_ALL_FUNCTIONS` (both entries became stale on 2026-09-21 — the plugin no longer
-resolves those two functions; removal is pending confirmation, the `cl_dlights` / `cl_elights`
-GLOBAL entries stay); the 16 all-identity globals added to
+resolves those two functions, so both were removed from the gate on 2026-09-21; the
+`cl_dlights` / `cl_elights` GLOBAL entries stay); the 16 all-identity globals added to
 `RENDERER_ENGINE_ALL_GLOBALS`; `c_model_polys` added to
 `RENDERER_SVENGINE_GLOBALS`; new `RENDERER_ENGINE_NON_SVENGINE_GLOBALS`
 (`c_alias_polys`); `DT_Initialize` moved out of the ALL group (see the next
@@ -1522,13 +1522,14 @@ calls. `cl_dlights` / `cl_elights` (the live half of those locators) are now two
 `GamedataResolvePtr` GLOBAL calls at the same point in `Engine_FillAddress`, so the resolution order
 is unchanged and the misleadingly named locators are gone.
 
-**Open (needs confirmation, not done).** `scripts/validate-gamedata.py` still lists
-`CL_AllocDlight` / `CL_AllocElight` in `RENDERER_ENGINE_ALL_FUNCTIONS`. `_renderer_check` treats that
-list as required, so the two entries now demand catalog records nothing consumes — the same
-"publishing is not the same as needing" situation as `R_DrawSpriteModel` and
-`cl_funcs_pDrawTransparentTriangles`, from the other direction. No test pins them
-(`scripts/tests` never mentions either name), so removing the two strings would keep
-`validate-gamedata.py` and the suite green.
+**Gate follow-up (done on 2026-09-21).** `scripts/validate-gamedata.py` listed `CL_AllocDlight` /
+`CL_AllocElight` in `RENDERER_ENGINE_ALL_FUNCTIONS`. `_renderer_check` treats that tuple as
+required, so the two entries demanded catalog records nothing consumes — the same "publishing is
+not the same as needing" situation as `R_DrawSpriteModel` and
+`cl_funcs_pDrawTransparentTriangles`, from the other direction. Both were removed; no test pinned
+them, and `validate-gamedata.py` plus the suite stayed green. A re-audit of the tuple against
+`Plugins/Renderer` then found no other entry without a consumer (68 functions, 52 globals, 1 patch,
+all still referenced), so the gate is consistent again.
 
 **Verified**: Renderer rebuilds Release|Win32 with 0 errors and the same 9 pre-existing warnings
 (gl_light, gl_rsurf, gl_studio, gl_wsurf); `validate-gamedata.py` passes (21 snapshots, 5 engine

@@ -183,7 +183,7 @@ RENDERER_CS_CLIENT_GAMES = BULLETPHYSICS_CS_CLIENT_GAMES
 RENDERER_CZDS_CLIENT_GAMES = BULLETPHYSICS_CZDS_CLIENT_GAMES
 
 RENDERER_ENGINE_ALL_FUNCTIONS = (
-    "BuildGammaTable", "CL_AllocDlight", "CL_AllocElight", "CL_FxBlend",
+    "BuildGammaTable", "CL_FxBlend",
     "CL_IsDevOverviewMode", "CL_SetDevOverView", "ClientDLL_DrawNormalTriangles",
     "CVideoMode_Common_DrawStartupGraphic", "Cache_Alloc", "ClientDLL_DrawTransparentTriangles",
     "Draw_DecalTexture",
