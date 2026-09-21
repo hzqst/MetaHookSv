@@ -75,7 +75,6 @@ typedef struct
 	void* (*Mod_LoadSpriteFrame)(void* pin, mspriteframe_t** ppframe, int framenum);
 	void (*R_MarkLeaves)(void);
 	void (*R_DrawBrushModel)(cl_entity_t* e);
-	void (*R_DrawSpriteModel)(cl_entity_t* ent);
 	mspriteframe_t* (*R_GetSpriteFrame)(msprite_t* pSprite, int frame);
 	int (*CL_FxBlend)(cl_entity_t* ent);
 	float(*GlowBlend)(cl_entity_t* ent);

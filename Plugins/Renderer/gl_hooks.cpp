@@ -110,12 +110,6 @@
 #define R_STUDIOSETUPSKIN_SIG_SVENGINE "\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x2A\x00\x00\xF6\x05"
 
 
-#define R_DRAWSRPITEMODEL_SIG_BLOB "\x83\xEC\x40\x53\x56\x57\x8B\x7C\x24\x50\x8B\x87\x94\x0B\x00\x00"
-#define R_DRAWSRPITEMODEL_SIG_NEW "\x55\x8B\xEC\x83\xEC\x44\x2A\x2A\x2A\x2A\x2A\x2A\x8B\x2A\x2A\x2A\x00\x00\xD9\x2A\xE0\x02"
-#define R_DRAWSRPITEMODEL_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\x2A\x2A\x2A\x8B\x75\x08\x2A\x8B\x2A\x94\x0B\x00\x00"
-#define R_DRAWSRPITEMODEL_SIG_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x2A\x53\x8B\x5C\x24\x2A\x55\x8B\x83\x2A\x0B\x00\x00"
-
-
 #define SCR_BEGIN_LOADING_PLAQUE "\x6A\x01\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x83\xC4\x04\x83\xF8\x03"
 
 #define MOD_LOADSPRITEMODEL_BLOB		"\x53\x55\x56\x57\x8B\x7C\x24\x18\x8B\x47\x04\x50\xFF\x15"
@@ -2877,77 +2871,6 @@ void Engine_FillAddress_Draw_DecalTexture(const mh_dll_info_t& DllInfo, const mh
 	//Sig_FuncNotFound(Draw_CacheGet);
 }
 
-void Engine_FillAddress_R_DrawSpriteModel(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (gPrivateFuncs.R_DrawSpriteModel)
-		return;
-
-	PVOID R_DrawSpriteModel_VA = 0;
-
-	{
-		const char sigs[] = "R_DrawSpriteModel:  couldn";
-		auto R_DrawSpriteModel_String = Search_Pattern_Data(sigs, DllInfo);
-		if (!R_DrawSpriteModel_String)
-			R_DrawSpriteModel_String = Search_Pattern_Rdata(sigs, DllInfo);
-		if (R_DrawSpriteModel_String)
-		{
-			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4";
-			*(DWORD*)(pattern + 1) = (DWORD)R_DrawSpriteModel_String;
-			auto R_DrawSpriteModel_Call = Search_Pattern(pattern, DllInfo);
-			if (R_DrawSpriteModel_Call)
-			{
-				R_DrawSpriteModel_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(R_DrawSpriteModel_Call, 0x300, [](PUCHAR Candidate) {
-
-					if (Candidate[0] == 0x55 &&
-						Candidate[1] == 0x8B &&
-						Candidate[2] == 0xEC)
-						return TRUE;
-
-					if (Candidate[0] == 0x83 &&
-						Candidate[1] == 0xEC &&
-						Candidate[3] == 0xA1)
-						return TRUE;
-
-					if (Candidate[0] == 0x83 &&
-						Candidate[1] == 0xEC &&
-						Candidate[3] >= 0x50 &&
-						Candidate[3] <= 0x57)
-						return TRUE;
-
-					return FALSE;
-					});
-				gPrivateFuncs.R_DrawSpriteModel = (decltype(gPrivateFuncs.R_DrawSpriteModel))ConvertDllInfoSpace(R_DrawSpriteModel_VA, DllInfo, RealDllInfo);
-			}
-		}
-	}
-
-	if (!gPrivateFuncs.R_DrawSpriteModel)
-	{
-		if (g_iEngineType == ENGINE_SVENGINE)
-		{
-			R_DrawSpriteModel_VA = Search_Pattern(R_DRAWSRPITEMODEL_SIG_SVENGINE, DllInfo);
-			gPrivateFuncs.R_DrawSpriteModel = (decltype(gPrivateFuncs.R_DrawSpriteModel))ConvertDllInfoSpace(R_DrawSpriteModel_VA, DllInfo, RealDllInfo);
-		}
-		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-		{
-			R_DrawSpriteModel_VA = Search_Pattern(R_DRAWSRPITEMODEL_SIG_HL25, DllInfo);
-			gPrivateFuncs.R_DrawSpriteModel = (decltype(gPrivateFuncs.R_DrawSpriteModel))ConvertDllInfoSpace(R_DrawSpriteModel_VA, DllInfo, RealDllInfo);
-		}
-		else if (g_iEngineType == ENGINE_GOLDSRC)
-		{
-			R_DrawSpriteModel_VA = Search_Pattern(R_DRAWSRPITEMODEL_SIG_NEW, DllInfo);
-			gPrivateFuncs.R_DrawSpriteModel = (decltype(gPrivateFuncs.R_DrawSpriteModel))ConvertDllInfoSpace(R_DrawSpriteModel_VA, DllInfo, RealDllInfo);
-		}
-		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
-		{
-			R_DrawSpriteModel_VA = Search_Pattern(R_DRAWSRPITEMODEL_SIG_BLOB, DllInfo);
-			gPrivateFuncs.R_DrawSpriteModel = (decltype(gPrivateFuncs.R_DrawSpriteModel))ConvertDllInfoSpace(R_DrawSpriteModel_VA, DllInfo, RealDllInfo);
-		}
-	}
-
-	Sig_FuncNotFound(R_DrawSpriteModel);
-}
-
 void Engine_FillAddress_GlowBlend(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.GlowBlend)
@@ -4662,8 +4585,6 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 	Engine_FillAddress_Draw_DecalTexture(DllInfo, RealDllInfo);
 
 	gPrivateFuncs.R_GetSpriteFrame = (decltype(gPrivateFuncs.R_GetSpriteFrame))GamedataResolvePtr(RealDllInfo.ImageBase, "R_GetSpriteFrame", MH_GAMESYMBOL_KIND_FUNCTION);
-
-	Engine_FillAddress_R_DrawSpriteModel(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_GlowBlend(DllInfo, RealDllInfo);
 
