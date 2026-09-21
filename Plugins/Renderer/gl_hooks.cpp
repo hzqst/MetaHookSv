@@ -1765,26 +1765,6 @@ void Engine_FillAddress_R_DrawParticles(const mh_dll_info_t& DllInfo, const mh_d
 
 }
 
-void Engine_FillAddress_CL_AllocDlight(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (gPrivateFuncs.CL_AllocDlight)
-		return;
-
-	gPrivateFuncs.CL_AllocDlight = (decltype(gPrivateFuncs.CL_AllocDlight))GamedataResolvePtr(RealDllInfo.ImageBase, "CL_AllocDlight", MH_GAMESYMBOL_KIND_FUNCTION);
-
-	cl_dlights = (decltype(cl_dlights))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_dlights", MH_GAMESYMBOL_KIND_GLOBAL);
-}
-
-void Engine_FillAddress_CL_AllocElight(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (gPrivateFuncs.CL_AllocElight)
-		return;
-
-	gPrivateFuncs.CL_AllocElight = (decltype(gPrivateFuncs.CL_AllocElight))GamedataResolvePtr(RealDllInfo.ImageBase, "CL_AllocElight", MH_GAMESYMBOL_KIND_FUNCTION);
-
-	cl_elights = (decltype(cl_elights))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_elights", MH_GAMESYMBOL_KIND_GLOBAL);
-}
-
 void Engine_FillAddress_R_StudioLighting(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_StudioLighting)
@@ -4086,9 +4066,9 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 
 	Engine_FillAddress_R_DrawParticles(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_CL_AllocDlight(DllInfo, RealDllInfo);
+	cl_dlights = (decltype(cl_dlights))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_dlights", MH_GAMESYMBOL_KIND_GLOBAL);
 
-	Engine_FillAddress_CL_AllocElight(DllInfo, RealDllInfo);
+	cl_elights = (decltype(cl_elights))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_elights", MH_GAMESYMBOL_KIND_GLOBAL);
 
 	gPrivateFuncs.R_GLStudioDrawPoints = (decltype(gPrivateFuncs.R_GLStudioDrawPoints))GamedataResolvePtr(RealDllInfo.ImageBase, "R_GLStudioDrawPoints", MH_GAMESYMBOL_KIND_FUNCTION);
 

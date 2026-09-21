@@ -77,8 +77,6 @@ typedef struct
 	void (*VID_UpdateWindowVars)(RECT* prc, int x, int y);
 	mleaf_t* (*Mod_PointInLeaf)(vec3_t p, model_t* model);
 	void* (*realloc_SvEngine)(void*, size_t);
-	dlight_t* (*CL_AllocDlight)(int key);
-	dlight_t* (*CL_AllocElight)(int key);
 	void(*S_ExtraUpdate)(void);
 	void(*R_DrawViewModel)(void);//inlined in SvEngine
 	void(*R_PolyBlend)(void);
