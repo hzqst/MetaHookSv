@@ -660,6 +660,15 @@ class RendererGateTests(unittest.TestCase):
         self.assertNotIn("R_RenderFinalFog", validate.RENDERER_ENGINE_ALL_FUNCTIONS)
         self.assertNotIn("R_RenderFinalFog", validate.RENDERER_ENGINE_NON_SVENGINE_FUNCTIONS)
 
+    def test_gate_requires_gspritemipmap_on_every_identity(self):
+        self.assertIn("gSpriteMipMap", validate.RENDERER_ENGINE_ALL_GLOBALS)
+        for gv in validate.RENDERER_ALL_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            del symbols["gSpriteMipMap"]
+            errors = validate.validate_renderer(symbols, gv)
+            self.assertTrue(any("gSpriteMipMap" in e for e in errors), (gv, errors))
+        self.assertNotIn("Mod_LoadSpriteFrame", validate.RENDERER_ENGINE_ALL_FUNCTIONS)
+
     def test_gate_requires_lightmap_and_decal_symbols_on_every_identity(self):
         names = (
             "R_TextureAnimation",
