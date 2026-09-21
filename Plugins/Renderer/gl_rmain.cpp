@@ -79,10 +79,10 @@ qboolean* vertical_fov_SvEngine = nullptr;
 vec_t* cl_simorg = nullptr;
 
 int* g_bUserFogOn = nullptr;
-float* g_UserFogColor = nullptr;
-float* g_UserFogDensity = nullptr;
-float* g_UserFogStart = nullptr;
-float* g_UserFogEnd = nullptr;
+float* g_UserFogColor = nullptr; //float flFinalFogColor[4]
+float* g_UserFogDensity = nullptr; //GLfloat flFogDensity
+float* g_UserFogStart = nullptr; //GLfloat flFogStart
+float* g_UserFogEnd = nullptr; //GLfloat flFogEnd
 
 qboolean* giScissorTest = nullptr;
 int* scissor_x = nullptr;
