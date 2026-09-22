@@ -39,8 +39,6 @@
 
 #define R_DRAWBRUSHMODEL_SIG_BLOB "\x83\xEC\x4C\xC7\x05\x2A\x2A\x2A\x2A\xFF\xFF\xFF\xFF\x53\x55\x56\x57"
 
-#define R_RECURSIVEWORLDNODE_SIG_BLOB "\x55\x8B\xEC\x83\xE4\xF8\x83\xEC\x0C\x53\x56\x57\x8B\x7D\x08\x83\x3F\xFE"
-
 #define R_DECALMPOLY_SIG "\xA1\x2A\x2A\x2A\x2A\x57\x50\xE8\x2A\x2A\x2A\x2A\x8B\x4C\x24\x10\x8B\x51\x18"
 #define R_DECALMPOLY_SIG_NEW "\x55\x8B\xEC\xA1\x2A\x2A\x2A\x2A\x57\x50\xE8\x2A\x2A\x2A\x2A\x8B\x4D\x0C\x8B\x51\x18\x52\xE8"
 
@@ -1133,51 +1131,13 @@ void Engine_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const
 	gDecalSurfCount = (decltype(gDecalSurfCount))GamedataResolvePtr(RealDllInfo.ImageBase, "gDecalSurfCount", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
-void Engine_FillAddress_R_RecursiveWorldNode(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (gPrivateFuncs.R_RecursiveWorldNode || gPrivateFuncs.R_RecursiveWorldNode_HL25)
-		return;
-
-	PVOID R_RecursiveWorldNode_VA = (PVOID)GamedataResolvePtr(RealDllInfo.ImageBase, "R_RecursiveWorldNode", MH_GAMESYMBOL_KIND_FUNCTION);
-
-	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		gPrivateFuncs.R_RecursiveWorldNode_HL25 = (decltype(gPrivateFuncs.R_RecursiveWorldNode_HL25))R_RecursiveWorldNode_VA;
-	}
-	else
-	{
-		gPrivateFuncs.R_RecursiveWorldNode = (decltype(gPrivateFuncs.R_RecursiveWorldNode))R_RecursiveWorldNode_VA;
-	}
-}
-
 void Engine_FillAddress_R_DrawWorld(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.R_DrawWorld)
-		return;
-
-	gPrivateFuncs.R_DrawWorld = (decltype(gPrivateFuncs.R_DrawWorld))GamedataResolvePtr(RealDllInfo.ImageBase, "R_DrawWorld", MH_GAMESYMBOL_KIND_FUNCTION);
-
 	modelorg = (decltype(modelorg))GamedataResolvePtr(RealDllInfo.ImageBase, "modelorg", MH_GAMESYMBOL_KIND_GLOBAL);
-
 }
 
 void Engine_FillAddress_R_DrawViewModel(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.R_DrawViewModel)
-		return;
-
-	PVOID R_DrawViewModel_VA = (PVOID)GamedataResolvePtrIfAvailable(RealDllInfo.ImageBase, "R_DrawViewModel", MH_GAMESYMBOL_KIND_FUNCTION);
-
-	if (R_DrawViewModel_VA)
-	{
-		gPrivateFuncs.R_DrawViewModel = (decltype(gPrivateFuncs.R_DrawViewModel))R_DrawViewModel_VA;
-	}
-	else if (g_iEngineType != ENGINE_SVENGINE)
-	{
-		Sig_FuncNotFound(R_DrawViewModel);
-	}
-
-
 	envmap = (decltype(envmap))GamedataResolvePtr(RealDllInfo.ImageBase, "envmap", MH_GAMESYMBOL_KIND_GLOBAL);
 	cl_stats = (decltype(cl_stats))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_stats", MH_GAMESYMBOL_KIND_GLOBAL);
 	cl_weaponstarttime = (decltype(cl_weaponstarttime))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_weaponstarttime", MH_GAMESYMBOL_KIND_GLOBAL);
@@ -2264,8 +2224,6 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 	rtable = (decltype(rtable))GamedataResolvePtr(RealDllInfo.ImageBase, "rtable", MH_GAMESYMBOL_KIND_GLOBAL);
 
 	gPrivateFuncs.R_DrawBrushModel = (decltype(gPrivateFuncs.R_DrawBrushModel))GamedataResolvePtr(RealDllInfo.ImageBase, "R_DrawBrushModel", MH_GAMESYMBOL_KIND_FUNCTION);
-
-	Engine_FillAddress_R_RecursiveWorldNode(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_R_DrawWorld(DllInfo, RealDllInfo);
 

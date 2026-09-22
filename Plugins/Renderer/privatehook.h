@@ -33,7 +33,6 @@ typedef struct
 	void (*R_FreeDeadParticles)(particle_t**);
 	void (*R_DrawTEntitiesOnList)(int onlyClientDraw);
 	void (*ClientDLL_DrawTransparentTriangles)(void);
-	void (*R_DrawWorld)(void);
 	void (*R_SetupGL)(void);
 	qboolean(*R_CullBox)(vec3_t mins, vec3_t maxs);
 	void (*GL_Bind)(int texnum);
@@ -51,8 +50,6 @@ typedef struct
 	void (*GL_EndRendering)(void);
 	void (*R_DrawSequentialPoly)(msurface_t* s, int face);
 	void (*R_DrawSequentialPoly_HL25)(msurface_t* s, int face, qboolean cleanUpShaderState);//HL25 added the third stack arg, callee gates shader/program cleanup on it
-	void (*R_RecursiveWorldNode)(mnode_t* node);
-	void (*R_RecursiveWorldNode_HL25)(mnode_t* node, qboolean cleanUpShaderState);//HL25 added the second arg, it is propagated through recursion and into R_DrawSequentialPoly's cleanUpShaderState
 	texture_t* (*R_TextureAnimation)(msurface_t* fa);
 	void (*GL_UnloadTextures)(void);
 	void (*GL_LoadFilterTexture)(void);
@@ -69,7 +66,6 @@ typedef struct
 	mleaf_t* (*Mod_PointInLeaf)(vec3_t p, model_t* model);
 	void* (*realloc_SvEngine)(void*, size_t);
 	void(*S_ExtraUpdate)(void);
-	void(*R_DrawViewModel)(void);//inlined in SvEngine
 	void(*R_PolyBlend)(void);
 	int(*V_FadeAlpha)(void);
 	void(*R_ResetLatched)(cl_entity_t* ent, qboolean full_reset);

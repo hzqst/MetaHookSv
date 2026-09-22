@@ -55,7 +55,7 @@ All of the following are resolved via `GamedataResolvePtr` (kind `FUNCTION` / `G
 1. `EngineSurface_FillAddress`, `VideoMode_FillAddress` (stub).
 2. Capability probes: `HasOfficialFBOSupport`, `HasOfficialGLTexAllocSupport`.
 3. Context: `GL_Init`, `GL_SetMode`, `GL_Shutdown`, `GL_Bind`, `GL_SelectTexture`, `GL_LoadTexture2`, `R_CullBox`, plus the inline `R_ForceCVars` / `R_CheckVariables` / `R_AnimateLight` gamedata resolves (the `R_SetupFrame` locator that used to hold them was removed 2026-09-22).
-4. View/scene: `R_SetupGL`, `R_RenderView`, `V_RenderView`, ~~`R_RenderScene`~~, `R_NewMap`, `GL_LoadFilterTexture`, `GL_BuildLightmaps`, `R_BuildLightMap`, `R_AddDynamicLights`, `GL_Disable/EnableMultitexture`, `R_DrawSequentialPoly`, `R_TextureAnimation`, `R_DrawBrushModel`, `R_RecursiveWorldNode`, `R_DrawWorld`, `R_DrawViewModel`, `R_MarkLeaves`.
+4. View/scene: `R_SetupGL`, `R_RenderView`, `V_RenderView`, ~~`R_RenderScene`~~, `R_NewMap`, `GL_LoadFilterTexture`, `GL_BuildLightmaps`, `R_BuildLightMap`, `R_AddDynamicLights`, `GL_Disable/EnableMultitexture`, `R_DrawSequentialPoly`, `R_TextureAnimation`, `R_DrawBrushModel`, ~~`R_RecursiveWorldNode`~~, ~~`R_DrawWorld`~~, ~~`R_DrawViewModel`~~, `R_MarkLeaves`.
 5. 2D: `GL_Set2D`, `GL_Finish2D`, `GL_BeginRendering`, `GL_EndRendering`, ~~`EmitWaterPolys`~~, `VID_UpdateWindowVars`, `Mod_PointInLeaf`, `R_DrawTEntitiesOnList`, `BuildGammaTable`.
 6. Effects/Studio: `R_DrawParticles`, ~~`CL_AllocDlight`~~, ~~`CL_AllocElight`~~, `R_GLStudioDrawPoints`, `R_StudioLighting`, ~~`R_StudioChrome`~~, ~~`R_LightLambert`~~, `R_StudioSetupSkin`, `Host_ClearMemory`, `Cache_Alloc`, ~~`Draw_MiptexTexture`~~, `Draw_DecalTexture`, `R_GetSpriteFrame`, ~~`R_DrawSpriteModel`~~, ~~`R_LightStrength`~~, ~~`R_RotateForEntity`~~, `R_GlowBlend`, ~~`SCR_BeginLoadingPlaque`~~, `Host_IsSinglePlayerGame`, `Mod_UnloadSpriteTextures`, `Mod_LoadSpriteModel`, ~~`Mod_LoadSpriteFrame`~~, ~~`R_AddTEntity`~~, `Hunk_AllocName`.
 7. Globals passes: `GL_EndRenderingVars`, `VisEdicts`, `R_AllocTransObjectsVars`, `R_RenderFinalFog`, `R_DrawTEntitiesOnListVars`, `R_RecursiveWorldNodeVars`, `R_LoadSkybox`, `GL_FilterMinMaxVars`, `ScrFov`, `RenderSceneVars`, `RenderSceneVars2`, `CL_IsDevOverviewModeVars`, `R_DecalInit`, `R_RenderDynamicLightmaps`, ~~`R_StudioChromeVars`~~, `CL_ViewEntityVars`, `CL_ReallocateDynamicData`, `TempEntsVars`, `WaterVars`, `ModKnown`, `Mod_NumKnown`, `Mod_LoadStudioModel`, `Mod_LoadBrushModel`, `Mod_LoadModel`, `BasePalette`, `SetFilterMode`, `SetFilterColor`, `SetFilterBrightness`, `MoveVars`, `MissingTexture`, `NoTexture`, `LegacyMultiTextureInit`, `PVSNode`.
@@ -99,16 +99,16 @@ All of the following are resolved via `GamedataResolvePtr` (kind `FUNCTION` / `G
 | `gPrivateFuncs.R_PolyBlend` / `V_FadeAlpha` | `void (*)(void)` / `float (*)(void)` | `Engine_FillAddress_R_PolyBlend`: per-engine `R_POLYBLEND_*`; `DisasmRanges(+0x100)` first `E8` → `V_FadeAlpha`. | Not hooked; plugin reimplements `R_PolyBlend`, calls `V_FadeAlpha`. |
 | `gPrivateFuncs.S_ExtraUpdate` | `void (*)(void)` | `Engine_FillAddress_S_ExtraUpdate`: per-engine `S_EXTRAUPDATE_*`. | Resolved only; called by the plugin path. |
 | `gPrivateFuncs.R_MarkLeaves` | `void (*)(void)` | Sig-only `R_MARKLEAVES_SIG_*`; also yields `r_viewleaf`, `r_oldviewleaf`. | Resolved only (plugin reimplements). |
-| `gPrivateFuncs.R_DrawViewModel` | `void (*)(void)` | `Engine_FillAddress_R_DrawViewModel`: SVEngine inlined; else in `R_RenderView+0x1000`, three consecutive `E8` where call #2 = `R_PolyBlend`, call #3 = `S_ExtraUpdate` → call #1. Also yields `envmap`, `cl_stats`, `cl_weaponstarttime`, `cl_weaponsequence`, `cl_light_level`. | Resolved only (plugin reimplements). |
+| ~~`gPrivateFuncs.R_DrawViewModel`~~ (deleted 2026-09-22) | ~~`void (*)(void)`~~ | ~~`Engine_FillAddress_R_DrawViewModel`: SVEngine inlined; else in `R_RenderView+0x1000`, three consecutive `E8` where call #2 = `R_PolyBlend`, call #3 = `S_ExtraUpdate` → call #1.~~ Write-only (never called, never hooked); the plugin reimplements the viewmodel path. The locator now resolves only `envmap`, `cl_stats`, `cl_weaponstarttime`, `cl_weaponsequence`, `cl_light_level` (all gamedata GLOBAL). | — |
 | `gPrivateFuncs.R_DrawParticles` / `R_FreeDeadParticles` / `R_TracerDraw` / `R_BeamDrawList` | `void (*)(void)` / `void (*)(particle_t**)` / `void (*)(void)` / `void (*)(void)` | `Engine_FillAddress_R_DrawParticles`: `83 C4 04 68 C0 0B 00 00` + `DisasmRanges(+0x100)` requiring `PUSH 0x2200/0x2300` and `PUSH 0x302/0x303` + reverse-search; fallback `R_DRAWPARTICLES_SIG_*`. `R_FreeDeadParticles` = `MOV ESI,[active_particles]` preceded by `E8`; `R_TracerDraw`/`R_BeamDrawList` from inline `R_TRACERDRAW_SIG` (`GetCallAddress(addr+6)`/`addr+11`). | Not hooked; plugin `R_DrawParticles` calls `R_FreeDeadParticles`/`R_TracerDraw`/`R_BeamDrawList`. |
 | ~~`gPrivateFuncs.R_AddTEntity`~~ | `void (*)(cl_entity_t*)` | ~~`Engine_FillAddress_R_AddTEntity`: SVEngine string `"Can't add transparent entity. Too many"` + `50 68 <str> E8`; others `"AddTentity: Too many objects"` + `68 <str> E8`; `ReverseSearchFunctionBegin(+0x50)`.~~ | Deleted 2026-09-20 — never called, never hooked; the locator's own comment already said "engine's R_AddTEntity is not used by Renderer anymore" (see last section). |
 | ~~`gPrivateFuncs.R_AddDynamicLights`~~ | `void (*)(msurface_t*)` | ~~BFS call-site walk rooted at `R_BuildLightMap` matching `PUSH reg; E8; 83 C4 04`; fallback `R_ADDDYNAMICLIGHTS_SIG_*`~~ | Deleted 2026-09-19 — never called, never hooked (see last section). |
 | ~~`gPrivateFuncs.R_BuildLightMap`~~ | `void (*)(msurface_t*, byte*, int)` | ~~string `"Error: lightmap for texture %s too large"` → `68 <str> E8 83 C4 18` + `ReverseSearchFunctionBeginEx(+0x300)`; fallback `R_BUILDLIGHTMAP_SIG_*`~~ | Deleted 2026-09-19 — its only consumer was the `R_AddDynamicLights` BFS root (see last section). |
 | ~~`gPrivateFuncs.R_RenderDynamicLightmaps`~~ | `void (*)(msurface_t*)` | ~~Found during the `R_DrawSequentialPoly` BFS (callee with trailing imm `0x14` and `PUSH 0x200`), and re-resolved by `Engine_FillAddress_R_RenderDynamicLightmaps` (per-engine `R_RENDERDYNAMICLIGHTMAPS_SIG_*`) while null. Also yields `d_lightstylevalue`, `lightmap_polys`, `lightmap_modified`.~~ | Deleted 2026-09-19 — never called; it anchored a BFS for two write-only globals (see last section). |
 | `gPrivateFuncs.R_TextureAnimation` | `texture_t* (*)(msurface_t*)` | Sig-only `R_TEXTUREANIMATION_SIG_*`; also yields `rtable`. | Resolved only. |
-| `gPrivateFuncs.R_DrawSequentialPoly` / `R_DrawSequentialPoly_HL25` | `void (*)(msurface_t*, int)` / `void (*)(msurface_t*, int, qboolean cleanUpShaderState)` | Sig-only `R_DRAWSEQUENTIALPOLY_SIG_*`; HL25 stores its own three-arg field (HL25 callers push a third 32-bit bool and the callee reads it to gate shader/program cleanup); also root of the lightmap/decal BFS (`lightmap_textures`, `lightmap_rectchange`, `lightmaps`, `gDecalSurfs`, `gDecalSurfCount`). The HL25 field is also the disassembly anchor for `R_RecursiveWorldNode` and `R_DrawWorld`. | Resolved only. |
-| `gPrivateFuncs.R_RecursiveWorldNode` / `R_RecursiveWorldNode_HL25` | `void (*)(mnode_t*)` / `void (*)(mnode_t*, qboolean cleanUpShaderState)` | SvEngine sig; HL25 from `R_DrawSequentialPoly_HL25` (two-arg ABI, the callee propagates the second arg through recursion and into `R_DrawSequentialPoly`'s `cleanUpShaderState`); GoldSrc/BLOB from `R_DrawBrushModel`; fallback `R_RECURSIVEWORLDNODE_SIG_*`. Also yields `r_framecount`/`r_visframecount` (the Vars BFS anchors the per-engine field); `skychain`/`waterchain` were dropped from the same BFS on 2026-09-19 (see last section). | Called by the plugin wrapper (`gl_rsurf.cpp` `R_RecursiveWorldNode`); the HL25 branch forwards `true` (engine default, `gl_reduce_shader_changes == 0`). |
-| `gPrivateFuncs.R_DrawWorld` | `void (*)(void)` | `Engine_FillAddress_R_DrawWorld`: `68 B8 0B 00 00 8D` + `DisasmRanges(+5)` needing `LEA [ebp/esp+disp]` + `6A 00` + `ReverseSearchFunctionBeginEx(+0x300)`; fallback `R_DRAWWORLD_SIG_*`. Also yields `modelorg`. | Resolved only (plugin reimplements). |
+| `gPrivateFuncs.R_DrawSequentialPoly` / `R_DrawSequentialPoly_HL25` | `void (*)(msurface_t*, int)` / `void (*)(msurface_t*, int, qboolean cleanUpShaderState)` | Sig-only `R_DRAWSEQUENTIALPOLY_SIG_*`; HL25 stores its own three-arg field (HL25 callers push a third 32-bit bool and the callee reads it to gate shader/program cleanup); also root of the lightmap/decal BFS (`lightmap_textures`, `lightmap_rectchange`, `lightmaps`, `gDecalSurfs`, `gDecalSurfCount`). | Resolved only. |
+| ~~`gPrivateFuncs.R_RecursiveWorldNode` / `R_RecursiveWorldNode_HL25`~~ (deleted 2026-09-22) | ~~`void (*)(mnode_t*)` / `void (*)(mnode_t*, qboolean cleanUpShaderState)`~~ | ~~SvEngine sig; HL25 from `R_DrawSequentialPoly_HL25` (two-arg ABI, the callee propagates the second arg through recursion and into `R_DrawSequentialPoly`'s `cleanUpShaderState`); GoldSrc/BLOB from `R_DrawBrushModel`; fallback `R_RECURSIVEWORLDNODE_SIG_*`.~~ The only reader was the plugin wrapper `R_RecursiveWorldNode` (`gl_rsurf.cpp:68`), itself unreachable — no call site, no `Install_InlineHook` / `g_phook_*` in the whole git history — so the fields were write-only in effect. | — |
+| ~~`gPrivateFuncs.R_DrawWorld`~~ (deleted 2026-09-22) | ~~`void (*)(void)`~~ | ~~`Engine_FillAddress_R_DrawWorld`: `68 B8 0B 00 00 8D` + `DisasmRanges(+5)` needing `LEA [ebp/esp+disp]` + `6A 00` + `ReverseSearchFunctionBeginEx(+0x300)`; fallback `R_DRAWWORLD_SIG_*`.~~ Write-only (never called, never hooked); the plugin's own `R_DrawWorld` (`gl_wsurf.cpp:5281`) is a full reimplementation. The locator now resolves only `modelorg`. | — |
 | `gPrivateFuncs.R_DrawBrushModel` | `void (*)(cl_entity_t*)` | Sig-only `R_DRAWBRUSHMODEL_SIG_*`. | Resolved only (base for `R_RecursiveWorldNode`/`R_DrawWorld`). |
 | ~~`gPrivateFuncs.EmitWaterPolys`~~ | `void (*)(msurface_t*, int)` | ~~Sig-only `EMITWATERPOLYS_SIG_*`.~~ | Deleted 2026-09-21 — resolved, never called, never hooked (see last section). |
 | `gPrivateFuncs.Mod_PointInLeaf` | `mleaf_t* (*)(vec3_t, model_t*)` | `Engine_FillAddress_Mod_PointInLeaf`: string `"Mod_PointInLeaf: bad model\0"` → `68 <str> E8 83 C4 04` + `ReverseSearchFunctionBeginEx(+0x100)`; fallback `MOD_POINTINLEAF_SIG_*`. | `Install_InlineHook(Mod_PointInLeaf)`. |
@@ -190,14 +190,14 @@ Entry point `EngineStudio_FillAddress(pstudio, DllInfo, RealDllInfo)` (`exportfu
 | `cls_state` / `cls_signon` / `scr_drawloading` | `cactive_t*` / `int*` / `qboolean*` | `cls_state`/`cls_signon` from `V_RenderView` (`CMP [.data],5`/`,2`); `scr_drawloading` from `Engine_FillAddress_SCR_BeginLoadingPlaque` gamedata GLOBAL. | Client state. |
 | `r_soundOrigin` / `r_playerViewportAngles` | `vec_t*` | `V_RenderView`: zeroed-register stores plus `FLDZ`+`FST[P]` candidates; if six candidates, `qsort` → `[0]` and `[3]`. | `r_playerViewportAngles` used; `r_soundOrigin` resolved only. |
 | `frustum` / `vpn` / `vup` / `vright` | `mplane_t*` / `vec_t*` | `Engine_FillAddress_R_CullBox`: `MOV ESI,imm(.data)` → `frustum`; then `68 <frustum> 68 … 68 … E8` pattern gives `vpn`/`vup`; `68 <vpn> 68 … 68 <frustum+0x28>` gives `vright`. | `R_SetFrustum` culling. |
-| `envmap` / `cl_stats` / `cl_weaponstarttime` / `cl_weaponsequence` / `cl_light_level` | `int*` / `float*` | `Engine_FillAddress_R_DrawViewModel`: per-engine patterns, operand offsets differ by engine type. | Viewmodel/env-map selection. |
+| `envmap` / `cl_stats` / `cl_weaponstarttime` / `cl_weaponsequence` / `cl_light_level` | `int*` / `float*` | `Engine_FillAddress_R_DrawViewModel`: gamedata GLOBAL (the per-engine disasm patterns that used to yield them are gone). | Viewmodel/env-map selection. |
 | `pmovevars` | `movevars_t*` | `Engine_FillAddress_MoveVars`: SvEngine `56 8B 74 24 08 6A 2C 56 E8 … D9 05`; others `E8 <MSG_ReadFloat> D9 1D <gravity> …`. | `zmax`, `skyName`. |
 | `r_framecount` / `r_visframecount` | `int*` | `Engine_FillAddress_R_RecursiveWorldNodeVars`: `MOV reg,[reg+0]` (or `[reg+4]`) then `MOV/CMP reg,[.data]`. | Frame/leaf counters. |
 | ~~`skychain` / `waterchain`~~ | `msurface_t**` | ~~Same walk: `TEST reg8,imm` `imm==4` → `skychain`, `imm==0x10` → `waterchain`.~~ | Deleted 2026-09-19 — write-only (see last section). |
 | `r_viewleaf` / `r_oldviewleaf` | `mleaf_t**` | `Engine_FillAddress_R_MarkLeaves`: `MOV ECX,[.data]` / `MOV [.data],ECX`. | PVS tracking. |
 | `r_entorigin` / `r_blend` / `cl_parsecount` / `cl_frames` / `size_of_frame` | `vec_t*` / `float*` / `int*` / `void*` / `int` | `Engine_FillAddress_R_DrawTEntitiesOnListVars`: `r_blend` after fog-disable; `cl_parsecount` = `MOV EAX,[abs]` whose live value is `63`; `cl_frames` = `LEA` within `+20`; `size_of_frame` = `IMUL imm 0x4000..0xF000`; `r_entorigin` after `MOVSX [reg+0x2E8]`. Defaults `size_of_frame=0x42B8` for buildnum ≤ 8684. | `R_GetPlayerState` and sprite attachment origin. |
 | `rtable` | `int (*)[20][20]` | `Engine_FillAddress_R_TextureAnimation`: `MOV ESI,imm(.data)`. | Animated-texture random table. |
-| `modelorg` | `vec_t*` | `Engine_FillAddress_R_DrawWorld`: `DisasmRanges(+0x130)` `MOV`/`MOVSS`/`FSTP [.data]` candidates, `qsort`, consecutive-run heuristic. | Resolved only. |
+| `modelorg` | `vec_t*` | `Engine_FillAddress_R_DrawWorld`: gamedata GLOBAL `modelorg` (the `DisasmRanges(+0x130)` / `qsort` heuristic is gone). | Resolved only. |
 | `window_rect` | `RECT*` | `Engine_FillAddress_VID_UpdateWindowVars`: `GLOBAL` `GamedataResolvePtr` since 2026-09-22 (was HL25 `MOVUPS [abs],xmm` / else `MOV [abs],reg` within `+0x40`). | `GL_EndRendering` destination rect (`gl_rmain.cpp:3588`). |
 | `pmainwindow` | `void**` | `Engine_FillAddress_EngineSurface_pushMakeCurrent` (see EngineSurface). | Main window handle. |
 
@@ -381,7 +381,8 @@ Baseline `26b17bd0`. All 76 dependencies the published catalog already covered
 | cof + hl-3248..4554 | `GL_SetModeLegacy` | non-SDL legacy ABI; CoF now reaches the legacy branch |
 | hl-10210 + hl-6153/8684 | `SDL_InitGL` | SDL builds only |
 | ~~all but svencoop-10257~~ | ~~`R_RenderScene`~~ | gate entry removed 2026-09-22: the field was write-only, so it demanded a symbol no consumer read (10257 inlines it and publishes no Windows record) |
-| all but svencoop-8948 | `R_DrawViewModel` | 8948 has no record and stays inlined |
+| ~~ALL (11 identities)~~ | ~~`R_RecursiveWorldNode`, `R_DrawWorld`~~ | both dropped from `RENDERER_ENGINE_ALL_FUNCTIONS` 2026-09-22 — write-only fields, no consumer read them |
+| ~~all but svencoop-8948~~ | ~~`R_DrawViewModel`~~ | gate entry removed 2026-09-22 (write-only field); the whole `RENDERER_NOT_SVENGINE_8948_GAMES` / `_FUNCTIONS` pair existed only for this symbol |
 | svencoop only | client portal functions/globals | `SCClientDLL001` factory |
 | svencoop-10257 only | `ClientPortalManager_EnableClipPlane`, `g_ViewEntityIndex_SCClient` | 8948 publishes neither; `g_ViewEntityIndex_SCClient` is resolved with `GamedataResolvePtrIfAvailable` and its consumers are already null-guarded |
 
@@ -1903,6 +1904,59 @@ over 21 snapshots / 5 engine families; `pytest scripts/tests` reports 98 passed 
 26 subtests; searches for the three names plus `R_NewMap_VA` in `Plugins` / `src` / `include` /
 `PluginLibs` / `toolsrc` return only the unrelated `Engine_FillAddress_R_DecalInit`.
 **Not verified**: in-game smoke test (map load / decal init path on any identity).
+
+## Dead-code removal (2026-09-22): the write-only `R_RecursiveWorldNode` / `R_DrawWorld` / `R_DrawViewModel` pointers
+
+Review questions: (1) can `Engine_FillAddress_R_RecursiveWorldNode` and `gPrivateFuncs.R_RecursiveWorldNode`
+go entirely? (2) the same for `gPrivateFuncs.R_DrawWorld` and `gPrivateFuncs.R_DrawViewModel`. All three go,
+but the first is a new shape: the field's reader was a *plugin function*, and that function was itself
+unreachable.
+
+| Symbol | Every reference before this change | Verdict |
+| --- | --- | --- |
+| `gPrivateFuncs.R_RecursiveWorldNode` / `.R_RecursiveWorldNode_HL25` | fields `privatehook.h:54-55`; read only at `gl_rsurf.cpp:70/73/77` | write-only in effect |
+| the plugin wrapper `R_RecursiveWorldNode` | definition `gl_rsurf.cpp:68-78`, declaration `gl_local.h:412`; no call site anywhere, no `Install_InlineHook`, no `g_phook_*` (`git log -S` over all history finds neither form), no `WorldNode` patch record in any snapshot | unreachable |
+| `gPrivateFuncs.R_DrawWorld` | field `privatehook.h:36`; assigned `gl_hooks.cpp:1158`, self-guard `:1155`; no reader | write-only |
+| `gPrivateFuncs.R_DrawViewModel` | field `privatehook.h:72`; assigned `gl_hooks.cpp:1173`, self-guard `:1166`; no reader | write-only |
+| `R_RECURSIVEWORLDNODE_SIG_BLOB` | `gl_hooks.cpp:42` | no reference repo-wide |
+| the two locators' globals | `modelorg` (`Engine_FillAddress_R_DrawWorld`); `envmap` / `cl_stats` / `cl_weaponstarttime` / `cl_weaponsequence` / `cl_light_level` (`Engine_FillAddress_R_DrawViewModel`) | live — kept; both locators now resolve **only** their globals |
+
+**Why the wrapper could never run.** The plugin's `R_RenderView` / `R_RenderView_SvEngine` hook replaces the
+engine's render entry, and the plugin's own world path is self-contained: `R_RenderScene` (`gl_rmain.cpp:4748`)
+→ plugin `R_SetupGL` / plugin `R_DrawWorld` (`gl_wsurf.cpp:5281`, "1:1 copy from R_DrawWorld, but with
+hw.dll!r_worldentity") → `gl_wsurf` leaf functions. Nothing in that chain calls the engine's
+`R_RecursiveWorldNode`, and the wrapper that forwarded to it was never installed. It is a 2021-01-20
+(`97288aa4`) relic that was still meaningful while `R_DrawWorld` was engine-side; the 2023-03-02 "Remove
+runtime recursions completely" rewrite left it orphaned.
+
+**No disasm dependency.** `Engine_FillAddress_R_RecursiveWorldNodeVars` still resolves `r_framecount` /
+`r_visframecount`, but as gamedata GLOBALs — it never used the function pointer as an anchor, so removing the
+locator does not touch it. The old "the HL25 field is the disassembly anchor for `R_RecursiveWorldNode` and
+`R_DrawWorld`" claim described the pre-gamedata design and was corrected in the table above.
+
+**Gate contraction (this pass changes the release gate).** `R_RecursiveWorldNode` and `R_DrawWorld` leave
+`RENDERER_ENGINE_ALL_FUNCTIONS`; the `RENDERER_NOT_SVENGINE_8948_GAMES` /
+`RENDERER_NOT_SVENGINE_8948_FUNCTIONS` pair (`("R_DrawViewModel",)`) — whose only reason to exist was that
+requirement — is deleted outright together with its `validate_renderer` block and the contract-test mirror.
+The catalog records stay (publishing is not needing): `R_RecursiveWorldNode` 11/11, `R_DrawWorld` 11/11,
+`R_DrawViewModel` 10/11 (8948 absent, stays inlined), all now ungated.
+
+**Doc corrections made in the same pass.** The `R_DrawViewModel` and `modelorg` global rows still described
+the deleted per-engine disasm patterns; both are gamedata GLOBAL resolutions now.
+
+**Verified**: Renderer `Release|Win32` builds with 0 errors and the same 9 pre-existing warnings
+(`gl_rsurf.cpp(453)` C4101 "surf" is unrelated to the deleted wrapper; the rest are in gl_light / gl_studio /
+gl_wsurf); `validate-gamedata.py` passes over 21 snapshots / 5 engine families; `pytest scripts/tests` reports
+98 passed / 2 skipped / 26 subtests. Searches for `R_RecursiveWorldNode`, `R_DrawViewModel`,
+`gPrivateFuncs.R_DrawWorld` and `gPrivateFuncs.R_DrawViewModel` return only
+`Engine_FillAddress_R_RecursiveWorldNodeVars` (the unrelated global resolver).
+**Not verified**: in-game smoke test (world rendering / viewmodel on any identity).
+
+**Next candidate**: `gPrivateFuncs.R_DrawBrushModel` (`privatehook.h:65`, assigned `gl_hooks.cpp:2266`) is
+write-only by the same standard — its documented purpose was to seed the `R_RecursiveWorldNode` /
+`R_DrawWorld` disasm roots, which are now gamedata. Four sig macros are also unreferenced repo-wide:
+`R_MARKLEAVES_SIG_BLOB` (`gl_hooks.cpp:26`), `R_CULLBOX_SIG_BLOB` (`:28`), `R_SETUPGL_SIG_BLOB` (`:36`) and
+`R_DRAWBRUSHMODEL_SIG_BLOB` (`:40`).
 
 
 

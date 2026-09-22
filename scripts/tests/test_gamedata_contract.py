@@ -474,8 +474,6 @@ class RendererGateTests(unittest.TestCase):
             add(validate.RENDERER_SETMODE_LEGACY_FUNCTIONS, "function")
         if game_version in validate.RENDERER_SDL_GAMES:
             add(validate.RENDERER_SDL_FUNCTIONS, "function")
-        if game_version in validate.RENDERER_NOT_SVENGINE_8948_GAMES:
-            add(validate.RENDERER_NOT_SVENGINE_8948_FUNCTIONS, "function")
         symbols.update(self.complete_client_symbols(game_version))
         return symbols
 

@@ -166,7 +166,6 @@ RENDERER_SDL_GAMES = ("hl-10210", "hl-6153", "hl-8684")
 RENDERER_SETMODE_GAMES = ("hl-10210", "hl-6153", "hl-8684", "svencoop-10257", "svencoop-8948")
 RENDERER_SETMODE_LEGACY_GAMES = ("cof-5936", "hl-3248", "hl-3266", "hl-3329",
                                  "hl-3647", "hl-4554")
-RENDERER_NOT_SVENGINE_8948_GAMES = tuple(g for g in RENDERER_ALL_GAMES if g != "svencoop-8948")
 RENDERER_SVEN_10257_GAMES = ("svencoop-10257",)
 # Renderer neuters exactly one legacy multitexture / detail-texture init per engine.
 # HL/CoF/blob publish the probe as CheckMultiTextureExtensions; HL25 and SvEngine
@@ -196,9 +195,9 @@ RENDERER_ENGINE_ALL_FUNCTIONS = (
     "Mod_PointInLeaf", "Mod_UnloadSpriteTextures",
     "PVSNode", "R_AnimateLight", "R_BeamDrawList", "R_CheckVariables",
     "R_CullBox", "R_DrawBrushModel", "R_DrawParticles", "R_DrawSequentialPoly",
-    "R_DrawTEntitiesOnList", "R_DrawWorld", "R_ForceCVars", "R_FreeDeadParticles",
+    "R_DrawTEntitiesOnList", "R_ForceCVars", "R_FreeDeadParticles",
     "R_GLStudioDrawPoints", "R_GetSpriteFrame", "R_MarkLeaves", "R_NewMap", "R_PolyBlend",
-    "R_RecursiveWorldNode", "R_RenderView", "R_ResetLatched",
+    "R_RenderView", "R_ResetLatched",
     "R_SetupGL",
     "R_StudioDrawModel", "R_StudioDrawPlayer", "R_StudioMergeBones", "R_StudioRenderFinal",
     "R_StudioRenderModel", "R_StudioSaveBones", "R_StudioSetupBones", "R_TextureAnimation",
@@ -245,7 +244,6 @@ RENDERER_ENGINE_HL25_FUNCTIONS = ("CGame_DrawStartupVideo",)
 RENDERER_SETMODE_FUNCTIONS = ("GL_SetMode",)
 RENDERER_SETMODE_LEGACY_FUNCTIONS = ("GL_SetModeLegacy",)
 RENDERER_SDL_FUNCTIONS = ("SDL_InitGL",)
-RENDERER_NOT_SVENGINE_8948_FUNCTIONS = ("R_DrawViewModel",)
 RENDERER_CLIENT_SVEN_FUNCTIONS = (
     "ClientPortalManager_RenderPortals", "ClientPortalManager_ResetAll", "UpdatePlayerPitch",
     "ClientPortalManager_GetOriginalSurfaceTexture", "ClientPortalManager_DrawPortalSurface",
@@ -755,8 +753,6 @@ def validate_renderer(symbols, game_version, include_engine=True, include_client
             errors += _renderer_check(symbols, game_version, RENDERER_SETMODE_LEGACY_FUNCTIONS, "function", "engine")
         if game_version in RENDERER_SDL_GAMES:
             errors += _renderer_check(symbols, game_version, RENDERER_SDL_FUNCTIONS, "function", "engine")
-        if game_version in RENDERER_NOT_SVENGINE_8948_GAMES:
-            errors += _renderer_check(symbols, game_version, RENDERER_NOT_SVENGINE_8948_FUNCTIONS, "function", "engine")
 
     # Client-side consumer gate.
     if not include_client:

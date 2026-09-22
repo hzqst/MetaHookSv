@@ -409,7 +409,6 @@ void R_GameFrameStart();
 void R_RenderFrameStart();
 void R_RenderEndFrame();
 mleaf_t *Mod_PointInLeaf(vec3_t p, model_t *model);
-void R_RecursiveWorldNode(mnode_t *node);
 void R_DrawParticles(void);
 void R_RotateForEntity(cl_entity_t *ent, float out[4][4]);
 void R_RotateForTransform(const float* in_origin, const float* in_angles, float out[4][4]);
