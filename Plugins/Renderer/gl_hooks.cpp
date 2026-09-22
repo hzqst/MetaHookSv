@@ -1243,6 +1243,7 @@ void Engine_FillAddress_BuildGammaTable(const mh_dll_info_t& DllInfo, const mh_d
 	gPrivateFuncs.BuildGammaTable = (decltype(gPrivateFuncs.BuildGammaTable))GamedataResolvePtr(RealDllInfo.ImageBase, "BuildGammaTable", MH_GAMESYMBOL_KIND_FUNCTION);
 
 	texgammatable = (decltype(texgammatable))GamedataResolvePtr(RealDllInfo.ImageBase, "texgammatable", MH_GAMESYMBOL_KIND_GLOBAL);
+	lightgammatable = (decltype(lightgammatable))GamedataResolvePtr(RealDllInfo.ImageBase, "lightgammatable", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Engine_FillAddress_R_DrawParticles(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -1264,7 +1265,6 @@ void Engine_FillAddress_R_StudioLighting(const mh_dll_info_t& DllInfo, const mh_
 	r_ambientlight = (decltype(r_ambientlight))GamedataResolvePtr(RealDllInfo.ImageBase, "r_ambientlight", MH_GAMESYMBOL_KIND_GLOBAL);
 	r_shadelight = (decltype(r_shadelight))GamedataResolvePtr(RealDllInfo.ImageBase, "r_shadelight", MH_GAMESYMBOL_KIND_GLOBAL);
 	r_plightvec = (decltype(r_plightvec))GamedataResolvePtr(RealDllInfo.ImageBase, "r_plightvec", MH_GAMESYMBOL_KIND_GLOBAL);
-	lightgammatable = (decltype(lightgammatable))GamedataResolvePtr(RealDllInfo.ImageBase, "lightgammatable", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Engine_FillAddress_Cache_Alloc(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
