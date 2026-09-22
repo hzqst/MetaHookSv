@@ -1962,9 +1962,13 @@ recorded above (`Release|Win32` 0 errors / same 9 warnings; `validate-gamedata.p
 5 engine families; 98 passed / 2 skipped / 26 subtests).
 **Not verified**: in-game smoke test (brush-entity rendering).
 
-**Still open**: four sig macros are unreferenced repo-wide — `R_MARKLEAVES_SIG_BLOB` (`gl_hooks.cpp:26`),
-`R_CULLBOX_SIG_BLOB` (`:28`), `R_SETUPGL_SIG_BLOB` (`:36`) and `R_DRAWBRUSHMODEL_SIG_BLOB` (`:40`);
-`R_DRAWBRUSHMODEL_SIG_BLOB` is the last trace of the deleted field's own locator macro.
+**Same pass, macro sweep.** The four sig macros left unreferenced by the gamedata migrations were deleted
+too — `R_MARKLEAVES_SIG_BLOB`, `R_CULLBOX_SIG_BLOB`, `R_SETUPGL_SIG_BLOB` and `R_DRAWBRUSHMODEL_SIG_BLOB`
+(formerly `gl_hooks.cpp:26/28/36/40`; `R_DRAWBRUSHMODEL_SIG_BLOB` was the last trace of that field's own
+locator macro). Their symbols (`R_MarkLeaves`, `R_CullBox`, `R_SetupGL`) are untouched — only the dead
+`#define`s went, and the run of five blank lines in front of `GL_SETMODE_SIG_BLOB` was collapsed to one.
+A full clean rebuild of the Renderer project (`-t:Rebuild`) reports 0 errors and exactly the same 9
+pre-existing warnings. No gate impact.
 
 ## Dead-code removal (2026-09-22): the write-only client `g_iWaterLevel` mirror
 
