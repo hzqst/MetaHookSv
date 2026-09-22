@@ -678,6 +678,21 @@ class RendererGateTests(unittest.TestCase):
             self.assertTrue(any("scr_drawloading" in e for e in errors), (gv, errors))
         self.assertNotIn("SCR_BeginLoadingPlaque", validate.RENDERER_ENGINE_ALL_FUNCTIONS)
 
+    def test_gate_requires_window_rect_on_every_identity(self):
+        self.assertIn("window_rect", validate.RENDERER_ENGINE_ALL_GLOBALS)
+        for gv in validate.RENDERER_ALL_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            del symbols["window_rect"]
+            errors = validate.validate_renderer(symbols, gv)
+            self.assertTrue(any("window_rect" in e for e in errors), (gv, errors))
+        #VID_UpdateWindowVars was write-only; the catalog FUNCTION record has no
+        #consumer and must not become a release dependency.
+        self.assertNotIn("VID_UpdateWindowVars", validate.RENDERER_ENGINE_ALL_FUNCTIONS)
+        for gv in validate.RENDERER_ALL_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            symbols["VID_UpdateWindowVars"] = {"kind": "function", "module": "engine"}
+            self.assertEqual([], validate.validate_renderer(symbols, gv))
+
     def test_gate_requires_texgammatable_on_every_identity(self):
         self.assertIn("texgammatable", validate.RENDERER_ENGINE_ALL_GLOBALS)
         for gv in validate.RENDERER_ALL_GAMES:

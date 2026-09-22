@@ -38,7 +38,6 @@ typedef struct
 	void (*R_DrawTEntitiesOnList)(int onlyClientDraw);
 	void (*ClientDLL_DrawTransparentTriangles)(void);
 	void (*R_DrawWorld)(void);
-	void (*R_SetupFrame)(void);
 	void (*R_SetupGL)(void);
 	qboolean(*R_CullBox)(vec3_t mins, vec3_t maxs);
 	void (*GL_Bind)(int texnum);
@@ -71,7 +70,6 @@ typedef struct
 	mspriteframe_t* (*R_GetSpriteFrame)(msprite_t* pSprite, int frame);
 	int (*CL_FxBlend)(cl_entity_t* ent);
 	float(*GlowBlend)(cl_entity_t* ent);
-	void (*VID_UpdateWindowVars)(RECT* prc, int x, int y);
 	mleaf_t* (*Mod_PointInLeaf)(vec3_t p, model_t* model);
 	void* (*realloc_SvEngine)(void*, size_t);
 	void(*S_ExtraUpdate)(void);
@@ -234,7 +232,6 @@ typedef struct
 	void(__cdecl* SDL_InitGL)();
 	decltype(glewInit)* SvEngine_glewInit;
 
-	bool R_SetupFrame_inlined;
 	bool R_RenderScene_inlined;
 
 }private_funcs_t;
