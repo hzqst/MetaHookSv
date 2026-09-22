@@ -327,7 +327,6 @@ extern int *lightgammatable;
 extern byte *texgammatable;
 extern int *r_ambientlight;
 extern float *r_shadelight;
-extern vec3_t *r_blightvec;
 extern vec3_t *r_plightvec;
 extern float *r_colormix;
 extern int *r_smodels_total;

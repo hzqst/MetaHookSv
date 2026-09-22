@@ -678,6 +678,44 @@ class RendererGateTests(unittest.TestCase):
             self.assertTrue(any("scr_drawloading" in e for e in errors), (gv, errors))
         self.assertNotIn("SCR_BeginLoadingPlaque", validate.RENDERER_ENGINE_ALL_FUNCTIONS)
 
+    def test_gate_requires_direct_resolved_palette_scissor_and_studio_globals(self):
+        names = (
+            "giScissorTest", "host_basepal", "lightgammatable",
+            "r_ambientlight", "r_plightvec", "r_shadelight",
+        )
+        for name in names:
+            self.assertIn(name, validate.RENDERER_ENGINE_ALL_GLOBALS)
+            for gv in validate.RENDERER_ALL_GAMES:
+                symbols = self.complete_engine_symbols(gv)
+                del symbols[name]
+                errors = validate.validate_renderer(symbols, gv)
+                self.assertTrue(any(name in e for e in errors), (name, gv, errors))
+        self.assertIn("Draw_Frame", validate.RENDERER_ENGINE_ALL_FUNCTIONS)
+        self.assertNotIn("R_StudioLighting", validate.RENDERER_ENGINE_ALL_FUNCTIONS)
+
+    def test_gate_requires_the_consumed_fallback_texture_for_each_engine_family(self):
+        for gv in validate.RENDERER_SVENGINE_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            self.assertIn("r_missingtexture", symbols)
+            self.assertNotIn("r_notexture_mip", symbols)
+            del symbols["r_missingtexture"]
+            errors = validate.validate_renderer(symbols, gv)
+            self.assertTrue(any("r_missingtexture" in e for e in errors), (gv, errors))
+        for gv in validate.RENDERER_NON_SVENGINE_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            self.assertIn("r_notexture_mip", symbols)
+            self.assertNotIn("r_missingtexture", symbols)
+            del symbols["r_notexture_mip"]
+            errors = validate.validate_renderer(symbols, gv)
+            self.assertTrue(any("r_notexture_mip" in e for e in errors), (gv, errors))
+
+        retired = ("r_emptytexture", "r_blightvec", "scissor_x", "scissor_y",
+                   "scissor_width", "scissor_height")
+        for gv in validate.RENDERER_ALL_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            for name in retired:
+                self.assertNotIn(name, symbols, (gv, name))
+
     def test_gate_requires_lightmap_and_decal_symbols_on_every_identity(self):
         names = (
             "R_TextureAnimation",

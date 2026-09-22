@@ -136,7 +136,7 @@ All of the following are resolved via `GamedataResolvePtr` (kind `FUNCTION` / `G
 | --- | --- | --- | --- |
 | ~~`gPrivateFuncs.CL_AllocDlight` / `CL_AllocElight`~~ | `dlight_t* (*)(int key)` | ~~`GamedataResolvePtr` FUNCTION.~~ Both fields deleted 2026-09-21 (second pass, see last section) — write-only once the `r_dlightactive` walk went, and the plugin reaches these APIs through `gEngfuncs.pEfxAPI`. Their locators are gone; `cl_dlights` / `cl_elights` are now resolved inline in `Engine_FillAddress`. |
 | `gPrivateFuncs.R_GLStudioDrawPoints` | `void (*)(void)` | `Engine_FillAddress_R_GLStudioDrawPoints`: `75 2A 68 44 0B 00 00 FF 15 …` + single-instruction `MOV [mem],1` + `ReverseSearchFunctionBeginEx(+0x1000)` (four prologue forms) + `DisasmRanges(+0x100)` requiring `[reg+0x54]` and `[reg+0x60]`; fallback `R_GLSTUDIODRAWPOINTS_SIG_*`. | `Install_InlineHook(R_GLStudioDrawPoints)`; handler re-implements, never calls original. |
-| `gPrivateFuncs.R_StudioLighting` | `void (*)(float* lv, int bone, int flags, vec3_t normal)` | Sig-only `R_STUDIOLIGHTING_SIG_*`; also yields `r_ambientlight`, `r_shadelight`, `r_blightvec`, `r_plightvec`, `lightgammatable` (BFS). | Resolved only. |
+| ~~`gPrivateFuncs.R_StudioLighting`~~ | ~~`void (*)(float* lv, int bone, int flags, vec3_t normal)`~~ | ~~Sig-only `R_STUDIOLIGHTING_SIG_*` plus BFS.~~ Deleted 2026-09-22 — the function pointer and `r_blightvec` were write-only; live outputs `r_ambientlight`, `r_shadelight`, `r_plightvec`, `lightgammatable` now resolve as gamedata GLOBALs. | — |
 | ~~`gPrivateFuncs.R_StudioChrome`~~ | `void (*)(int* pchrome, int bone, vec3_t normal)` | ~~Sig-only `R_STUDIOCHROME_SIG_*`~~ | Deleted 2026-09-19 — resolved, never called; its only consumer was the `R_StudioChromeVars` GOLDSRC disasm base (see last section). |
 | ~~`gPrivateFuncs.R_LightLambert`~~ | `void (*)(float (*light)[4], float* normal, float* src, float* lambert)` | ~~Sig-only `R_LIGHTLAMBERT_SIG_*`.~~ | Deleted 2026-09-21 — resolved, never called, never hooked (see last section). |
 | ~~`gPrivateFuncs.R_StudioSetupSkin` / `R_StudioGetSkin`~~ | `void (*)(studiohdr_t*, int)` / `skin_t* (*)(int keynum, int index)` | ~~`Engine_FillAddress_R_StudioSetupSkin`: string `"DM_Base.bmp"` → `68 <str> C7 44 24 …` + `ReverseSearchFunctionBeginEx(+0x300)`; `R_StudioGetSkin` = `E8` target in `+0x800` whose body contains `CMP reg,0xB`; `GL_UnloadTexture` from the same walk. Also yields `tmp_palette`.~~ | Deleted 2026-09-22 — resolved, never called, never hooked; four outputs, all write-only (see last section). |
@@ -151,7 +151,7 @@ All of the following are resolved via `GamedataResolvePtr` (kind `FUNCTION` / `G
 | `gPrivateFuncs.Host_IsSinglePlayerGame` | `qboolean (*)(void)` | String `"setpause;"` → `68 <str> E8 … 83 C4` + `ReverseSearchPattern(+0x50,"55 8B EC E8",4)`; the `E8` followed by `85 C0` is the target; fallback `HOST_IS_SINGLE_PLAYER_GAME_*`. | Wrapper `gl_rmain.cpp:824`. |
 | ~~`gPrivateFuncs.R_AddTEntity`~~ | `void (*)(cl_entity_t*)` | ~~See render-view table.~~ | Deleted 2026-09-20 (see last section). |
 | ~~`gPrivateFuncs.R_RenderFinalFog`~~ | `void (*)(void)` | ~~SvEngine `R_RenderFinalFog_VA` is the `push 0B60h` instruction inside the render-view body; HL25/GoldSrc `GetCallAddress(addr+9)`.~~ | Deleted 2026-09-21 — write-only field; the five user-fog globals now resolve from gamedata. |
-| `gPrivateFuncs.Draw_Frame` / `Draw_SpriteFrameHoles[_SvEngine]` / `Draw_SpriteFrameAdditive[_SvEngine]` / `Draw_SpriteFrameGeneric[_SvEngine]` / `Draw_FillRGBA` / `Draw_FillRGBABlend` / `Draw_FillRGBABuf` / `D_FillRect` / `Draw_Pic` | 2D draw helpers | `Engine_FillAddress_*`: gamedata-only, engine-gated where the identity set differs; `Draw_Frame` also yields `giScissorTest`, `scissor_x/y/width/height`; `Draw_FillRGBABuf` is SvEngine-only, `D_FillRect` is non-SvEngine-only. | `Install_InlineHook` each; handlers in `gl_rmain.cpp`. |
+| `gPrivateFuncs.Draw_Frame` / `Draw_SpriteFrameHoles[_SvEngine]` / `Draw_SpriteFrameAdditive[_SvEngine]` / `Draw_SpriteFrameGeneric[_SvEngine]` / `Draw_FillRGBA` / `Draw_FillRGBABlend` / `Draw_FillRGBABuf` / `D_FillRect` / `Draw_Pic` | 2D draw helpers | `Engine_FillAddress_*`: gamedata-only, engine-gated where the identity set differs. `Draw_Frame` and its live `giScissorTest` by-product now resolve independently as FUNCTION / GLOBAL. | Installed as inline hooks; handlers live in `gl_rmain.cpp`. |
 
 ### Engine Studio renderer (located in `exportfuncs.cpp`)
 
@@ -214,13 +214,13 @@ Entry point `EngineStudio_FillAddress(pstudio, DllInfo, RealDllInfo)` (`exportfu
 | `cl_dlights` / ~~`r_dlightactive`~~ / `cl_elights` | `dlight_t*` / `int*` / `dlight_t*` | GLOBAL `GamedataResolvePtr`, resolved inline in `Engine_FillAddress` since 2026-09-21. `r_dlightactive` was the last catalog-uncovered one, walked from `CL_AllocDlight` (after `PUSH 0x28`, a `PUSH imm(.data)` / `MOV reg,[.data]` / `OR [.data],1`) — deleted 2026-09-21, it had no reader. | Dynamic-light rendering. `cl_dlights` (`gl_light.cpp:1786`, `gl_rmain.cpp:5305`, `gl_studio.cpp:3517-3543`) and `cl_elights` (`gl_studio.cpp:2222`) are read. |
 | ~~`decal_wad`~~ / ~~`gfCustomBuild`~~ / ~~`szCustName`~~ | `cachewad_t**` / `qboolean*` / `char (*)[10]` | ~~`Engine_FillAddress_Draw_DecalTexture` BFS~~ / ~~`_Draw_MiptexTexture` `DisasmRanges(+0x500)`~~. | Custom-WAD texture lookup. All three deleted 2026-09-21 (see last section). |
 | ~~`gSkyTexNumber` / `r_loading_skybox`~~ | `int*` / `int*` | ~~`Engine_FillAddress_R_LoadSkybox`: `MOV reg,imm(.data)` validated by `CMP [reg],reg`/`PUSH [reg+disp]`; `MOV eax,[.data]` or `CMP [.data],0`~~ | Deleted 2026-09-19 — write-only, no consumers (see last section). |
-| `giScissorTest` / `scissor_x` / `scissor_y` / `scissor_width` / `scissor_height` | `qboolean*` / `int*` | `Engine_FillAddress_Draw_Frame`: `MOV reg,[.data]`+`TEST`, or `CMP [.data],0`, or `CMP [.data],xor_reg`; four `PUSH/MOV [.data]` candidates `qsort`ed. | `giScissorTest` used; scissor rect resolved only. |
+| `giScissorTest` / ~~`scissor_x` / `scissor_y` / `scissor_width` / `scissor_height`~~ | `qboolean*` / ~~`int*`~~ | `Engine_FillAddress_Draw_Frame`: gamedata GLOBAL `giScissorTest`. The four rect pointers and the `Draw_Frame` disassembly were deleted 2026-09-22. | `giScissorTest` controls the textured-rect shader state; the rect pointers had no reader. |
 | `mod_known` / `mod_numknown` | `model_t*` / `int*` | `Engine_FillAddress_ModKnown`: `.text` `B8 9D 82 97 53 81 E9`, ptr at `+7`; `_Mod_NumKnown`: string `"Cached models:\n"` → `57 68 <str> E8` + `DisasmRanges(+0x50)`. | Model index/count. |
 | ~~`loadname` / `loadmodel`~~ | ~~`char (*)[64]` / `model_t**`~~ | **Deleted (2026-09-18).** The locator (`PUSH imm(.data)` near the `"loading %s"` printf; then first `MOV [.data],reg`) and the extern/definitions were removed: both slots were written but never read anywhere in the plugin. The upstream catalog does publish them (engine GLOBAL, 11/11). | — |
 | `cl_max_edicts` / `cl_entities` | `int*` / `cl_entity_t**` | `Engine_FillAddress_CL_ReallocateDynamicData`: string `"CL_Reallocate cl_entities\n"` → `68 <str> E8` + `ReverseSearchFunctionBeginEx(+0x100)`; `MOV reg,[.data]`+`83 C4 04` or `IMUL reg,reg,[.data],imm`; `cl_entities` = first `MOV [.data],EAX` after the call. | Edict ranges. |
 | `cl_numvisedicts` / `cl_visedicts` | `int*` / `cl_entity_t**` | `Engine_FillAddress_VisEdicts`: `.text` `8B 0D <slot> 81 F9 00 ?,00 00`; `DisasmRanges(+0x150)` `MOV [disp+ecx*4],reg` → array base. | Visible-entity list. |
-| `host_basepal` | `word**` | `Engine_FillAddress_BasePalette`: `68 <"palette.lmp"> 68 00 08 00 00 E8 … 83 C4 08 A3 <slot>`. | Palette lookup. |
-| `r_missingtexture` / `r_notexture_mip` | `texture_t**` | `Engine_FillAddress_MissingTexture`/`_NoTexture`: strings `"**missing**"` / `"**empty**"` → `6A 00 68 <str> E8 …`; first `MOV reg,[.data]` after the call. | Fallback textures. |
+| `host_basepal` | `word**` | `Engine_FillAddress_BasePalette`: gamedata GLOBAL `host_basepal`. | Palette lookup. |
+| `r_missingtexture` / `r_notexture_mip` | `texture_t**` | Direct gamedata GLOBAL resolves: SvEngine requires `r_missingtexture`; non-SvEngine requires `r_notexture_mip`. The duplicate `"**empty**"` scans were removed 2026-09-22. | `R_GetEmptyWorldTexture` selects the same symbol by engine family. |
 | `cache_head` | `cache_system_t*` | `Engine_FillAddress_Cache_Alloc` `DisasmRanges(+0x500)` `CMP reg,imm(.data)`. | LRU list. |
 | `gSpriteMipMap` | `int*` | `Engine_FillAddress_Mod_LoadSpriteFrame`: gamedata GLOBAL `gSpriteMipMap`. | Sprite mipmap enable. |
 | `detTexSupported` | `bool*` | `Engine_FillAddress_LegacyMultiTextureInit`: gamedata `GLOBAL`. | Detail-texture flag; forced false in the plugin's GL init. |
@@ -1048,10 +1048,10 @@ same symbol on 2026-09-12 for the same reason.)
 **Still open / deliberately not touched.** The 12 `gPrivateFuncs.triapi_*`
 originals saved at `gl_hooks.cpp:6093-6107` (the plugin's triAPI wrappers
 reimplement everything and only `triapi_Fog` / `triapi_FogParams` /
-`triapi_SpriteTexture` call the saved originals). The five guard-only globals
-whose only "use" is `Sig_VarNotFound` (`r_soundOrigin`, `scissor_x`, `scissor_y`,
-`scissor_width`, `scissor_height`). And `g_StudioRendererRendermode` (`static`,
-write-only). All three groups were reported but excluded from this sweep.
+`triapi_SpriteTexture` call the saved originals). The guard-only `r_soundOrigin`.
+And `g_StudioRendererRendermode` (`static`, write-only). These groups were
+reported but excluded from this sweep; the four former scissor rect globals were
+deleted in the 2026-09-22 gamedata migration below.
 
 **Verified**: `Renderer` `Release|Win32` builds with the same 9 pre-existing
 warnings and 0 errors; `validate-gamedata.py` passes over 21 snapshots / 5 engine
@@ -1590,3 +1590,42 @@ producing four outputs at once, all four write-only, and unlike `Draw_CacheGet` 
 
 **Verified**: Renderer rebuilds Release|Win32 with 0 errors and the same 9 pre-existing warnings; `validate-gamedata.py` passes (21 snapshots, 5 engine families); `pytest scripts/tests` 94 passed / 2 skipped / 26 subtests.
 **Not verified**: in-game model skin rendering smoke test.
+
+## Gamedata migration (2026-09-22): palette, fallback textures, scissor state and Studio lighting
+
+Five remaining locators were collapsed to direct GLOBAL resolves:
+
+- `host_basepal`, `giScissorTest`, `r_ambientlight`, `r_shadelight`,
+  `r_plightvec` and `lightgammatable` are published on all 11 Renderer engine
+  identities and have live readers.
+- `r_missingtexture` is required only on the two SvEngine identities;
+  `r_notexture_mip` only on the nine non-SvEngine identities. This mirrors
+  `R_GetEmptyWorldTexture`; SvEngine's published `r_emptytexture` has no
+  Renderer reader and stays ungated.
+- `gPrivateFuncs.Draw_Frame` remains a live inline-hook target and still resolves
+  as a FUNCTION; only its former global-variable disassembly was removed.
+  `gPrivateFuncs.R_StudioLighting` was only a disassembly anchor, never called or
+  hooked, so that field was deleted.
+- `r_blightvec` and `scissor_x/y/width/height` were write-only locator outputs.
+  Their definitions and externs were deleted instead of turning dead state into
+  required gamedata.
+
+The old `"palette.lmp"`, `"**missing**"` and duplicate `"**empty**"` scans,
+`R_STUDIOLIGHTING_SIG_*` family, and the `Draw_Frame` / `R_StudioLighting`
+`DisasmRanges` walks are gone. The Renderer consumer gate now checks the six
+all-identity GLOBALs plus the two family-specific fallback-texture GLOBALs.
+
+**Completion-review correction.** A plain search for
+`gPrivateFuncs.Draw_Frame` initially made the field look anchor-only, but the
+build exposed its token-pasted reads through `Install_InlineHook(Draw_Frame)`
+and `Uninstall_Hook(Draw_Frame)`. The field, FUNCTION resolve and FUNCTION gate
+therefore remain; only the disassembly-derived globals changed. This is the same
+macro-audit constraint documented by the 2026-09-19 dead-variable sweep.
+
+**Verified**: Renderer `Release|Win32` builds with 0 errors and the same 9
+pre-existing warnings; `validate-gamedata.py` passes over 21 snapshots / 5
+engine families; `pytest scripts/tests` reports 96 passed / 2 skipped / 26
+subtests. A residual-symbol search finds the removed names only in the gate test
+that asserts they stay retired.
+**Not verified**: in-game fallback-texture, sprite-palette, scissor and Studio
+lighting smoke tests.

@@ -186,10 +186,6 @@ extern float *flFogStart;
 extern float *flFogEnd;
 
 extern qboolean* giScissorTest;
-extern int* scissor_x;
-extern int* scissor_y;
-extern int* scissor_width;
-extern int* scissor_height;
 
 extern screenfade_t* cl_sf;
 

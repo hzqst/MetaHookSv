@@ -85,10 +85,6 @@ float* flFogStart = nullptr;
 float* flFogEnd = nullptr;
 
 qboolean* giScissorTest = nullptr;
-int* scissor_x = nullptr;
-int* scissor_y = nullptr;
-int* scissor_width = nullptr;
-int* scissor_height = nullptr;
 
 screenfade_t* cl_sf = nullptr;
 

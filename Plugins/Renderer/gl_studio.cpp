@@ -54,7 +54,6 @@ int* lightgammatable = NULL;
 byte* texgammatable = NULL;
 int* r_ambientlight = NULL;
 float* r_shadelight = NULL;
-vec3_t* r_blightvec = NULL;
 vec3_t* r_plightvec = NULL;
 float* r_colormix = NULL;
 int* r_smodels_total = NULL;

@@ -213,11 +213,11 @@ RENDERER_ENGINE_ALL_GLOBALS = (
     "cl_waterlevel", "cl_weaponsequence", "cl_weaponstarttime", "cl_worldmodel",
     "cshift_water", "currententity", "currenttexture", "d_lightstylevalue", "detTexSupported",
     "envmap", "filterBrightness", "filterColorBlue", "filterColorGreen", "filterColorRed",
-    "filterMode", "flFinalFogColor", "flFogDensity", "flFogEnd", "flFogStart", "frustum", "gDecalCache", "gDecalPool", "gDecalSurfCount", "gDevOverview", "gSpriteMipMap", "gTempEnts", "gWaterColor", "g_bUserFogOn",
-    "gl_filter_max", "gl_filter_min",
-    "lightmaps", "mod_known",
+    "filterMode", "flFinalFogColor", "flFogDensity", "flFogEnd", "flFogStart", "frustum", "gDecalCache", "gDecalPool", "gDecalSurfCount", "gDevOverview", "gSpriteMipMap", "gTempEnts", "gWaterColor", "g_bUserFogOn", "giScissorTest",
+    "gl_filter_max", "gl_filter_min", "host_basepal",
+    "lightgammatable", "lightmaps", "mod_known",
     "mod_numknown", "modelorg", "pstudiohdr",
-    "r_blend", "r_entorigin", "r_framecount", "r_origin", "r_refdef", "r_visframecount",
+    "r_ambientlight", "r_blend", "r_entorigin", "r_framecount", "r_origin", "r_plightvec", "r_refdef", "r_shadelight", "r_visframecount",
     "r_worldentity", "rtable",
     "scr_drawloading", "scr_fov_value",
 )
@@ -231,7 +231,7 @@ RENDERER_ENGINE_NON_SVENGINE_FUNCTIONS = (
 )
 RENDERER_ENGINE_NON_SVENGINE_PATCHES = ("GL_SetMode_call_qwglCreateContext",)
 #SvEngine renamed the alias-poly counter to c_model_polys.
-RENDERER_ENGINE_NON_SVENGINE_GLOBALS = ("c_alias_polys",)
+RENDERER_ENGINE_NON_SVENGINE_GLOBALS = ("c_alias_polys", "r_notexture_mip")
 RENDERER_ENGINE_E8_FUNCTIONS = ("GL_SelectPixelFormat", "GlowBlend")
 #Draw_FillRGBABuf is SvEngine's buffered eight-integer rectangle body; the catalog used to
 #publish it under the wrong name NET_DrawRect and dropped that name without an alias.
@@ -239,7 +239,7 @@ RENDERER_ENGINE_SVENGINE_FUNCTIONS = (
     "Draw_FillRGBABuf", "Draw_SpriteFrameAdditive_SvEngine", "Draw_SpriteFrameGeneric_SvEngine",
     "Draw_SpriteFrameHoles_SvEngine", "R_LoadSkyBox_SvEngine",
 )
-RENDERER_SVENGINE_GLOBALS = ("allow_cheats", "c_model_polys")
+RENDERER_SVENGINE_GLOBALS = ("allow_cheats", "c_model_polys", "r_missingtexture")
 RENDERER_MTEX_PROBE_FUNCTIONS = ("CheckMultiTextureExtensions",)
 RENDERER_INLINED_MTEX_PROBE_FUNCTIONS = ("DT_Initialize",)
 RENDERER_ENGINE_HL25_FUNCTIONS = ("CGame_DrawStartupVideo",)

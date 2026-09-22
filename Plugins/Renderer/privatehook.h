@@ -193,7 +193,6 @@ typedef struct
 
 	//Engine Studio
 	void (*R_GLStudioDrawPoints)(void);
-	void (*R_StudioLighting)(float* lv, int bone, int flags, vec3_t normal);
 
 	//Engine Studio Exported API
 	void (*studioapi_StudioDynamicLight)(struct cl_entity_s* ent, struct alight_s* plight);
