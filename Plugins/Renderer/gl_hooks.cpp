@@ -1315,7 +1315,6 @@ void Engine_FillAddress_Hunk_AllocName(const mh_dll_info_t& DllInfo, const mh_dl
 		return;
 
 	gPrivateFuncs.Hunk_AllocName = (decltype(gPrivateFuncs.Hunk_AllocName))GamedataResolvePtr(RealDllInfo.ImageBase, "Hunk_AllocName", MH_GAMESYMBOL_KIND_FUNCTION);
-
 }
 
 void Engine_FillAddress_GL_EndRenderingVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
