@@ -24,12 +24,8 @@ typedef struct
 	void (*V_RenderView)(void);
 	void (*R_RenderView)(void);
 	void (*R_RenderView_SvEngine)(int viewIdx);
-	void (*R_RenderScene)(void);
 	void (*ClientDLL_DrawNormalTriangles)(void);
 	void (*R_NewMap)(void);
-	void (*R_ClearParticles)(void);
-	void (*R_DecalInit)(void);
-	void (*V_InitLevel)(void);
 	void (*GL_BuildLightmaps)(void);
 	void (*R_DrawParticles)(void);
 	void (*R_TracerDraw)(void);
@@ -231,8 +227,6 @@ typedef struct
 	//Engine's SDL2 wrapper
 	void(__cdecl* SDL_InitGL)();
 	decltype(glewInit)* SvEngine_glewInit;
-
-	bool R_RenderScene_inlined;
 
 }private_funcs_t;
 

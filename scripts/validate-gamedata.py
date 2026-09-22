@@ -166,7 +166,6 @@ RENDERER_SDL_GAMES = ("hl-10210", "hl-6153", "hl-8684")
 RENDERER_SETMODE_GAMES = ("hl-10210", "hl-6153", "hl-8684", "svencoop-10257", "svencoop-8948")
 RENDERER_SETMODE_LEGACY_GAMES = ("cof-5936", "hl-3248", "hl-3266", "hl-3329",
                                  "hl-3647", "hl-4554")
-RENDERER_NOT_SVENGINE_10257_GAMES = tuple(g for g in RENDERER_ALL_GAMES if g != "svencoop-10257")
 RENDERER_NOT_SVENGINE_8948_GAMES = tuple(g for g in RENDERER_ALL_GAMES if g != "svencoop-8948")
 RENDERER_SVEN_10257_GAMES = ("svencoop-10257",)
 # Renderer neuters exactly one legacy multitexture / detail-texture init per engine.
@@ -246,7 +245,6 @@ RENDERER_ENGINE_HL25_FUNCTIONS = ("CGame_DrawStartupVideo",)
 RENDERER_SETMODE_FUNCTIONS = ("GL_SetMode",)
 RENDERER_SETMODE_LEGACY_FUNCTIONS = ("GL_SetModeLegacy",)
 RENDERER_SDL_FUNCTIONS = ("SDL_InitGL",)
-RENDERER_NOT_SVENGINE_10257_FUNCTIONS = ("R_RenderScene",)
 RENDERER_NOT_SVENGINE_8948_FUNCTIONS = ("R_DrawViewModel",)
 RENDERER_CLIENT_SVEN_FUNCTIONS = (
     "ClientPortalManager_RenderPortals", "ClientPortalManager_ResetAll", "UpdatePlayerPitch",
@@ -757,8 +755,6 @@ def validate_renderer(symbols, game_version, include_engine=True, include_client
             errors += _renderer_check(symbols, game_version, RENDERER_SETMODE_LEGACY_FUNCTIONS, "function", "engine")
         if game_version in RENDERER_SDL_GAMES:
             errors += _renderer_check(symbols, game_version, RENDERER_SDL_FUNCTIONS, "function", "engine")
-        if game_version in RENDERER_NOT_SVENGINE_10257_GAMES:
-            errors += _renderer_check(symbols, game_version, RENDERER_NOT_SVENGINE_10257_FUNCTIONS, "function", "engine")
         if game_version in RENDERER_NOT_SVENGINE_8948_GAMES:
             errors += _renderer_check(symbols, game_version, RENDERER_NOT_SVENGINE_8948_FUNCTIONS, "function", "engine")
 

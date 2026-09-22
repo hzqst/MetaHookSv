@@ -1097,152 +1097,12 @@ void Engine_FillAddress_V_RenderView(const mh_dll_info_t& DllInfo, const mh_dll_
 	}
 }
 
-void Engine_FillAddress_R_RenderScene(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (gPrivateFuncs.R_RenderScene)
-		return;
-
-	PVOID R_RenderScene_VA = 0;
-
-	PVOID R_RenderView_VA = (gPrivateFuncs.R_RenderView_SvEngine) ? (PVOID)gPrivateFuncs.R_RenderView_SvEngine : (PVOID)gPrivateFuncs.R_RenderView;
-
-	PVOID R_SetupGL_VA = (PVOID)gPrivateFuncs.R_SetupGL;
-
-	//SvEngine 10257 inlines R_RenderScene and publishes no catalog record; every
-	//other identity, including svencoop-8948, resolves it.
-	if (g_iEngineType == ENGINE_SVENGINE &&
-		g_pMetaHookAPI->IsGameSymbolAvailable(RealDllInfo.ImageBase, "R_RenderScene") != MH_GAMESYMBOL_OK)
-	{
-		typedef struct R_RenderScene_SearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-			PVOID &R_SetupGL_VA;
-			PVOID &R_RenderScene_VA;
-			bool bFoundCallSetupGL{};
-		}R_RenderScene_SearchContext;
-
-		R_RenderScene_SearchContext ctx = { RealDllInfo, RealDllInfo, R_SetupGL_VA, R_RenderScene_VA };
-
-		g_pMetaHookAPI->DisasmRanges(R_RenderView_VA, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (R_RenderScene_SearchContext*)context;
-
-			if (address[0] == 0xE8)
-			{
-				PVOID target = (decltype(target))pinst->detail->x86.operands[0].imm;
-
-				if (target == ctx->R_SetupGL_VA)
-				{
-					ctx->bFoundCallSetupGL = true;
-
-					//as global var
-					gPrivateFuncs.R_RenderScene_inlined = true;
-
-					return TRUE;
-				}
-				else
-				{
-					//Do a copy here
-					R_RenderScene_SearchContext ctx2 = *ctx;
-
-					g_pMetaHookAPI->DisasmRanges((PVOID)target, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-						auto pinst = (cs_insn*)inst;
-						auto ctx2 = (R_RenderScene_SearchContext*)context;
-
-						PVOID target2 = (decltype(target2))pinst->detail->x86.operands[0].imm;
-
-						if (target2 == ctx2->R_SetupGL_VA)
-						{
-							ctx2->bFoundCallSetupGL = true;
-							return TRUE;
-						}
-
-						if (address[0] == 0xCC)
-							return TRUE;
-
-						if (pinst->id == X86_INS_RET)
-							return TRUE;
-
-						return FALSE;
-
-						}, 0, &ctx2);
-
-					if (ctx2.bFoundCallSetupGL)
-					{
-						ctx2.R_RenderScene_VA = target;
-						return TRUE;
-					}
-				}
-			}
-
-			if (ctx->bFoundCallSetupGL)
-				return TRUE;
-
-			if (ctx->R_RenderScene_VA)
-				return TRUE;
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-
-			}, 0, &ctx);
-
-		if (R_RenderScene_VA)
-		{
-			gPrivateFuncs.R_RenderScene = (decltype(gPrivateFuncs.R_RenderScene))R_RenderScene_VA;
-		}
-
-		if (gPrivateFuncs.R_RenderScene_inlined)
-			return;
-
-		if (!R_RenderScene_VA)
-		{
-			char pattern[] = "\xDD\xD8\xDD\xD8\xE8";
-			auto addr = (PUCHAR)Search_Pattern_From(R_RenderView_VA, pattern, RealDllInfo);
-			Sig_AddrNotFound(R_RenderScene);
-			R_RenderScene_VA = GetCallAddress(addr + 4);
-			gPrivateFuncs.R_RenderScene = (decltype(gPrivateFuncs.R_RenderScene))R_RenderScene_VA;
-		}
-
-		Sig_FuncNotFound(R_RenderScene);
-		return;
-	}
-
-	gPrivateFuncs.R_RenderScene = (decltype(gPrivateFuncs.R_RenderScene))GamedataResolvePtr(RealDllInfo.ImageBase, "R_RenderScene", MH_GAMESYMBOL_KIND_FUNCTION);
-
-}
-
 void Engine_FillAddress_R_NewMap(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_NewMap)
 		return;
 
 	gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))GamedataResolvePtr(RealDllInfo.ImageBase, "R_NewMap", MH_GAMESYMBOL_KIND_FUNCTION);
-
-	PVOID R_NewMap_VA = (PVOID)gPrivateFuncs.R_NewMap;
-
-	{
-		//R_ClearParticles / R_DecalInit / V_InitLevel remain catalog-uncovered call targets.
-		char pattern[] = "\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xC7\x05\x2A\x2A\x2A\x2A\xFF\xFF\xFF\xFF";
-		auto addr = (ULONG_PTR)Search_Pattern_From_Size(R_NewMap_VA, 0x100, pattern);
-		if (addr)
-		{
-			PVOID R_ClearParticles_VA = GetCallAddress(addr + 0);
-			PVOID R_DecalInit_VA = GetCallAddress(addr + 5);
-			PVOID V_InitLevel_VA = GetCallAddress(addr + 10);
-
-			gPrivateFuncs.R_ClearParticles = (decltype(gPrivateFuncs.R_ClearParticles))R_ClearParticles_VA;
-			gPrivateFuncs.R_DecalInit = (decltype(gPrivateFuncs.R_DecalInit))R_DecalInit_VA;
-			gPrivateFuncs.V_InitLevel = (decltype(gPrivateFuncs.V_InitLevel))V_InitLevel_VA;
-		}
-	}
 
 	gPrivateFuncs.GL_UnloadTextures = (decltype(gPrivateFuncs.GL_UnloadTextures))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_UnloadTextures", MH_GAMESYMBOL_KIND_FUNCTION);
 }
@@ -2391,8 +2251,6 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 	Engine_FillAddress_R_RenderView(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_V_RenderView(DllInfo, RealDllInfo);
-
-	Engine_FillAddress_R_RenderScene(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_R_NewMap(DllInfo, RealDllInfo);
 

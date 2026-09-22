@@ -474,8 +474,6 @@ class RendererGateTests(unittest.TestCase):
             add(validate.RENDERER_SETMODE_LEGACY_FUNCTIONS, "function")
         if game_version in validate.RENDERER_SDL_GAMES:
             add(validate.RENDERER_SDL_FUNCTIONS, "function")
-        if game_version in validate.RENDERER_NOT_SVENGINE_10257_GAMES:
-            add(validate.RENDERER_NOT_SVENGINE_10257_FUNCTIONS, "function")
         if game_version in validate.RENDERER_NOT_SVENGINE_8948_GAMES:
             add(validate.RENDERER_NOT_SVENGINE_8948_FUNCTIONS, "function")
         symbols.update(self.complete_client_symbols(game_version))
@@ -571,15 +569,6 @@ class RendererGateTests(unittest.TestCase):
         symbols = self.complete_engine_symbols("hl-4554")
         self.assertNotIn("SDL_InitGL", symbols)
         self.assertEqual([], validate.validate_renderer(symbols, "hl-4554"))
-
-    def test_gate_render_scene_is_not_applicable_for_svengine_10257(self):
-        for gv in validate.RENDERER_ALL_GAMES:
-            symbols = self.complete_engine_symbols(gv)
-            if gv == "svencoop-10257":
-                self.assertNotIn("R_RenderScene", symbols)
-            else:
-                self.assertIn("R_RenderScene", symbols)
-            self.assertEqual([], validate.validate_renderer(symbols, gv), gv)
 
     def test_gate_requires_exactly_one_multitexture_init_per_identity(self):
         for gv in validate.RENDERER_ALL_GAMES:
