@@ -160,7 +160,6 @@ int* allocated_textures = nullptr;
 //client dll
 
 
-int* g_iWaterLevel = nullptr;
 bool* g_bRenderingPortals_SCClient = nullptr;
 int* g_ViewEntityIndex_SCClient = nullptr;//Sniber NMSL
 

@@ -3066,41 +3066,6 @@ void Client_FillAddress_UpdatePlayerPitch(const mh_dll_info_t& DllInfo, const mh
 
 }
 
-void Client_FillAddress_WaterLevel(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	/*
-.text:10072350                                     V_CalcRefdef    proc near               ; DATA XREF: .rdata:off_10170E88↓o
-.text:10072350
-.text:10072350                                     var_10          = dword ptr -10h
-.text:10072350                                     var_8           = dword ptr -8
-.text:10072350                                     var_4           = dword ptr -4
-.text:10072350                                     a1              = dword ptr  4
-.text:10072350
-.text:10072350 83 EC 08                                            sub     esp, 8
-.text:10072353 56                                                  push    esi
-.text:10072354 8B 74 24 10                                         mov     esi, [esp+0Ch+a1]
-.text:10072358 8B 46 54                                            mov     eax, [esi+54h]
-.text:1007235B A3 74 35 60 10                                      mov     g_iWaterLevel, eax
-.text:10072360 83 BE E0 00 00 00 00                                cmp     dword ptr [esi+0E0h], 0
-.text:10072367 0F 85 A7 01 00 00                                   jnz     loc_10072514
-.text:1007236D 80 3D 0D C8 63 10 00                                cmp     g_bRenderingPortals, 0
-.text:10072374 0F 85 9A 01 00 00                                   jnz     loc_10072514
-.text:1007237A 83 7E 44 00                                         cmp     dword ptr [esi+44h], 0
-.text:1007237E C7 86 E4 00 00 00 00 00 00 00                       mov     dword ptr [esi+0E4h], 0
-.text:10072388 0F 84 77 01 00 00                                   jz      loc_10072505
-.text:1007238E 83 BE AC 00 00 00 01                                cmp     dword ptr [esi+0ACh], 1
-				*/
-	const char pattern[] = "\xA3\x2A\x2A\x2A\x2A\x83\x2A\xE0\x00\x00\x00\x00\x0F\x85\x2A\x2A\x2A\x2A\x80\x3D\x2A\x2A\x2A\x2A\x00";
-	auto addr = (PUCHAR)Search_Pattern(pattern, DllInfo);
-	Sig_AddrNotFound(g_iWaterLevel);
-
-	auto g_iWaterLevel_VA = *(PVOID*)(addr + 1);
-
-	g_iWaterLevel = (decltype(g_iWaterLevel))ConvertDllInfoSpace(g_iWaterLevel_VA, DllInfo, RealDllInfo);
-
-	Sig_VarNotFound(g_iWaterLevel);
-}
-
 void Client_FillAddress_FogParams(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	const char pattern[] = "\x68\x01\x26\x00\x00\x68\x65\x0B\x00\x00";
@@ -3182,7 +3147,6 @@ void Client_FillAddress_SCClient(const mh_dll_info_t& DllInfo, const mh_dll_info
 			Client_FillAddress_ClientPortalManager_EnableClipPlane(DllInfo, RealDllInfo);
 			Client_FillAddress_ClientPortalManager_RenderPoratals(DllInfo, RealDllInfo);
 			Client_FillAddress_UpdatePlayerPitch(DllInfo, RealDllInfo);
-			Client_FillAddress_WaterLevel(DllInfo, RealDllInfo);
 			Client_FillAddress_FogParams(DllInfo, RealDllInfo);
 
 			g_bRenderingPortals_SCClient = (decltype(g_bRenderingPortals_SCClient))GamedataResolvePtr(RealDllInfo.ImageBase, "g_bRenderingPortals_SCClient", MH_GAMESYMBOL_KIND_GLOBAL);

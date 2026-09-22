@@ -244,7 +244,7 @@ Entry point `EngineStudio_FillAddress(pstudio, DllInfo, RealDllInfo)` (`exportfu
 | Local symbol / inferred game object | Declaration / type | Resolution mechanism | Subsequent use |
 | --- | --- | --- | --- |
 | `g_bRenderingPortals_SCClient` | `bool*` | `Client_FillAddress_RenderingPortals`: `6A 00 6A 00 6A 00 8B ? FF 50 ?` + `DisasmRanges(+0x80)` `MOV [.data],1`. | Portal-pass gating. |
-| `g_iWaterLevel` | `int*` | `Client_FillAddress_WaterLevel`: `A3 <slot> 83 …` ptr at `addr+1`. | `V_CalcRefdef` fog gate. |
+| ~~`g_iWaterLevel`~~ (deleted 2026-09-22) | ~~`int*`~~ | ~~`Client_FillAddress_WaterLevel`: `A3 <slot> 83 …` ptr at `addr+1`.~~ Write-only: its only other reference was inside the commented-out fixed-function fog block of `V_CalcRefdef` (`exportfuncs.cpp:101-115`, disabled by `ed9c8a64` #695 on 2025-09-16). | — |
 | `g_iFogColor_SCClient` / `g_iStartDist_SCClient` / `g_iEndDist_SCClient` | `float*` | `Client_FillAddress_FogParams`: `68 01 26 00 00 68 65 0B 00 00` (`GL_LINEAR`,`GL_FOG`) + `DisasmRanges(+0x300)` `MOVSS xmm,[.data]` candidates; requires ≥5 with last three 4-byte-adjacent; assigns `[0]`/`[3]`/`[4]`. | Sven fog params. |
 | `g_ViewEntityIndex_SCClient` | `int*` | `Client_FillAddress_ViewEntityIndex` (buildnum ≥ 10182): `FF 15 … 85 C0 ? ? 8B 00 ? 05` + `DisasmRanges(+0x80)` `CMP reg,[.data]`. | Studio view-entity save/restore. |
 | `g_iUser1` / `g_iUser2` | `int*` | `Client_FillAddress_CL_IsThirdPerson`: anchor = client `CL_IsThirdPerson` (from `pExportFuncs`/`GetProcAddress`); `DisasmRanges(+0x100)` up to 16 `.data` candidates; last two accepted when adjacent. | Spectator resolution. |
@@ -1965,6 +1965,36 @@ recorded above (`Release|Win32` 0 errors / same 9 warnings; `validate-gamedata.p
 **Still open**: four sig macros are unreferenced repo-wide — `R_MARKLEAVES_SIG_BLOB` (`gl_hooks.cpp:26`),
 `R_CULLBOX_SIG_BLOB` (`:28`), `R_SETUPGL_SIG_BLOB` (`:36`) and `R_DRAWBRUSHMODEL_SIG_BLOB` (`:40`);
 `R_DRAWBRUSHMODEL_SIG_BLOB` is the last trace of the deleted field's own locator macro.
+
+## Dead-code removal (2026-09-22): the write-only client `g_iWaterLevel` mirror
+
+Review question: convert `Client_FillAddress_WaterLevel` to a gamedata resolve. The answer was to delete it
+instead — the symbol has no live reader in the plugin.
+
+| Symbol | Every reference before this change | Verdict |
+| --- | --- | --- |
+| `g_iWaterLevel` | definition `gl_rmain.cpp:163`, extern `gl_local.h:202`, assigned `gl_hooks.cpp:3099`; the only other reference is `exportfuncs.cpp:103` | write-only |
+| `Client_FillAddress_WaterLevel` | locator `gl_hooks.cpp:3069-3102` (34 lines: a `V_CalcRefdef` disasm comment, the `A3 <slot> 83 …` `Search_Pattern`, `Sig_AddrNotFound` / `Sig_VarNotFound`) plus the dispatch call inside the `SCClientDLL001` branch | no reader |
+
+**Why it looked live.** `exportfuncs.cpp:103` does read `g_iWaterLevel` — but that line sits inside the
+`/* … */` block at `exportfuncs.cpp:101-115`, the fixed-function fog emulation that `ed9c8a64` (issue #695,
+2025-09-16) disabled when it switched `V_CalcRefdef` to the save-zero-call-restore trick for
+`g_iStartDist_SCClient` / `g_iEndDist_SCClient`. The field has therefore been write-only for about a year.
+The commented block stays in place as the record of what #695 removed; it is now the only remaining mention
+of the deleted symbol.
+
+**No migration, no gate change.** `g_iWaterLevel` is a published `module=client` GLOBAL, but only on the two
+svencoop identities (10257 / 8948, windows + linux), and its catalog record has no consumer — so per the
+publishing-is-not-needing rule it is deleted rather than wired into `RENDERER_CLIENT_SVEN_GLOBALS`
+(`("g_bRenderingPortals_SCClient",)`, unchanged). No `memory/GameData.md` entry was warranted. Deleting the
+locator also removes two fatal init-time paths (`Sig_AddrNotFound` / `Sig_VarNotFound`).
+
+**Verified**: Renderer `Release|Win32` builds with 0 errors and the same 9 pre-existing warnings;
+`validate-gamedata.py` passes over 21 snapshots / 5 engine families; `pytest scripts/tests` reports
+98 passed / 2 skipped / 26 subtests. Searches for `g_iWaterLevel` / `Client_FillAddress_WaterLevel` under
+`Plugins/Renderer` and `scripts` return only the commented block above; `Plugins/SCCameraFix` has its own,
+unrelated `g_iWaterLevel`.
+**Not verified**: in-game smoke test (Sven Co-op fog / `V_CalcRefdef` path).
 
 
 
