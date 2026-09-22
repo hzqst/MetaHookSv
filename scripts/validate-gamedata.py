@@ -194,7 +194,7 @@ RENDERER_ENGINE_ALL_FUNCTIONS = (
     "Mod_LoadModel", "Mod_LoadSpriteModel", "Mod_LoadStudioModel",
     "Mod_PointInLeaf", "Mod_UnloadSpriteTextures",
     "PVSNode", "R_AnimateLight", "R_BeamDrawList", "R_CheckVariables",
-    "R_CullBox", "R_DrawBrushModel", "R_DrawParticles", "R_DrawSequentialPoly",
+    "R_CullBox", "R_DrawParticles", "R_DrawSequentialPoly",
     "R_DrawTEntitiesOnList", "R_ForceCVars", "R_FreeDeadParticles",
     "R_GLStudioDrawPoints", "R_GetSpriteFrame", "R_MarkLeaves", "R_NewMap", "R_PolyBlend",
     "R_RenderView", "R_ResetLatched",

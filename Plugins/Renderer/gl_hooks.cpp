@@ -2223,8 +2223,6 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 	gPrivateFuncs.R_TextureAnimation = (decltype(gPrivateFuncs.R_TextureAnimation))GamedataResolvePtr(RealDllInfo.ImageBase, "R_TextureAnimation", MH_GAMESYMBOL_KIND_FUNCTION);
 	rtable = (decltype(rtable))GamedataResolvePtr(RealDllInfo.ImageBase, "rtable", MH_GAMESYMBOL_KIND_GLOBAL);
 
-	gPrivateFuncs.R_DrawBrushModel = (decltype(gPrivateFuncs.R_DrawBrushModel))GamedataResolvePtr(RealDllInfo.ImageBase, "R_DrawBrushModel", MH_GAMESYMBOL_KIND_FUNCTION);
-
 	Engine_FillAddress_R_DrawWorld(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_R_DrawViewModel(DllInfo, RealDllInfo);
