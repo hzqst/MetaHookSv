@@ -1618,52 +1618,7 @@ void Engine_FillAddress_BuildGammaTable(const mh_dll_info_t& DllInfo, const mh_d
 
 	gPrivateFuncs.BuildGammaTable = (decltype(gPrivateFuncs.BuildGammaTable))GamedataResolvePtr(RealDllInfo.ImageBase, "BuildGammaTable", MH_GAMESYMBOL_KIND_FUNCTION);
 
-	PVOID BuildGammaTable_VA = (PVOID)gPrivateFuncs.BuildGammaTable;
-
-
-	/*
-	//Global pointers that link into engine vars
-	byte *texgammatable = NULL;
-	*/
-
-	typedef struct BuildGammaTable_SearchContext_s
-	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-	} BuildGammaTable_SearchContext;
-
-	BuildGammaTable_SearchContext ctx = { RealDllInfo, RealDllInfo };
-
-	g_pMetaHookAPI->DisasmRanges(BuildGammaTable_VA, 0x250, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (BuildGammaTable_SearchContext*)context;
-
-		if (pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[0].mem.base == X86_REG_ESI &&
-			(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->RealDllInfo.DataBase &&
-			(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize &&
-			pinst->detail->x86.operands[1].type == X86_OP_REG &&
-			pinst->detail->x86.operands[1].size == 1)
-		{
-			texgammatable = (decltype(texgammatable))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->RealDllInfo, ctx->RealDllInfo);
-		}
-
-		if (texgammatable)
-			return TRUE;
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-	}, 0, &ctx);
-
-	Sig_VarNotFound(texgammatable);
+	texgammatable = (decltype(texgammatable))GamedataResolvePtr(RealDllInfo.ImageBase, "texgammatable", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Engine_FillAddress_R_DrawParticles(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -1677,77 +1632,7 @@ void Engine_FillAddress_R_DrawParticles(const mh_dll_info_t& DllInfo, const mh_d
 	gPrivateFuncs.R_BeamDrawList = (decltype(gPrivateFuncs.R_BeamDrawList))GamedataResolvePtr(RealDllInfo.ImageBase, "R_BeamDrawList", MH_GAMESYMBOL_KIND_FUNCTION);
 
 	active_particles = (decltype(active_particles))GamedataResolvePtr(RealDllInfo.ImageBase, "active_particles", MH_GAMESYMBOL_KIND_GLOBAL);
-
-	PVOID R_DrawParticles_VA = (PVOID)gPrivateFuncs.R_DrawParticles;
-
-	//particletexture is catalog-uncovered and is still read from the resolved body.
-	typedef struct R_DrawParticles_SearchContext_s
-	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-	} R_DrawParticles_SearchContext;
-
-	R_DrawParticles_SearchContext ctx = { RealDllInfo, RealDllInfo };
-
-	g_pMetaHookAPI->DisasmRanges(R_DrawParticles_VA, 0x150, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (R_DrawParticles_SearchContext*)context;
-
-		if (!particletexture &&
-			pinst->id == X86_INS_PUSH &&
-			pinst->detail->x86.op_count == 1 &&
-			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[0].mem.base == 0 &&
-			pinst->detail->x86.operands[0].mem.index == 0 &&
-			(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->RealDllInfo.DataBase &&
-			(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize)
-		{
-			particletexture = (decltype(particletexture))((PVOID)pinst->detail->x86.operands[0].mem.disp);
-		}
-
-		if (!particletexture &&
-			pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[1].mem.base == 0 &&
-			pinst->detail->x86.operands[1].mem.index == 0 &&
-			(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->RealDllInfo.DataBase &&
-			(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize)
-		{
-			//Skip this shit
-			//.text:101EBCA6 A1 F4 36 32 10                                      mov     eax, ___security_cookie
-			//.text:101EBCAB 33 C5 xor eax, ebp
-			if (address[instLen] == 0x33 && address[instLen + 1] == 0xC5)
-			{
-
-			}
-			else if (address[instLen] == 0x33 && address[instLen + 1] == 0xC4)
-			{
-
-			}
-			else
-			{
-				particletexture = (decltype(particletexture))((PVOID)pinst->detail->x86.operands[1].mem.disp);
-			}
-		}
-
-		if (particletexture)
-			return TRUE;
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-		}, 0, &ctx);
-
-	Sig_VarNotFound(particletexture);
-
-
+	particletexture = (decltype(particletexture))GamedataResolvePtr(RealDllInfo.ImageBase, "particletexture", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Engine_FillAddress_R_StudioLighting(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)

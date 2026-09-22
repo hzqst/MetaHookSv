@@ -79,7 +79,7 @@ All of the following are resolved via `GamedataResolvePtr` (kind `FUNCTION` / `G
 | `gPrivateFuncs.GL_UnloadTextures` | `void (*)(void)` | `Engine_FillAddress_R_NewMap`: last 5-byte `E8` before `RET` in the `R_NewMap` body. | `Install_InlineHook(GL_UnloadTextures)`; wrapper `gl_draw.cpp:661`. |
 | `gPrivateFuncs.GL_LoadFilterTexture` | `void (*)(void)` | `Engine_FillAddress_GL_LoadFilterTexture`: sig-only, per-engine `GL_LOADFILTERTEXTURE_SIG_*`. | `Install_InlineHook(GL_LoadFilterTexture)`; wrapper `gl_draw.cpp:722`. |
 | `gPrivateFuncs.GL_BuildLightmaps` | `void (*)(void)` | Call #4 of the four consecutive `E8` in `R_NewMap`; standalone `Engine_FillAddress_GL_BuildLightmaps` uses `GL_BUILDLIGHTMAPS_SIG_*`. | `Install_InlineHook(GL_BuildLightmaps)`; wrapper `gl_rsurf.cpp:365`. |
-| `gPrivateFuncs.BuildGammaTable` | `void (*)(float gamma)` | `Engine_FillAddress_BuildGammaTable`: non-SvEngine `00 00 20 40 E8` (`2.0f; call`, target in `.text`); SvEngine no inline; fallback `BUILDGAMMATABLE_SIG_*`. | `Install_InlineHook(BuildGammaTable)`; wrapper fills `texgammatable`. |
+| `gPrivateFuncs.BuildGammaTable` | `void (*)(float gamma)` | `Engine_FillAddress_BuildGammaTable`: `GamedataResolvePtr` FUNCTION for `BuildGammaTable` (since #873); the `BUILDGAMMATABLE_SIG_*` / `00 00 20 40 E8` scan is long gone. Its GLOBAL by-product `texgammatable` was the last scanned symbol there and became a `GamedataResolvePtr` GLOBAL on 2026-09-22. | `Install_InlineHook(BuildGammaTable)`; wrapper `gl_draw.cpp:3528` fills `texgammatable` / `lightgammatable`. |
 | `gPrivateFuncs.GL_Set2D` / `GL_Finish2D` | `void (*)(void)` | `Engine_FillAddress_GL_Set2D`/`_GL_Finish2D`: sig-only per engine (`GL_SET2D_SIG_*` / `GL_FINISH2D_SIG_*`); HL25 `Set2D` adds `VA += 1`. | `Install_InlineHook(GL_Set2D)` / `(GL_Finish2D)`. |
 | `gPrivateFuncs.GL_BeginRendering` / `GL_EndRendering` | `void (*)(int*,int*,int*,int*)` / `void (*)(void)` | `Engine_FillAddress_GL_BeginRendering` sig-only; `_GL_EndRendering` prefers `GL_ENDRENDERING_SIG_COMMON_GOLDSRC` + reverse-search, else per-engine (GoldSrc picks `_NEW` when `g_bHasOfficialFBOSupport` else `_BLOB`); requires `GL_BeginRendering`. | `Install_InlineHook(GL_BeginRendering)` / `(GL_EndRendering)`; handlers call the originals. |
 | `gPrivateFuncs.LegacyMultiTextureInit` (`CheckMultiTextureExtensions` / `InitMultitexturing` / `DT_Initialize`) | `void (*)(void)` | `Engine_FillAddress_LegacyMultiTextureInit`: gamedata, first of the three the identity publishes. | `Install_InlineHook(LegacyMultiTextureInit)` (empty wrapper). |
@@ -209,7 +209,7 @@ Entry point `EngineStudio_FillAddress(pstudio, DllInfo, RealDllInfo)` (`exportfu
 | `gl_extensions` | `const char**` | `Engine_FillAddress_GL_Init` (and `GL_SetMode` BFS): `push 0x1F03` (`GL_EXTENSIONS`) then `MOV [.data],EAX`. | GL extension reset. |
 | `vid_d3d` / `currenttexture` / ~~`oldtarget`~~ | `float*` / `int*` | `GL_SetMode` BFS (`MOV [.data],0x3F800000`); `currenttexture` now gamedata GLOBAL. | `currenttexture` mirrored by the plugin; `vid_d3d` resolved only. `oldtarget` was **deleted 2026-09-19** (write-only since `a5bfd6a5`). |
 | `gltextures` / `gltextures_SvEngine` / `maxgltextures_SvEngine` / `peakgltextures_SvEngine` / `numgltextures` / `allocated_textures` / `gHostSpawnCount` | texture-array bookkeeping | `Engine_FillAddress_GL_LoadTexture2` `DisasmRanges` (non-SvEngine: `MOV reg,[.data]`/`MOV reg,imm` after a self-`XOR`; SvEngine: `8B 15 … 8B 1D` for `gltextures_SvEngine`, `6B C1 54 89 0D` for `maxgltextures`, `03 35 … 3B 15` for `peakgltextures`, `66 8B …` for `gHostSpawnCount`). `allocated_textures` chosen from the trailing `MOV [.data],reg` when `!g_bHasOfficialGLTexAllocSupport`. | Texture enumeration/unload/growth. |
-| `particletexture` / `active_particles` | `int*` / `particle_t**` | `Engine_FillAddress_R_DrawParticles`: first `PUSH [.data]` or `MOV reg,[.data]` not followed by `33 C5`/`33 C4`; `active_particles` = the `MOV ESI,[.data]` preceding `E8` that anchors `R_FreeDeadParticles`. | Particle rendering. |
+| `particletexture` / `active_particles` | `int*` / `particle_t**` | Both `GLOBAL` `GamedataResolvePtr` in `Engine_FillAddress_R_DrawParticles` (`active_particles` since 2026-09-17, `particletexture` since 2026-09-22). | Particle rendering; `*particletexture` is bound in `gl_rmain.cpp:1043`. |
 | `gTempEnts` | `TEMPENTITY*` | `Engine_FillAddress_TempEntsVars`: SvEngine `68 00 E0 5F 00 6A 00 68 <gTempEnts> A3`, others `68 30 68 17 00 6A 00 68 <gTempEnts> E8`; ptr at `addr+8`. | Temp-entity index lookup. |
 | `cl_dlights` / ~~`r_dlightactive`~~ / `cl_elights` | `dlight_t*` / `int*` / `dlight_t*` | GLOBAL `GamedataResolvePtr`, resolved inline in `Engine_FillAddress` since 2026-09-21. `r_dlightactive` was the last catalog-uncovered one, walked from `CL_AllocDlight` (after `PUSH 0x28`, a `PUSH imm(.data)` / `MOV reg,[.data]` / `OR [.data],1`) — deleted 2026-09-21, it had no reader. | Dynamic-light rendering. `cl_dlights` (`gl_light.cpp:1786`, `gl_rmain.cpp:5305`, `gl_studio.cpp:3517-3543`) and `cl_elights` (`gl_studio.cpp:2222`) are read. |
 | ~~`decal_wad`~~ / ~~`gfCustomBuild`~~ / ~~`szCustName`~~ | `cachewad_t**` / `qboolean*` / `char (*)[10]` | ~~`Engine_FillAddress_Draw_DecalTexture` BFS~~ / ~~`_Draw_MiptexTexture` `DisasmRanges(+0x500)`~~. | Custom-WAD texture lookup. All three deleted 2026-09-21 (see last section). |
@@ -396,7 +396,8 @@ Both are published as engine GLOBALs for all 11 identities and the retained
 heuristics for them were unreliable after the root switched to the real image,
 so they were migrated as well (78 symbols total): `Engine_FillAddress_R_DrawWorld`
 and `Engine_FillAddress_R_DrawParticles` now resolve them through
-`ResolveGameSymbol` and only `particletexture` (catalog-uncovered) is still
+`ResolveGameSymbol` and only `particletexture` (then believed catalog-uncovered, but
+already published — see the 2026-09-22 section) was still
 scanned. A sweep for every catalog symbol that is still assigned outside a
 `GamedataResolve*` call (matching bare-symbol assignments against the whole
 `records[]` name set) now reports no remaining locator, so this class of
@@ -427,7 +428,8 @@ scan image consistently for both root and pattern.
 `R_SetupFrame`; `R_ClearParticles` / `R_DecalInit` / `V_InitLevel` (callees),
 ~~`GL_UnloadTextures`~~ (wrong — it was already published; see the 2026-09-19
 section), ~~`R_LoadSkyboxInt_SvEngine`~~, `realloc_SvEngine`,
-`particletexture`, the `gl_extensions` / `vid_d3d` / texture-array / fog /
+~~`particletexture`~~ (wrong — also already published; see the 2026-09-22
+section), the `gl_extensions` / `vid_d3d` / texture-array / fog /
 scissor / viewmodel / sky / view-leaf / lightmap variable slots,
 `CL_FxBlend`'s sibling `r_blend`, and every symbol outside the list
 (EngineSurface virtuals, portal/DrawNormalTriangles scans,
@@ -502,7 +504,9 @@ every identity a hook target again.
 - `gWaterColor` — both `GWATERCOLOR_SIG_HL25` / `GWATERCOLOR_SIG` branches kept
   in `Engine_FillAddress_WaterVars`, read from the `V_CalcRefdef` water-cshift
   call site.
-- `particletexture`, plus `ClientDLL_DrawNormalTriangles` / `gDevOverview`,
+- ~~`particletexture`~~ (migrated 2026-09-22 — see last section: it had been
+  published all along, on exactly the 11 identities that publish the rest of the
+  `R_DrawParticles` family), plus `ClientDLL_DrawNormalTriangles` / `gDevOverview`,
   which shared the deleted `cl_waterlevel` scan in `_RenderSceneVars2` — that
   pass still runs in `DllInfo` space (it was never switched to the real image by
   #873) and its exit condition is now
@@ -803,7 +807,8 @@ catalog-uncovered.
 **Residual scanning after this pass** (unchanged from the #873 list except for
 the entries above): `R_SetupFrame`, `R_ClearParticles` / `R_DecalInit` /
 `V_InitLevel`, ~~`R_LoadSkyboxInt_SvEngine`~~, `realloc_SvEngine`,
-`particletexture`, ~~`r_dlightactive`~~, `r_framecount`, `gWaterColor`,
+`particletexture` (wrong — published all along; migrated 2026-09-22),
+~~`r_dlightactive`~~, `r_framecount`, `gWaterColor`,
 `vpn` / `vup` / `vright`, `lightmap_polys` / `lightmap_modified`,
 `gl_extensions` / `vid_d3d` / texture-array / fog / scissor / viewmodel / sky /
 view-leaf slots, the EngineSurface virtuals and the portal / DrawNormalTriangles
@@ -1629,3 +1634,85 @@ subtests. A residual-symbol search finds the removed names only in the gate test
 that asserts they stay retired.
 **Not verified**: in-game fallback-texture, sprite-palette, scissor and Studio
 lighting smoke tests.
+
+## Gamedata migration (2026-09-22): `particletexture`, emptying `Engine_FillAddress_R_DrawParticles`
+
+`Engine_FillAddress_R_DrawParticles` had already resolved `R_DrawParticles`,
+`R_FreeDeadParticles`, `R_TracerDraw`, `R_BeamDrawList` (FUNCTION) and
+`active_particles` (GLOBAL) through `GamedataResolvePtr`; everything that
+remained was the 0x150-byte `DisasmRanges` walk that derived the last symbol,
+`particletexture`, as "the first `push [.data]` / `mov reg,[.data]` in the
+`R_DrawParticles` body whose displacement lands in the real image's data
+segment, skipping a `mov` whose next bytes are `33 C5` / `33 C4` (the
+`___security_cookie` prologue)".
+
+**Stale claim corrected.** That comment (`particletexture is catalog-uncovered`)
+had been wrong for several releases: upstream publishes it as an engine `global`
+in `engine/particletexture.windows.yaml` (`gv_rva` + the
+`R_InitParticleTexture`-style `gv_sig` that embeds the `mov eax, ds:particletexture`
+operand). Coverage is **11/11**, and it is exactly the same identity set that
+publishes the other five symbols of this function:
+
+| group | identities | `particletexture` |
+| --- | --- | --- |
+| `cof-5936` | 1 | yes |
+| `hl-*` (3248 / 3266 / 3329 / 3647 / 4554 / 6153 / 8684 / 10210) | 8 | yes |
+| `svencoop-*` (8948 / 10257) | 2 | yes |
+| `cstrike-*` / `czero-*` / `czeror-*` (16-17-record shells) | 10 | absent, as are all five siblings |
+
+Migrating therefore introduces no new identity requirement: the plugin already
+`Sys_Error`s on those shells for `R_DrawParticles` itself.
+
+**Change.** The whole function body is now six `GamedataResolvePtr` calls — 78
+lines removed, the `R_DrawParticles_SearchContext` struct, the `DisasmRanges`
+lambda, `R_DrawParticles_VA` and the `Sig_VarNotFound(particletexture)` are gone.
+`R_DrawParticles` and friends stay FUNCTION resolves (the plugin still
+reimplements the caller); only the variable derivation disappeared, so no
+`gPrivateFuncs` field and no gate FUNCTION entry change.
+
+**Consumer gate / tests.** `particletexture` joins `RENDERER_ENGINE_ALL_GLOBALS`;
+`RendererGateTests.test_gate_requires_particletexture_on_every_identity`
+(assert gate membership, then per-identity deletion must produce an error) joins
+the contract suite.
+
+**Verified**: Renderer `Release|Win32` builds with 0 errors and the same
+pre-existing warnings (none in `gl_hooks.cpp`); `validate-gamedata.py` passes
+over 21 snapshots / 5 engine families; `pytest scripts/tests/test_gamedata_contract.py`
+reports 64 passed.
+**Not verified**: in-game particle-rendering smoke test on any identity.
+
+## Gamedata migration (2026-09-22, second entry): `texgammatable`, emptying `Engine_FillAddress_BuildGammaTable`
+
+`gPrivateFuncs.BuildGammaTable` was already a `GamedataResolvePtr` FUNCTION
+(that happened in #873; the `BUILDGAMMATABLE_SIG_*` macros and the
+`00 00 20 40 E8` / `2.0f; call` scan are long gone). The only thing left in the
+locator was the 0x250-byte `DisasmRanges` walk that derived `texgammatable` as
+"the first `mov reg8, [esi+disp]` whose displacement lands in the real image's
+data segment".
+
+`texgammatable` is published upstream as an engine `global` on **11/11**
+identities — the same set as its sibling `lightgammatable`, which was migrated on
+2026-09-22 through `Engine_FillAddress_R_StudioLighting`. Both have the same
+shape: the plugin never *reads* them, but the hook wrapper
+`BuildGammaTable` (`gl_draw.cpp:3528`) writes the identity table into the
+engine's buffer right after calling the original, so the engine's gamma path
+reads what the plugin wrote. That is why they are live consumers rather than the
+write-only mirrors the 2026-09-19/20 dead-variable sweeps deleted.
+
+The function body is now two resolves — 48 lines removed: `BuildGammaTable_VA`,
+the commented-out `byte *texgammatable = NULL;` block, the
+`BuildGammaTable_SearchContext` struct, the `DisasmRanges` lambda and
+`Sig_VarNotFound(texgammatable)`. `BuildGammaTable` stays a FUNCTION resolve (it
+is an installed inline-hook target: `Install_InlineHook` / `Uninstall_Hook` at
+`gl_hooks.cpp:2868` / `:2936`).
+
+**Consumer gate / tests.** `texgammatable` joins `RENDERER_ENGINE_ALL_GLOBALS`;
+`RendererGateTests.test_gate_requires_texgammatable_on_every_identity` also
+asserts `BuildGammaTable` stays in `RENDERER_ENGINE_ALL_FUNCTIONS`.
+
+**Verified**: Renderer `Release|Win32` builds with 0 errors and no warning from
+`gl_hooks.cpp`; `validate-gamedata.py` passes over 21 snapshots / 5 engine
+families; `pytest scripts/tests/test_gamedata_contract.py` reports 65 passed.
+**Not verified**: in-game gamma-correction smoke test on any identity.
+
+

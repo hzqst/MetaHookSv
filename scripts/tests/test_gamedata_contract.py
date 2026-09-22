@@ -678,6 +678,23 @@ class RendererGateTests(unittest.TestCase):
             self.assertTrue(any("scr_drawloading" in e for e in errors), (gv, errors))
         self.assertNotIn("SCR_BeginLoadingPlaque", validate.RENDERER_ENGINE_ALL_FUNCTIONS)
 
+    def test_gate_requires_texgammatable_on_every_identity(self):
+        self.assertIn("texgammatable", validate.RENDERER_ENGINE_ALL_GLOBALS)
+        for gv in validate.RENDERER_ALL_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            del symbols["texgammatable"]
+            errors = validate.validate_renderer(symbols, gv)
+            self.assertTrue(any("texgammatable" in e for e in errors), (gv, errors))
+        self.assertIn("BuildGammaTable", validate.RENDERER_ENGINE_ALL_FUNCTIONS)
+
+    def test_gate_requires_particletexture_on_every_identity(self):
+        self.assertIn("particletexture", validate.RENDERER_ENGINE_ALL_GLOBALS)
+        for gv in validate.RENDERER_ALL_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            del symbols["particletexture"]
+            errors = validate.validate_renderer(symbols, gv)
+            self.assertTrue(any("particletexture" in e for e in errors), (gv, errors))
+
     def test_gate_requires_direct_resolved_palette_scissor_and_studio_globals(self):
         names = (
             "giScissorTest", "host_basepal", "lightgammatable",
