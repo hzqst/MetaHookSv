@@ -5850,6 +5850,7 @@ void* __cdecl CoreProfile_SDL_CreateWindow(const char* title, int x, int y, int 
 
 int __cdecl CoreProfile_SDL_GL_ExtensionSupported(const char* extension)
 {
+	//Disable framebuffer initialization path completely from GL_Init and GL_SetMode
 	if (!strcmp(extension, "GL_ARB_texture_rectangle"))
 		return 0;
 	if (!strcmp(extension, "GL_NV_texture_rectangle"))
@@ -5862,6 +5863,7 @@ int __cdecl CoreProfile_SDL_GL_ExtensionSupported(const char* extension)
 
 void InitializeGraphicEngine(void* window)
 {
+	//For non-SDL path with legacy engine
 	if (!gPrivateFuncs.SDL_GL_SetAttribute)
 	{
 		g_hDC = GetDC((HWND)window);
@@ -5989,12 +5991,13 @@ void InitializeGraphicEngine(void* window)
 
 qboolean GL_SelectPixelFormat(HDC hDC)
 {
-	//TODO wglSelectPixelFormat?
+	//wglSelectPixelFormat seems doing nothing?
 	return true;
 }
 
 static qboolean GL_SetMode_Internal(void)
 {
+	//For SvEngine
 	if (gPrivateFuncs.SvEngine_glewInit)
 	{
 		auto err = gPrivateFuncs.SvEngine_glewInit();
@@ -6006,6 +6009,7 @@ static qboolean GL_SetMode_Internal(void)
 		}
 	}
 
+	//For GoldSrc with SDL support
 	if (gPrivateFuncs.SDL_InitGL)
 	{
 		gPrivateFuncs.SDL_InitGL();
@@ -6017,32 +6021,12 @@ static qboolean GL_SetMode_Internal(void)
 
 qboolean GL_SetMode_SvEngine(void* window, HDC* pmaindc, HGLRC* pbaseRC)
 {
-#if 1
 	return GL_SetMode_Internal();
-#else
-	auto r = gPrivateFuncs.GL_SetMode_SvEngine(window, pmaindc, pbaseRC);
-
-	if (r)
-	{
-
-	}
-	return r;
-#endif
 }
 
 qboolean GL_SetMode_GoldSrc(void* window, HDC* pmaindc, HGLRC* pbaseRC, int fD3D, const char* pszDriver, const char* pszCmdLine)
 {
-#if 1
 	return GL_SetMode_Internal();
-#else
-	auto r = gPrivateFuncs.GL_SetMode_GoldSrc(window, pmaindc, pbaseRC, fD3D, pszDriver, pszCmdLine);
-
-	if (r)
-	{
-
-	}
-	return r;
-#endif
 }
 
 qboolean GL_SetModeLegacy(void* window, HDC* pmaindc, HGLRC* pbaseRC, int fD3D, const char* pszDriver, const char* pszCmdLine)

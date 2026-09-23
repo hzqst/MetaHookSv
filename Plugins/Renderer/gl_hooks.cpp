@@ -542,7 +542,8 @@ void Engine_FillAddress_ScrFov(const mh_dll_info_t& DllInfo, const mh_dll_info_t
 {
 	/*
 	//Global pointers that link into engine vars.
-		float *scr_fov_value = NULL;
+		cvar_t scr_fov;
+		scr_fov.value;
 	*/
 
 	scr_fov_value = (decltype(scr_fov_value))GamedataResolvePtr(RealDllInfo.ImageBase, "scr_fov_value", MH_GAMESYMBOL_KIND_GLOBAL);
@@ -632,14 +633,12 @@ void Engine_FillAddress_CL_IsDevOverviewModeVars(const mh_dll_info_t& DllInfo, c
 {
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		// int* allow_cheats = NULL;
 		allow_cheats = (decltype(allow_cheats))GamedataResolvePtr(RealDllInfo.ImageBase, "allow_cheats", MH_GAMESYMBOL_KIND_GLOBAL);
 	}
 	else
 	{
-		// GoldSrc doesn't have such "int *allow_cheats;"
+		// "int allow_cheats" is not a thing in GoldSrc 
 	}
-
 }
 
 void Engine_FillAddress_R_DecalInit(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -986,7 +985,6 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 	gPrivateFuncs.Mod_LoadSpriteModel = (decltype(gPrivateFuncs.Mod_LoadSpriteModel))GamedataResolvePtr(RealDllInfo.ImageBase, "Mod_LoadSpriteModel", MH_GAMESYMBOL_KIND_FUNCTION);
 
 	Engine_FillAddress_Mod_LoadSpriteFrame(DllInfo, RealDllInfo);
-
 
 	Engine_FillAddress_Hunk_AllocName(DllInfo, RealDllInfo);
 
