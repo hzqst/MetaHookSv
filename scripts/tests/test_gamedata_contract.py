@@ -77,6 +77,22 @@ def scalar_record(name="size_of_frame", value=17080, module="engine",
     }
 
 
+def struct_member_record(name="CVideoMode_Common.m_ImageID", payload=None):
+    if payload is None:
+        payload = {
+            "struct_name": "CVideoMode_Common",
+            "member_name": "m_ImageID",
+            "offset": "0x19c",
+        }
+    return {
+        "platform": "windows",
+        "module": "engine",
+        "symbolName": name,
+        "kind": "structMember",
+        "payload": payload,
+    }
+
+
 def virtual_function_record(name="GameStudioRenderer_StudioDrawModel", module="engine",
                             payload=None):
     if payload is None:
@@ -155,6 +171,25 @@ class SnapshotContractTests(unittest.TestCase):
         doc = make_snapshot([scalar_record(payload_name="")])
         errors, _, _ = validate.validate_snapshot(doc, "hl-8684")
         self.assertTrue(any("missing/invalid scalar_name" in e for e in errors), errors)
+
+    def test_accepts_struct_member_offset(self):
+        doc = make_snapshot([struct_member_record()])
+        errors, _, symbols = validate.validate_snapshot(doc, "hl-8684")
+        self.assertEqual([], errors, errors)
+        self.assertEqual(
+            {"kind": "structMember", "offset": 0x19c, "module": "engine"},
+            symbols["CVideoMode_Common.m_ImageID"],
+        )
+
+    def test_rejects_invalid_struct_member_payload(self):
+        for payload in (
+            {"member_name": "m_ImageID", "offset": "0x19c"},
+            {"struct_name": "CVideoMode_Common", "offset": "0x19c"},
+            {"struct_name": "CVideoMode_Common", "member_name": "m_ImageID", "offset": "xyz"},
+        ):
+            doc = make_snapshot([struct_member_record(payload=payload)])
+            errors, _, _ = validate.validate_snapshot(doc, "hl-8684")
+            self.assertTrue(any("structMember" in e for e in errors), (payload, errors))
 
     def test_accepts_virtual_function_record(self):
         doc = make_snapshot([virtual_function_record()])
@@ -450,6 +485,7 @@ class RendererGateTests(unittest.TestCase):
         add(validate.RENDERER_ENGINE_ALL_FUNCTIONS, "function")
         add(validate.RENDERER_ENGINE_ALL_GLOBALS, "global")
         add(validate.RENDERER_ENGINE_ALL_PATCHES, "patch")
+        add(validate.RENDERER_ENGINE_STRUCT_MEMBERS, "structMember")
         for prefix in validate.RENDERER_NUMBERED_PATCH_SETS:
             symbols[f"{prefix}_0"] = {"kind": "patch", "module": "engine"}
             symbols[f"{prefix}_1"] = {"kind": "patch", "module": "engine"}
@@ -466,6 +502,8 @@ class RendererGateTests(unittest.TestCase):
         if game_version in validate.RENDERER_SVENGINE_GAMES:
             add(validate.RENDERER_ENGINE_SVENGINE_FUNCTIONS, "function")
             add(validate.RENDERER_SVENGINE_GLOBALS, "global")
+        if game_version in validate.RENDERER_FBO_GAMES:
+            add(validate.RENDERER_FBO_GLOBALS, "global")
         if game_version in validate.RENDERER_HL25_GAMES:
             add(validate.RENDERER_ENGINE_HL25_FUNCTIONS, "function")
         if game_version in validate.RENDERER_SETMODE_GAMES:
@@ -528,6 +566,24 @@ class RendererGateTests(unittest.TestCase):
         symbols["R_NewMap"] = {"kind": "function", "module": "client"}
         errors = validate.validate_renderer(symbols, "hl-8684")
         self.assertTrue(any("'R_NewMap' must belong to module 'engine'" in e for e in errors), errors)
+
+    def test_gate_requires_startup_graphic_member_offsets(self):
+        for gv in validate.RENDERER_ALL_GAMES:
+            for name in validate.RENDERER_ENGINE_STRUCT_MEMBERS:
+                symbols = self.complete_engine_symbols(gv)
+                del symbols[name]
+                errors = validate.validate_renderer(symbols, gv)
+                self.assertTrue(any(name in e for e in errors), (gv, name, errors))
+
+    def test_gate_requires_fbo_aspect_globals_only_when_published(self):
+        for gv in validate.RENDERER_FBO_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            del symbols["s_fXMouseAspectAdjustment"]
+            errors = validate.validate_renderer(symbols, gv)
+            self.assertTrue(any("s_fXMouseAspectAdjustment" in e for e in errors), (gv, errors))
+        symbols = self.complete_engine_symbols("hl-3248")
+        self.assertNotIn("s_fXMouseAspectAdjustment", symbols)
+        self.assertEqual([], validate.validate_renderer(symbols, "hl-3248"))
 
     def test_gate_requires_numbered_patch_set(self):
         symbols = self.complete_engine_symbols("hl-8684")

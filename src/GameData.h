@@ -34,6 +34,9 @@ namespace GameData
 	// MH_GAMESYMBOL_KIND_MISMATCH when the symbol exists with a non-scalar kind.
 	mh_gamesymbol_status_t QueryScalarByCRC64(uint64_t moduleCRC64, const char* symbolName, uint32_t* outValue);
 
+	// Query a structMember byte offset by (moduleCRC64, symbolName).
+	mh_gamesymbol_status_t QueryStructMemberByCRC64(uint64_t moduleCRC64, const char* symbolName, uint32_t* outOffset);
+
 	// Look up the catalog gameVersion for a module CRC-64. Returns false and sets
 	// *outGameVersion to nullptr when outGameVersion is null, the catalog is
 	// unavailable, or the CRC-64 is not catalogued. The returned string is owned
@@ -68,6 +71,7 @@ mh_gamesymbol_status_t MH_GetModuleCRC64(PVOID moduleBase, uint64_t* outCRC64);
 mh_gamesymbol_status_t MH_QueryGameSymbol(PVOID moduleBase, const char* symbolName, mh_gamesymbol_t* outSymbol);
 mh_gamesymbol_status_t MH_QueryGameSymbolByCRC64(uint64_t moduleCRC64, const char* symbolName, mh_gamesymbol_t* outSymbol);
 mh_gamesymbol_status_t MH_QueryGameSymbolScalar(PVOID moduleBase, const char* symbolName, uint32_t* outValue);
+mh_gamesymbol_status_t MH_QueryGameSymbolStructMember(PVOID moduleBase, const char* symbolName, uint32_t* outOffset);
 mh_gamesymbol_status_t MH_ResolveGameSymbol(PVOID moduleBase, const char* symbolName, mh_gamesymbol_kind_t expectedKind, PVOID* outAddress);
 mh_gamesymbol_status_t MH_IsGameSymbolAvailable(PVOID moduleBase, const char* symbolName);
 PVOID MH_SearchPatternMasked(PVOID searchBase, DWORD searchLength, const BYTE* patternBytes, const BYTE* patternMask, DWORD patternLength);

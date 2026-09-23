@@ -33,7 +33,6 @@ typedef struct
 	void (*R_FreeDeadParticles)(particle_t**);
 	void (*R_DrawTEntitiesOnList)(int onlyClientDraw);
 	void (*ClientDLL_DrawTransparentTriangles)(void);
-	void (*R_SetupGL)(void);
 	qboolean(*R_CullBox)(vec3_t mins, vec3_t maxs);
 	void (*GL_Bind)(int texnum);
 	void (*GL_SelectTexture)(GLenum target);
@@ -58,7 +57,6 @@ typedef struct
 	int(*GL_LoadTexture2)(char* identifier, int textureType, int width, int height, byte* data, qboolean mipmap, int iPalTextureType, byte* pPal, int filter);
 	void (*Mod_UnloadSpriteTextures)(model_t* mod);
 	void (*Mod_LoadSpriteModel)(model_t* mod, void* buffer);
-	void (*R_MarkLeaves)(void);
 	mspriteframe_t* (*R_GetSpriteFrame)(msprite_t* pSprite, int frame);
 	int (*CL_FxBlend)(cl_entity_t* ent);
 	float(*GlowBlend)(cl_entity_t* ent);
@@ -160,7 +158,6 @@ typedef struct
 	void* (*Cache_Alloc)(cache_user_t* c, int size, const char* name);
 	void (*Host_ClearMemory)(qboolean bQuite);
 	void(__fastcall* CVideoMode_Common_DrawStartupGraphic)(void* videomode, int dummy, void* window);
-	int offset_CVideoMode_Common_m_ImageID_Size;
 	int offset_CVideoMode_Common_m_ImageID;
 	int offset_CVideoMode_Common_m_iBaseResX;
 	int offset_CVideoMode_Common_m_iBaseResY;

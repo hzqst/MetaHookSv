@@ -138,10 +138,9 @@ BULLETPHYSICS_CZDS_CLIENT_GAMES = ("czeror-8684", "czeror-10210")
 # ---------------------------------------------------------------------------
 # Renderer consumer gate (issues #865 and #873).
 #
-# Plugins/Renderer resolves every symbol below through ResolveGameSymbol. The
-# 46 entries migrated by #865, the 76 migrated by #873 and the 19 migrated by
-# the #873 follow-up are all pinned here so a catalog update cannot silently
-# drop a record the plugin still requires.
+# Plugins/Renderer resolves address-bearing symbols through ResolveGameSymbol
+# and reads member offsets through QueryGameSymbolStructMember. Required records
+# are pinned here so a catalog update cannot silently drop a live dependency.
 # Groups mirror the plugin's engine-family / identity branches:
 #   ALL              - every declared engine family
 #   NON_SVENGINE     - all but svencoop (base symbol, SvEngine has a variant)
@@ -149,9 +148,9 @@ BULLETPHYSICS_CZDS_CLIENT_GAMES = ("czeror-8684", "czeror-10210")
 #   MTEX_PROBE       - engines that expose the multitexture probe standalone,
 #                      vs INLINED_MTEX_PROBE which fold it into GL_Init
 #   SVENGINE / HL25  - variant symbols published by a single family
+#   FBO              - identities with engine-owned mouse aspect globals
 #   explicit game sets for the SDL and GL_SetMode ABI branches
-# Unlike BulletPhysics, Renderer's seven client Studio virtualFunctions and
-# g_iUser1/g_iUser2 are required resolves, so they are presence-checked too.
+# Renderer's required client Studio virtualFunctions are presence-checked too.
 # ---------------------------------------------------------------------------
 RENDERER_ALL_GAMES = (
     "cof-5936", "hl-10210", "hl-3248", "hl-3266", "hl-3329", "hl-3647",
@@ -161,6 +160,7 @@ RENDERER_NON_SVENGINE_GAMES = tuple(g for g in RENDERER_ALL_GAMES if not g.start
 RENDERER_E8_GAMES = ("cof-5936", "hl-3248", "hl-3266", "hl-3329", "hl-3647",
                      "hl-4554", "hl-6153", "hl-8684")
 RENDERER_SVENGINE_GAMES = ("svencoop-10257", "svencoop-8948")
+RENDERER_FBO_GAMES = ("hl-10210", "hl-6153", "hl-8684", "svencoop-10257", "svencoop-8948")
 RENDERER_HL25_GAMES = ("hl-10210",)
 RENDERER_SDL_GAMES = ("hl-10210", "hl-6153", "hl-8684")
 RENDERER_SETMODE_GAMES = ("hl-10210", "hl-6153", "hl-8684", "svencoop-10257", "svencoop-8948")
@@ -196,9 +196,8 @@ RENDERER_ENGINE_ALL_FUNCTIONS = (
     "PVSNode", "R_AnimateLight", "R_BeamDrawList", "R_CheckVariables",
     "R_CullBox", "R_DrawParticles", "R_DrawSequentialPoly",
     "R_DrawTEntitiesOnList", "R_ForceCVars", "R_FreeDeadParticles",
-    "R_GLStudioDrawPoints", "R_GetSpriteFrame", "R_MarkLeaves", "R_NewMap",
+    "R_GLStudioDrawPoints", "R_GetSpriteFrame", "R_NewMap",
     "R_RenderView", "R_ResetLatched",
-    "R_SetupGL",
     "R_StudioDrawModel", "R_StudioDrawPlayer", "R_StudioMergeBones", "R_StudioRenderFinal",
     "R_StudioRenderModel", "R_StudioSaveBones", "R_StudioSetupBones", "R_TextureAnimation",
     "R_TracerDraw",
@@ -211,12 +210,12 @@ RENDERER_ENGINE_ALL_GLOBALS = (
     "cl_waterlevel", "cl_weaponsequence", "cl_weaponstarttime", "cl_worldmodel",
     "cshift_water", "currententity", "currenttexture", "d_lightstylevalue", "detTexSupported",
     "envmap", "filterBrightness", "filterColorBlue", "filterColorGreen", "filterColorRed",
-    "filterMode", "flFinalFogColor", "flFogDensity", "flFogEnd", "flFogStart", "frustum", "gDecalCache", "gDecalPool", "gDecalSurfCount", "gDevOverview", "gHostSpawnCount", "gSpriteMipMap", "gTempEnts", "gWaterColor", "g_bUserFogOn", "giScissorTest",
+    "filterMode", "flFinalFogColor", "flFogDensity", "flFogEnd", "flFogStart", "frustum", "gDecalCache", "gDecalPool", "gDecalSurfCount", "gDevOverview", "gHostSpawnCount", "gProjectionMatrix", "gScreenToWorld", "gSpriteMipMap", "gTempEnts", "gWaterColor", "gWorldToScreen", "g_bUserFogOn", "giScissorTest",
     "gl_extensions", "gl_filter_max", "gl_filter_min", "gltextures", "host_basepal",
     "lightgammatable", "lightmaps", "mod_known",
-    "mod_numknown", "modelorg", "particletexture", "pstudiohdr",
-    "r_ambientlight", "r_blend", "r_entorigin", "r_framecount", "r_origin", "r_plightvec", "r_refdef", "r_shadelight", "r_visframecount",
-    "r_worldentity", "rtable",
+    "maxTransObjs", "mod_numknown", "modelorg", "movevars", "numTransObjs", "particletexture", "pstudiohdr",
+    "r_ambientlight", "r_blend", "r_entorigin", "r_framecount", "r_oldviewleaf", "r_origin", "r_playerViewportAngles", "r_plightvec", "r_refdef", "r_shadelight", "r_viewleaf", "r_visframecount", "r_world_matrix",
+    "r_worldentity", "rtable", "transObjects", "vpn", "vright", "vup",
     "scr_drawloading", "scr_fov_value", "texgammatable", "window_rect",
 )
 RENDERER_ENGINE_ALL_PATCHES = ("Sys_ShutdownGame_to_GL_Shutdown_callsite_0",)
@@ -239,7 +238,12 @@ RENDERER_ENGINE_SVENGINE_FUNCTIONS = (
 )
 RENDERER_SVENGINE_GLOBALS = (
     "allow_cheats", "c_model_polys", "gltextures.m_Memory.m_nAllocationCount",
-    "gltextures.m_Size", "peakgltextures", "r_missingtexture",
+    "gltextures.m_Size", "gmodinfo_vertical_fov", "peakgltextures", "r_missingtexture",
+)
+RENDERER_FBO_GLOBALS = ("s_fXMouseAspectAdjustment", "s_fYMouseAspectAdjustment")
+RENDERER_ENGINE_STRUCT_MEMBERS = (
+    "CVideoMode_Common.m_ImageID", "CVideoMode_Common.m_iBaseResX",
+    "CVideoMode_Common.m_iBaseResY",
 )
 RENDERER_LEGACY_TEXALLOC_GLOBALS = ("texture_extension_number",)
 RENDERER_MTEX_PROBE_FUNCTIONS = ("CheckMultiTextureExtensions",)
@@ -528,6 +532,20 @@ def validate_snapshot(doc, game_version):
             if name in symbols and symbols[name] != rec:
                 errors.append(f"'{game_version}': conflicting duplicate symbol '{name}'")
             symbols[name] = rec
+        elif kind == "structMember":
+            p = payload if isinstance(payload, dict) else {}
+            struct_name = p.get("struct_name")
+            member_name = p.get("member_name")
+            offset = parse_hex_u32(p.get("offset"))
+            if (not isinstance(struct_name, str) or not struct_name or
+                    not isinstance(member_name, str) or not member_name or
+                    offset is None):
+                errors.append(f"'{game_version}': structMember '{name}' missing/invalid struct_name/member_name/offset")
+                continue
+            rec = {"kind": "structMember", "offset": offset, "module": mod}
+            if name in symbols and symbols[name] != rec:
+                errors.append(f"'{game_version}': conflicting duplicate symbol '{name}'")
+            symbols[name] = rec
         elif kind == "virtualFunction":
             p = payload if isinstance(payload, dict) else {}
             func_rva = parse_hex_u32(p.get("func_rva"))
@@ -721,6 +739,7 @@ def validate_renderer(symbols, game_version, include_engine=True, include_client
         errors += _renderer_check(symbols, game_version, RENDERER_ENGINE_ALL_FUNCTIONS, "function", "engine")
         errors += _renderer_check(symbols, game_version, RENDERER_ENGINE_ALL_GLOBALS, "global", "engine")
         errors += _renderer_check(symbols, game_version, RENDERER_ENGINE_ALL_PATCHES, "patch", "engine")
+        errors += _renderer_check(symbols, game_version, RENDERER_ENGINE_STRUCT_MEMBERS, "structMember", "engine")
 
         # Numbered patch sets: contiguous from _0.
         for prefix in RENDERER_NUMBERED_PATCH_SETS:
@@ -749,6 +768,8 @@ def validate_renderer(symbols, game_version, include_engine=True, include_client
         if game_version in RENDERER_SVENGINE_GAMES:
             errors += _renderer_check(symbols, game_version, RENDERER_ENGINE_SVENGINE_FUNCTIONS, "function", "engine")
             errors += _renderer_check(symbols, game_version, RENDERER_SVENGINE_GLOBALS, "global", "engine")
+        if game_version in RENDERER_FBO_GAMES:
+            errors += _renderer_check(symbols, game_version, RENDERER_FBO_GLOBALS, "global", "engine")
         if game_version in RENDERER_HL25_GAMES:
             errors += _renderer_check(symbols, game_version, RENDERER_ENGINE_HL25_FUNCTIONS, "function", "engine")
         if game_version in RENDERER_SETMODE_GAMES:

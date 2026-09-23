@@ -216,14 +216,8 @@ extern bool g_bHasLowerBody;
 
 extern int gl_max_texture_size;
 extern float gl_max_ansio;
-extern int *gl_msaa_fbo;
-extern int *gl_backbuffer_fbo;
-
-extern vec_t* r_soundOrigin;
 extern vec_t* r_playerViewportAngles;
 
-extern cactive_t *cls_state;
-extern int *cls_signon;
 extern qboolean *scr_drawloading;
 
 extern movevars_t* pmovevars;
@@ -257,7 +251,6 @@ extern bool g_bEnforceAspect;
 extern bool g_bUseOITBlend;
 //extern bool bVerticalFov;//unused
 extern bool g_bUseLegacyTextureLoader;
-extern bool g_bHasOfficialFBOSupport;
 extern bool g_bHasOfficialGLTexAllocSupport;
 
 extern FBO_Container_t s_FinalBufferFBO;

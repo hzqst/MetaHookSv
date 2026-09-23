@@ -17,7 +17,7 @@ tags:
 
 ## Overview
 
-GameData 是 launcher 与 V3/V4 插件共享的本地游戏符号目录（catalog）组件：从 `<game>\<mod>\metahook\gamedata\index.json` 读取并冻结一份只读符号表，按 `(moduleCRC64, symbolName)` 查询符号元数据，并通过 `moduleBase` 懒计算模块原始文件的 CRC-64/XZ。公共接口以 MetaHook API 109 暴露（`metahook_api_t` 尾部的 6 个函数槽），API 110 追加 `MH_GAMESYMBOL_KIND_PATCH` 与 `IsGameSymbolAvailable` 槽位，API 111 追加 `MH_GAMESYMBOL_KIND_SCALAR` 与 `QueryGameSymbolScalar` 槽位，API 112 追加 `MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION`（不新增函数槽位，经 `ResolveGameSymbol` / `QueryGameSymbol` 消费；均不改动旧槽位偏移）。
+GameData 是 launcher 与 V3/V4 插件共享的本地游戏符号目录（catalog）组件：从 `<game>\<mod>\metahook\gamedata\index.json` 读取并冻结只读符号表，按 `(moduleCRC64, symbolName)` 查询元数据，并通过 `moduleBase` 懒计算模块原始文件的 CRC-64/XZ。公共接口从 API 109 起提供地址查询；API 110/111 分别追加 PATCH/SCALAR 与对应槽位，API 112/113 追加 VIRTUAL_FUNCTION/VTABLE 地址类型，API 114 追加 STRUCT_MEMBER 与 `QueryGameSymbolStructMember` 偏移查询槽位；既有函数槽位顺序不变。
 
 ## Responsibilities
 
@@ -139,3 +139,11 @@ flowchart TD
 - V3/V4 插件 — 通过 `metahook_api_t` API 109 的 6 个函数槽调用；API 110 起可用 `IsGameSymbolAvailable`（第 7 槽）；API 111 起可用 `QueryGameSymbolScalar`（第 8 槽）。
 
 Related: [[metahook-privatevars]] [[project-overview]] [[plugin-system]]
+
+## API 114: structMember offsets (2026-09-23)
+
+- **Trigger / constraint:** Renderer needs the published `CVideoMode_Common` member offsets. The dataset already carries `kind: structMember`, but GameData previously marked it unsupported; `ResolveGameSymbol` and `QueryGameSymbolScalar` cannot represent an object-relative byte offset.
+- **Implementation:** `MH_GAMESYMBOL_KIND_STRUCT_MEMBER = 7` and a tail-appended `QueryGameSymbolStructMember(moduleBase, name, uint32_t* outOffset)` slot raise `METAHOOK_API_VERSION` to 114 without moving older slots. `NormalizeStructMember` consumes nonempty `struct_name` / `member_name` and hexadecimal uint32 `offset`; signature/size metadata are not used. The normalized record stores an object-relative offset and zero address fields. The dedicated query returns `KIND_MISMATCH` for another kind and clears output on ordinary failures. `ResolveGameSymbol` continues to accept address-bearing kinds only. The existing dataset schema 5 / source contract 8 is unchanged.
+- **Consumer:** Renderer requires API 114, queries `CVideoMode_Common.m_ImageID`, `.m_iBaseResX`, and `.m_iBaseResY` directly, and gates those three records as `structMember`. It no longer derives these values by disassembling `CVideoMode_Common_DrawStartupGraphic` or requiring the unused `.m_ImageID.m_Size` member.
+- **Verification:** The structMember parser's accept/error tests pass, the gamedata contract suite reports 69 passed, scripts/tests reports 102 passed / 2 skipped / 26 subtests, and the packaged-data gate passes for 21 snapshots / five engine families. `MetaHook.vcxproj` and `Renderer.vcxproj` build in Release|Win32. In-game smoke tests were not run.
+- **Scope:** API, catalog parser, validator, Renderer consumer, and public API documentation; no manual snapshot changes.

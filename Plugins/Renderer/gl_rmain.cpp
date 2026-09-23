@@ -122,14 +122,8 @@ int gl_max_ubo_size = 0;
 int gl_max_texture_size = 0;
 float gl_max_ansio = 0;
 
-int* gl_msaa_fbo = nullptr; //"static FBO_Container_t s_MSAAFBO" in hw.dll / hw.so
-int* gl_backbuffer_fbo = nullptr; //"static FBO_Container_t s_BackBufferFBO" in hw.dll / hw.so
-
-vec_t* r_soundOrigin = nullptr;
 vec_t* r_playerViewportAngles = nullptr;
 
-cactive_t* cls_state = nullptr;
-int* cls_signon = nullptr;
 qboolean* scr_drawloading = nullptr;
 
 movevars_t* pmovevars = nullptr;
@@ -339,7 +333,6 @@ FBO_Container_t* g_CurrentRenderingFBO = nullptr;
 bool g_bEnforceAspect = true;
 bool g_bUseOITBlend = false;
 bool g_bUseLegacyTextureLoader = false;
-bool g_bHasOfficialFBOSupport = false;
 bool g_bHasOfficialGLTexAllocSupport = true;
 
 
