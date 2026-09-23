@@ -7,7 +7,6 @@ byte *lightmaps = NULL;
 int *d_lightstylevalue = NULL;
 dlight_t *cl_dlights = NULL;
 dlight_t* cl_elights = NULL;
-int *r_dlightactive = NULL;
 int *gDecalSurfCount = NULL;
 decal_t *gDecalPool = NULL;
 decalcache_t *gDecalCache = NULL;
@@ -65,19 +64,6 @@ static void R_BuildCachedDecalBounds(float* v, int vertCount, CCachedDecal& cach
 
 	cachedDecal.boundsValid = true;
 }
-
-void R_RecursiveWorldNode(mnode_t *node)
-{
-	if (gPrivateFuncs.R_RecursiveWorldNode_HL25)
-	{
-		//HL25's R_DrawWorld passes (gl_reduce_shader_changes == 0), true matches the engine default
-		gPrivateFuncs.R_RecursiveWorldNode_HL25(node, true);
-		return;
-	}
-
-	gPrivateFuncs.R_RecursiveWorldNode(node);
-}
-
 
 decal_t* EngineGetDecalByIndex(int index)
 {

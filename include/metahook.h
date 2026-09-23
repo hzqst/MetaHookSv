@@ -109,7 +109,7 @@ typedef struct mh_plugininfo_s
 #include <ICommandLine.h>
 #include <IRegistry.h>
 
-#define METAHOOK_API_VERSION 113
+#define METAHOOK_API_VERSION 114
 
 typedef struct hook_s hook_t;
 
@@ -198,7 +198,10 @@ typedef enum mh_gamesymbol_kind_e
 	// table array itself (typically in .rdata). ResolveGameSymbol accepts it and
 	// returns moduleBase + rva; consumers index the returned pointer array by
 	// vfunc index. No new API function slots were added for this kind.
-	MH_GAMESYMBOL_KIND_VTABLE = 6
+	MH_GAMESYMBOL_KIND_VTABLE = 6,
+	// A struct member offset is a plain uint32 byte displacement from its owning
+	// object, not an address. Query it with QueryGameSymbolStructMember.
+	MH_GAMESYMBOL_KIND_STRUCT_MEMBER = 7
 } mh_gamesymbol_kind_t;
 
 /*
@@ -796,8 +799,8 @@ typedef struct metahook_api_s
 
 	/*
 		Purpose: Resolve a symbol to its runtime virtual address (moduleBase + rva).
-		expectedKind must be FUNCTION, GLOBAL, PATCH or VIRTUAL_FUNCTION; returns
-		KIND_MISMATCH otherwise.
+		expectedKind must be FUNCTION, GLOBAL, PATCH, VIRTUAL_FUNCTION or VTABLE.
+		Scalar and structMember records cannot be resolved as addresses.
 	*/
 	mh_gamesymbol_status_t (*ResolveGameSymbol)(
 		PVOID moduleBase,
@@ -845,6 +848,16 @@ typedef struct metahook_api_s
 		PVOID moduleBase,
 		const char *symbolName,
 		uint32_t *outValue);
+
+	/*
+		Purpose: Query a structMember record's uint32 byte offset by module base
+		and canonical name. The offset is relative to an object, never to the
+		module image base. Returns KIND_MISMATCH for any other symbol kind.
+	*/
+	mh_gamesymbol_status_t (*QueryGameSymbolStructMember)(
+		PVOID moduleBase,
+		const char *symbolName,
+		uint32_t *outOffset);
 
 	// Always terminate with a NULL
 	PVOID Terminator;

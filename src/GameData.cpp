@@ -57,6 +57,7 @@ namespace
 		DWORD instructionLength = 0;
 
 		uint32_t scalarValue = 0;   // valid only when kind == MH_GAMESYMBOL_KIND_SCALAR
+		DWORD memberOffset = 0;     // valid only when kind == MH_GAMESYMBOL_KIND_STRUCT_MEMBER
 
 		bool conflicted = false;   // duplicate key with differing content
 		bool unsupportedKind = false; // kind not typed by this API version
@@ -456,6 +457,32 @@ namespace
 		return true;
 	}
 
+	// A structMember record carries a byte offset from its owning object, not
+	// a module-relative address. Signature and size metadata are not consumed.
+	bool NormalizeStructMember(const rapidjson::Value& payload, GameSymbolRecord& rec, std::string& error)
+	{
+		const rapidjson::Value* structName = FindMember(payload, "struct_name");
+		const rapidjson::Value* memberName = FindMember(payload, "member_name");
+		const rapidjson::Value* offset = FindMember(payload, "offset");
+		if (!structName || !structName->IsString() || !*structName->GetString() ||
+			!memberName || !memberName->IsString() || !*memberName->GetString() ||
+			!offset || !offset->IsString() || !ParseHexU32(offset->GetString(), rec.memberOffset))
+		{
+			error = "structMember payload is missing/invalid struct_name/member_name/offset";
+			return false;
+		}
+
+		rec.kind = MH_GAMESYMBOL_KIND_STRUCT_MEMBER;
+		rec.rva = 0;
+		rec.symbolSize = 0;
+		rec.signatureRva = 0;
+		rec.instructionOffset = 0;
+		rec.operandOffset = 0;
+		rec.instructionLength = 0;
+		rec.flags = 0;
+		return true;
+	}
+
 	// A virtual function record is an address-bearing function entry recovered
 	// from its owning vtable slot. The rva is consumed as a normal function
 	// address; vfunc_index/vtable_name are validated but not stored.
@@ -579,6 +606,7 @@ namespace
 			a.operandOffset == b.operandOffset &&
 			a.instructionLength == b.instructionLength &&
 			a.scalarValue == b.scalarValue &&
+			a.memberOffset == b.memberOffset &&
 			a.unsupportedKind == b.unsupportedKind;
 	}
 
@@ -808,6 +836,16 @@ namespace
 				{
 					if (error.empty())
 						error = "scalar payload must be an object";
+					AddDiagnostic("snapshot '%s': symbol '%s': %s", gameVersion, symbolName->GetString(), error.c_str());
+					continue;
+				}
+			}
+			else if (std::strcmp(kindStr, "structMember") == 0)
+			{
+				if (!payload || !payload->IsObject() || !NormalizeStructMember(*payload, record, error))
+				{
+					if (error.empty())
+						error = "structMember payload must be an object";
 					AddDiagnostic("snapshot '%s': symbol '%s': %s", gameVersion, symbolName->GetString(), error.c_str());
 					continue;
 				}
@@ -1284,7 +1322,8 @@ namespace GameData
 		return MH_GAMESYMBOL_OK;
 	}
 
-	mh_gamesymbol_status_t QueryScalarByCRC64(uint64_t moduleCRC64, const char* symbolName, uint32_t* outValue)
+	static mh_gamesymbol_status_t QueryPlainValueByCRC64(uint64_t moduleCRC64, const char* symbolName,
+		mh_gamesymbol_kind_t expectedKind, uint32_t* outValue)
 	{
 		if (!outValue || !symbolName || !*symbolName)
 			return MH_GAMESYMBOL_INVALID_ARGUMENT;
@@ -1307,11 +1346,21 @@ namespace GameData
 			return MH_GAMESYMBOL_CATALOG_CONFLICT;
 		if (rec.unsupportedKind)
 			return MH_GAMESYMBOL_UNSUPPORTED_KIND;
-		if (rec.kind != MH_GAMESYMBOL_KIND_SCALAR)
+		if (rec.kind != expectedKind)
 			return MH_GAMESYMBOL_KIND_MISMATCH;
 
-		*outValue = rec.scalarValue;
+		*outValue = expectedKind == MH_GAMESYMBOL_KIND_SCALAR ? rec.scalarValue : rec.memberOffset;
 		return MH_GAMESYMBOL_OK;
+	}
+
+	mh_gamesymbol_status_t QueryScalarByCRC64(uint64_t moduleCRC64, const char* symbolName, uint32_t* outValue)
+	{
+		return QueryPlainValueByCRC64(moduleCRC64, symbolName, MH_GAMESYMBOL_KIND_SCALAR, outValue);
+	}
+
+	mh_gamesymbol_status_t QueryStructMemberByCRC64(uint64_t moduleCRC64, const char* symbolName, uint32_t* outOffset)
+	{
+		return QueryPlainValueByCRC64(moduleCRC64, symbolName, MH_GAMESYMBOL_KIND_STRUCT_MEMBER, outOffset);
 	}
 
 	bool GetGameVersion(uint64_t moduleCRC64, const char** outGameVersion)
@@ -1480,7 +1529,8 @@ mh_gamesymbol_status_t MH_QueryGameSymbol(PVOID moduleBase, const char* symbolNa
 	return GameData::QueryByCRC64(crc64, symbolName, outSymbol);
 }
 
-mh_gamesymbol_status_t MH_QueryGameSymbolScalar(PVOID moduleBase, const char* symbolName, uint32_t* outValue)
+static mh_gamesymbol_status_t MH_QueryGameSymbolPlainValue(PVOID moduleBase, const char* symbolName,
+	uint32_t* outValue, mh_gamesymbol_status_t (*queryByCRC64)(uint64_t, const char*, uint32_t*))
 {
 	if (!outValue || !symbolName || !*symbolName)
 		return MH_GAMESYMBOL_INVALID_ARGUMENT;
@@ -1495,7 +1545,17 @@ mh_gamesymbol_status_t MH_QueryGameSymbolScalar(PVOID moduleBase, const char* sy
 	if (st != MH_GAMESYMBOL_OK)
 		return st;
 
-	return GameData::QueryScalarByCRC64(crc64, symbolName, outValue);
+	return queryByCRC64(crc64, symbolName, outValue);
+}
+
+mh_gamesymbol_status_t MH_QueryGameSymbolScalar(PVOID moduleBase, const char* symbolName, uint32_t* outValue)
+{
+	return MH_QueryGameSymbolPlainValue(moduleBase, symbolName, outValue, GameData::QueryScalarByCRC64);
+}
+
+mh_gamesymbol_status_t MH_QueryGameSymbolStructMember(PVOID moduleBase, const char* symbolName, uint32_t* outOffset)
+{
+	return MH_QueryGameSymbolPlainValue(moduleBase, symbolName, outOffset, GameData::QueryStructMemberByCRC64);
 }
 
 mh_gamesymbol_status_t MH_ResolveGameSymbol(PVOID moduleBase, const char* symbolName, mh_gamesymbol_kind_t expectedKind, PVOID* outAddress)

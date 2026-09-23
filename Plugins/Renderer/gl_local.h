@@ -175,22 +175,17 @@ extern int *cl_light_level;
 extern int *c_alias_polys;
 extern int *c_brush_polys;
 extern int(*rtable)[20][20];
-extern void *tmp_palette;
 
 extern int* gSpriteMipMap;
 
 //fog
 extern int *g_bUserFogOn;
-extern float *g_UserFogColor;
-extern float *g_UserFogDensity;
-extern float *g_UserFogStart;
-extern float *g_UserFogEnd;
+extern float *flFinalFogColor;
+extern float *flFogDensity;
+extern float *flFogStart;
+extern float *flFogEnd;
 
 extern qboolean* giScissorTest;
-extern int* scissor_x;
-extern int* scissor_y;
-extern int* scissor_width;
-extern int* scissor_height;
 
 extern screenfade_t* cl_sf;
 
@@ -204,13 +199,10 @@ extern float* g_iFogColor_SCClient;
 extern float* g_iStartDist_SCClient;
 extern float* g_iEndDist_SCClient;
 
-extern int* g_iWaterLevel;
 extern bool* g_bRenderingPortals_SCClient;
 extern int* g_ViewEntityIndex_SCClient;
 
 extern void** (*pmainwindow);
-
-extern float* vid_d3d;
 
 extern const char** gl_extensions;
 
@@ -224,14 +216,8 @@ extern bool g_bHasLowerBody;
 
 extern int gl_max_texture_size;
 extern float gl_max_ansio;
-extern int *gl_msaa_fbo;
-extern int *gl_backbuffer_fbo;
-
-extern vec_t* r_soundOrigin;
 extern vec_t* r_playerViewportAngles;
 
-extern cactive_t *cls_state;
-extern int *cls_signon;
 extern qboolean *scr_drawloading;
 
 extern movevars_t* pmovevars;
@@ -265,7 +251,6 @@ extern bool g_bEnforceAspect;
 extern bool g_bUseOITBlend;
 //extern bool bVerticalFov;//unused
 extern bool g_bUseLegacyTextureLoader;
-extern bool g_bHasOfficialFBOSupport;
 extern bool g_bHasOfficialGLTexAllocSupport;
 
 extern FBO_Container_t s_FinalBufferFBO;
@@ -414,7 +399,6 @@ void R_GameFrameStart();
 void R_RenderFrameStart();
 void R_RenderEndFrame();
 mleaf_t *Mod_PointInLeaf(vec3_t p, model_t *model);
-void R_RecursiveWorldNode(mnode_t *node);
 void R_DrawParticles(void);
 void R_RotateForEntity(cl_entity_t *ent, float out[4][4]);
 void R_RotateForTransform(const float* in_origin, const float* in_angles, float out[4][4]);
@@ -546,9 +530,7 @@ int GL_LoadTexture2(char *identifier, GL_TEXTURETYPE textureType, int width, int
 void GL_InitShaders(void);
 void GL_FreeShaders(void);
 texture_t *Draw_DecalTexture(int index);
-void Draw_MiptexTexture(cachewad_t *wad, byte *data);
 mbasenode_t* PVSNode(mbasenode_t* basenode, vec3_t emins, vec3_t emaxs);
-void R_DecalShootInternal(texture_t *ptexture, int index, int entity, int modelIndex, vec3_t position, int flags, float flScale);
 
 void staticFreeTextureId(int id);
 void __fastcall enginesurface_pushMakeCurrent(void* pthis, int, int* insets, int* absExtents, int* clipRect, bool translateToScreenSpace);
@@ -586,8 +568,6 @@ void D_FillRect(vrect_t* r, unsigned char* color);
 
 mspriteframe_t* R_GetSpriteFrame(msprite_t* pSprite, int frame);
 
-void* Draw_CustomCacheGet(cachewad_t* wad, void* raw, int rawsize, int index);
-void* Draw_CacheGet(cachewad_t* wad, int index);
 int SignbitsForPlane(mplane_t *out);
 colorVec R_LightPoint(vec3_t p);
 void *R_GetRefDef(void);

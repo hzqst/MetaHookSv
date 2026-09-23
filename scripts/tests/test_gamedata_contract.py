@@ -77,6 +77,22 @@ def scalar_record(name="size_of_frame", value=17080, module="engine",
     }
 
 
+def struct_member_record(name="CVideoMode_Common.m_ImageID", payload=None):
+    if payload is None:
+        payload = {
+            "struct_name": "CVideoMode_Common",
+            "member_name": "m_ImageID",
+            "offset": "0x19c",
+        }
+    return {
+        "platform": "windows",
+        "module": "engine",
+        "symbolName": name,
+        "kind": "structMember",
+        "payload": payload,
+    }
+
+
 def virtual_function_record(name="GameStudioRenderer_StudioDrawModel", module="engine",
                             payload=None):
     if payload is None:
@@ -155,6 +171,25 @@ class SnapshotContractTests(unittest.TestCase):
         doc = make_snapshot([scalar_record(payload_name="")])
         errors, _, _ = validate.validate_snapshot(doc, "hl-8684")
         self.assertTrue(any("missing/invalid scalar_name" in e for e in errors), errors)
+
+    def test_accepts_struct_member_offset(self):
+        doc = make_snapshot([struct_member_record()])
+        errors, _, symbols = validate.validate_snapshot(doc, "hl-8684")
+        self.assertEqual([], errors, errors)
+        self.assertEqual(
+            {"kind": "structMember", "offset": 0x19c, "module": "engine"},
+            symbols["CVideoMode_Common.m_ImageID"],
+        )
+
+    def test_rejects_invalid_struct_member_payload(self):
+        for payload in (
+            {"member_name": "m_ImageID", "offset": "0x19c"},
+            {"struct_name": "CVideoMode_Common", "offset": "0x19c"},
+            {"struct_name": "CVideoMode_Common", "member_name": "m_ImageID", "offset": "xyz"},
+        ):
+            doc = make_snapshot([struct_member_record(payload=payload)])
+            errors, _, _ = validate.validate_snapshot(doc, "hl-8684")
+            self.assertTrue(any("structMember" in e for e in errors), (payload, errors))
 
     def test_accepts_virtual_function_record(self):
         doc = make_snapshot([virtual_function_record()])
@@ -450,6 +485,7 @@ class RendererGateTests(unittest.TestCase):
         add(validate.RENDERER_ENGINE_ALL_FUNCTIONS, "function")
         add(validate.RENDERER_ENGINE_ALL_GLOBALS, "global")
         add(validate.RENDERER_ENGINE_ALL_PATCHES, "patch")
+        add(validate.RENDERER_ENGINE_STRUCT_MEMBERS, "structMember")
         for prefix in validate.RENDERER_NUMBERED_PATCH_SETS:
             symbols[f"{prefix}_0"] = {"kind": "patch", "module": "engine"}
             symbols[f"{prefix}_1"] = {"kind": "patch", "module": "engine"}
@@ -466,18 +502,17 @@ class RendererGateTests(unittest.TestCase):
         if game_version in validate.RENDERER_SVENGINE_GAMES:
             add(validate.RENDERER_ENGINE_SVENGINE_FUNCTIONS, "function")
             add(validate.RENDERER_SVENGINE_GLOBALS, "global")
+        if game_version in validate.RENDERER_FBO_GAMES:
+            add(validate.RENDERER_FBO_GLOBALS, "global")
         if game_version in validate.RENDERER_HL25_GAMES:
             add(validate.RENDERER_ENGINE_HL25_FUNCTIONS, "function")
         if game_version in validate.RENDERER_SETMODE_GAMES:
             add(validate.RENDERER_SETMODE_FUNCTIONS, "function")
         if game_version in validate.RENDERER_SETMODE_LEGACY_GAMES:
             add(validate.RENDERER_SETMODE_LEGACY_FUNCTIONS, "function")
+            add(validate.RENDERER_LEGACY_TEXALLOC_GLOBALS, "global")
         if game_version in validate.RENDERER_SDL_GAMES:
             add(validate.RENDERER_SDL_FUNCTIONS, "function")
-        if game_version in validate.RENDERER_NOT_SVENGINE_10257_GAMES:
-            add(validate.RENDERER_NOT_SVENGINE_10257_FUNCTIONS, "function")
-        if game_version in validate.RENDERER_NOT_SVENGINE_8948_GAMES:
-            add(validate.RENDERER_NOT_SVENGINE_8948_FUNCTIONS, "function")
         symbols.update(self.complete_client_symbols(game_version))
         return symbols
 
@@ -532,6 +567,24 @@ class RendererGateTests(unittest.TestCase):
         errors = validate.validate_renderer(symbols, "hl-8684")
         self.assertTrue(any("'R_NewMap' must belong to module 'engine'" in e for e in errors), errors)
 
+    def test_gate_requires_startup_graphic_member_offsets(self):
+        for gv in validate.RENDERER_ALL_GAMES:
+            for name in validate.RENDERER_ENGINE_STRUCT_MEMBERS:
+                symbols = self.complete_engine_symbols(gv)
+                del symbols[name]
+                errors = validate.validate_renderer(symbols, gv)
+                self.assertTrue(any(name in e for e in errors), (gv, name, errors))
+
+    def test_gate_requires_fbo_aspect_globals_only_when_published(self):
+        for gv in validate.RENDERER_FBO_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            del symbols["s_fXMouseAspectAdjustment"]
+            errors = validate.validate_renderer(symbols, gv)
+            self.assertTrue(any("s_fXMouseAspectAdjustment" in e for e in errors), (gv, errors))
+        symbols = self.complete_engine_symbols("hl-3248")
+        self.assertNotIn("s_fXMouseAspectAdjustment", symbols)
+        self.assertEqual([], validate.validate_renderer(symbols, "hl-3248"))
+
     def test_gate_requires_numbered_patch_set(self):
         symbols = self.complete_engine_symbols("hl-8684")
         for name in list(symbols):
@@ -571,15 +624,6 @@ class RendererGateTests(unittest.TestCase):
         symbols = self.complete_engine_symbols("hl-4554")
         self.assertNotIn("SDL_InitGL", symbols)
         self.assertEqual([], validate.validate_renderer(symbols, "hl-4554"))
-
-    def test_gate_render_scene_is_not_applicable_for_svengine_10257(self):
-        for gv in validate.RENDERER_ALL_GAMES:
-            symbols = self.complete_engine_symbols(gv)
-            if gv == "svencoop-10257":
-                self.assertNotIn("R_RenderScene", symbols)
-            else:
-                self.assertIn("R_RenderScene", symbols)
-            self.assertEqual([], validate.validate_renderer(symbols, gv), gv)
 
     def test_gate_requires_exactly_one_multitexture_init_per_identity(self):
         for gv in validate.RENDERER_ALL_GAMES:
@@ -647,10 +691,111 @@ class RendererGateTests(unittest.TestCase):
             errors = validate.validate_renderer(symbols, gv)
             self.assertTrue(any("D_FillRect" in e for e in errors), (gv, errors))
 
+    def test_gate_requires_user_fog_globals_on_every_identity(self):
+        names = ("flFinalFogColor", "flFogDensity", "flFogEnd", "flFogStart",
+                 "g_bUserFogOn")
+        for name in names:
+            self.assertIn(name, validate.RENDERER_ENGINE_ALL_GLOBALS)
+            for gv in validate.RENDERER_ALL_GAMES:
+                symbols = self.complete_engine_symbols(gv)
+                del symbols[name]
+                errors = validate.validate_renderer(symbols, gv)
+                self.assertTrue(any(name in e for e in errors), (name, gv, errors))
+        self.assertNotIn("R_RenderFinalFog", validate.RENDERER_ENGINE_ALL_FUNCTIONS)
+        self.assertNotIn("R_RenderFinalFog", validate.RENDERER_ENGINE_NON_SVENGINE_FUNCTIONS)
+
+    def test_gate_requires_gspritemipmap_on_every_identity(self):
+        self.assertIn("gSpriteMipMap", validate.RENDERER_ENGINE_ALL_GLOBALS)
+        for gv in validate.RENDERER_ALL_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            del symbols["gSpriteMipMap"]
+            errors = validate.validate_renderer(symbols, gv)
+            self.assertTrue(any("gSpriteMipMap" in e for e in errors), (gv, errors))
+        self.assertNotIn("Mod_LoadSpriteFrame", validate.RENDERER_ENGINE_ALL_FUNCTIONS)
+
+    def test_gate_requires_scr_drawloading_on_every_identity(self):
+        self.assertIn("scr_drawloading", validate.RENDERER_ENGINE_ALL_GLOBALS)
+        for gv in validate.RENDERER_ALL_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            del symbols["scr_drawloading"]
+            errors = validate.validate_renderer(symbols, gv)
+            self.assertTrue(any("scr_drawloading" in e for e in errors), (gv, errors))
+        self.assertNotIn("SCR_BeginLoadingPlaque", validate.RENDERER_ENGINE_ALL_FUNCTIONS)
+
+    def test_gate_requires_window_rect_on_every_identity(self):
+        self.assertIn("window_rect", validate.RENDERER_ENGINE_ALL_GLOBALS)
+        for gv in validate.RENDERER_ALL_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            del symbols["window_rect"]
+            errors = validate.validate_renderer(symbols, gv)
+            self.assertTrue(any("window_rect" in e for e in errors), (gv, errors))
+        #VID_UpdateWindowVars was write-only; the catalog FUNCTION record has no
+        #consumer and must not become a release dependency.
+        self.assertNotIn("VID_UpdateWindowVars", validate.RENDERER_ENGINE_ALL_FUNCTIONS)
+        for gv in validate.RENDERER_ALL_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            symbols["VID_UpdateWindowVars"] = {"kind": "function", "module": "engine"}
+            self.assertEqual([], validate.validate_renderer(symbols, gv))
+
+    def test_gate_requires_texgammatable_on_every_identity(self):
+        self.assertIn("texgammatable", validate.RENDERER_ENGINE_ALL_GLOBALS)
+        for gv in validate.RENDERER_ALL_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            del symbols["texgammatable"]
+            errors = validate.validate_renderer(symbols, gv)
+            self.assertTrue(any("texgammatable" in e for e in errors), (gv, errors))
+        self.assertIn("BuildGammaTable", validate.RENDERER_ENGINE_ALL_FUNCTIONS)
+
+    def test_gate_requires_particletexture_on_every_identity(self):
+        self.assertIn("particletexture", validate.RENDERER_ENGINE_ALL_GLOBALS)
+        for gv in validate.RENDERER_ALL_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            del symbols["particletexture"]
+            errors = validate.validate_renderer(symbols, gv)
+            self.assertTrue(any("particletexture" in e for e in errors), (gv, errors))
+
+    def test_gate_requires_direct_resolved_palette_scissor_and_studio_globals(self):
+        names = (
+            "giScissorTest", "host_basepal", "lightgammatable",
+            "r_ambientlight", "r_plightvec", "r_shadelight",
+        )
+        for name in names:
+            self.assertIn(name, validate.RENDERER_ENGINE_ALL_GLOBALS)
+            for gv in validate.RENDERER_ALL_GAMES:
+                symbols = self.complete_engine_symbols(gv)
+                del symbols[name]
+                errors = validate.validate_renderer(symbols, gv)
+                self.assertTrue(any(name in e for e in errors), (name, gv, errors))
+        self.assertIn("Draw_Frame", validate.RENDERER_ENGINE_ALL_FUNCTIONS)
+        self.assertNotIn("R_StudioLighting", validate.RENDERER_ENGINE_ALL_FUNCTIONS)
+
+    def test_gate_requires_the_consumed_fallback_texture_for_each_engine_family(self):
+        for gv in validate.RENDERER_SVENGINE_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            self.assertIn("r_missingtexture", symbols)
+            self.assertNotIn("r_notexture_mip", symbols)
+            del symbols["r_missingtexture"]
+            errors = validate.validate_renderer(symbols, gv)
+            self.assertTrue(any("r_missingtexture" in e for e in errors), (gv, errors))
+        for gv in validate.RENDERER_NON_SVENGINE_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            self.assertIn("r_notexture_mip", symbols)
+            self.assertNotIn("r_missingtexture", symbols)
+            del symbols["r_notexture_mip"]
+            errors = validate.validate_renderer(symbols, gv)
+            self.assertTrue(any("r_notexture_mip" in e for e in errors), (gv, errors))
+
+        retired = ("r_emptytexture", "r_blightvec", "scissor_x", "scissor_y",
+                   "scissor_width", "scissor_height")
+        for gv in validate.RENDERER_ALL_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            for name in retired:
+                self.assertNotIn(name, symbols, (gv, name))
+
     def test_gate_requires_lightmap_and_decal_symbols_on_every_identity(self):
         names = (
             "R_TextureAnimation",
-            "d_lightstylevalue", "frustum", "gDecalSurfCount",
+            "d_lightstylevalue", "frustum", "gDecalCache", "gDecalPool", "gDecalSurfCount",
             "lightmaps", "rtable",
         )
         for name in names:

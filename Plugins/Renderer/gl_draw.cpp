@@ -13,9 +13,6 @@ int *peakgltextures_SvEngine = NULL;//for SvEngine
 int *numgltextures = NULL;
 int *gHostSpawnCount = NULL;
 int *currenttexture = NULL;
-cachewad_t **decal_wad = NULL;
-qboolean* gfCustomBuild = NULL;
-char (*szCustName)[10] = NULL;
 
 int *gl_filter_min = NULL;
 int *gl_filter_max = NULL;
@@ -1811,77 +1808,6 @@ texture_t *Draw_DecalTexture(int index)
 	texture_t *texture = gPrivateFuncs.Draw_DecalTexture(index);
 
 	return texture;
-}
-
-void Draw_MiptexTexture(cachewad_t *wad, byte *data)
-{
-	texture_t* tex = nullptr;
-	miptex_t* mip = nullptr;
-	miptex_t tmp = { 0 };
-	int i = 0, pix = 0, paloffset = 0, palettesize = 0;
-	byte* pal = nullptr, * bitmap = nullptr;
-
-	if (wad->cacheExtra != 32)
-	{
-		gEngfuncs.Con_Printf("Draw_MiptexTexture: Bad cached wad %s\n", wad->name);
-		return;
-	}
-
-	tmp = *(miptex_t*)(data + wad->cacheExtra);
-	tex = (texture_t*)data;
-	mip = &tmp;
-
-	strncpy(tex->name, mip->name, sizeof(tex->name) - 1);
-	tex->name[sizeof(tex->name) - 1] = 0;
-
-	tex->width = LittleLong(mip->width);
-	tex->height = LittleLong(mip->height);
-	tex->anim_max = 0;
-	tex->anim_min = 0;
-	tex->anim_total = 0;
-	tex->alternate_anims = NULL;
-	tex->anim_next = NULL;
-
-	for (i = 0; i < MIPLEVELS; i++)
-		tex->offsets[i] = LittleLong(mip->offsets[i]) + wad->cacheExtra;
-
-	pix = tex->width * tex->height;
-	paloffset = 0;
-
-	for (i = 0; i < MIPLEVELS; i++, pix >>= 2)
-		paloffset += pix;
-
-	bitmap = (byte*)(data + tex->offsets[0]);
-	pal = (byte*)(data + tex->offsets[0] + paloffset + sizeof(short));
-	palettesize = *(unsigned short*)(data + sizeof(miptex_t) + pix);
-
-	if ((*gfCustomBuild))
-	{
-		strncpy(tex->name, (*szCustName), sizeof(tex->name) - 1);
-		tex->name[sizeof(tex->name) - 1] = 0;
-	}
-
-	if (pal[765] == 0 && pal[766] == 0 && pal[767] == 255)
-	{
-		tex->name[0] = '{';
-
-		int iTexType = (g_iEngineType == ENGINE_SVENGINE) ? TEX_TYPE_ALPHA_SVENGINE : TEX_TYPE_ALPHA;
-
-		tex->gl_texturenum = GL_LoadTexture(tex->name, GLT_DECAL, tex->width, tex->height, bitmap, true, iTexType, pal);
-	}
-	else
-	{
-		tex->name[0] = '}';
-
-		if ((*gfCustomBuild)) {
-			GL_UnloadTextureWithType(tex->name, GLT_DECAL);
-		}
-
-		//Why'th fuck 2 in SvEngine?
-		int iTexType = (g_iEngineType == ENGINE_SVENGINE) ? TEX_TYPE_ALPHA_GRADIENT_SVENGINE : TEX_TYPE_ALPHA_GRADIENT;
-
-		tex->gl_texturenum = GL_LoadTexture(tex->name, GLT_DECAL, tex->width, tex->height, bitmap, true, iTexType, pal);
-	}
 }
 
 /*

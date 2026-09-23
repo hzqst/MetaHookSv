@@ -4090,5 +4090,6 @@ metahook_api_t gMetaHookAPI =
 	MH_GetGameSymbolStatusString,
 	MH_IsGameSymbolAvailable,
 	MH_QueryGameSymbolScalar,
+	MH_QueryGameSymbolStructMember,
 	NULL
 };

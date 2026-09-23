@@ -45,6 +45,20 @@ inline PVOID GamedataResolvePtr(PVOID moduleBase, const char* symbolName, mh_gam
 	return address;
 }
 
+inline uint32_t GamedataQueryStructMember(PVOID moduleBase, const char* symbolName)
+{
+	uint32_t offset = 0;
+	mh_gamesymbol_status_t status = g_pMetaHookAPI->QueryGameSymbolStructMember(moduleBase, symbolName, &offset);
+
+	if (status != MH_GAMESYMBOL_OK)
+	{
+		Sys_Error("Could not query gamedata struct member: %s (%s)\nEngine buildnum: %d",
+			symbolName, g_pMetaHookAPI->GetGameSymbolStatusString(status), g_dwEngineBuildnum);
+	}
+
+	return offset;
+}
+
 //Resolve a conditionally required gamedata symbol. Returns nullptr when the
 //current binary identity publishes no record, so callers can keep an explicitly
 //isolated legacy branch; a symbol that is present but fails to resolve is fatal,

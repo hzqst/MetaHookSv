@@ -79,16 +79,12 @@ qboolean* vertical_fov_SvEngine = nullptr;
 vec_t* cl_simorg = nullptr;
 
 int* g_bUserFogOn = nullptr;
-float* g_UserFogColor = nullptr;
-float* g_UserFogDensity = nullptr;
-float* g_UserFogStart = nullptr;
-float* g_UserFogEnd = nullptr;
+float* flFinalFogColor = nullptr;
+float* flFogDensity = nullptr;
+float* flFogStart = nullptr;
+float* flFogEnd = nullptr;
 
 qboolean* giScissorTest = nullptr;
-int* scissor_x = nullptr;
-int* scissor_y = nullptr;
-int* scissor_width = nullptr;
-int* scissor_height = nullptr;
 
 screenfade_t* cl_sf = nullptr;
 
@@ -126,14 +122,8 @@ int gl_max_ubo_size = 0;
 int gl_max_texture_size = 0;
 float gl_max_ansio = 0;
 
-int* gl_msaa_fbo = nullptr;
-int* gl_backbuffer_fbo = nullptr;
-
-vec_t* r_soundOrigin = nullptr;
 vec_t* r_playerViewportAngles = nullptr;
 
-cactive_t* cls_state = nullptr;
-int* cls_signon = nullptr;
 qboolean* scr_drawloading = nullptr;
 
 movevars_t* pmovevars = nullptr;
@@ -158,13 +148,12 @@ texture_t** r_missingtexture = nullptr;
 //Sven Co-op only
 int* allow_cheats = nullptr;
 
-//Blob Engine only
+//Legacy engines without official GL texture allocation
 int* allocated_textures = nullptr;
 
 //client dll
 
 
-int* g_iWaterLevel = nullptr;
 bool* g_bRenderingPortals_SCClient = nullptr;
 int* g_ViewEntityIndex_SCClient = nullptr;//Sniber NMSL
 
@@ -173,8 +162,6 @@ float* g_iStartDist_SCClient = nullptr;
 float* g_iEndDist_SCClient = nullptr;
 
 void** (*pmainwindow) = nullptr;
-
-float* vid_d3d = nullptr;
 
 const char** gl_extensions = nullptr;
 
@@ -346,7 +333,6 @@ FBO_Container_t* g_CurrentRenderingFBO = nullptr;
 bool g_bEnforceAspect = true;
 bool g_bUseOITBlend = false;
 bool g_bUseLegacyTextureLoader = false;
-bool g_bHasOfficialFBOSupport = false;
 bool g_bHasOfficialGLTexAllocSupport = true;
 
 
@@ -3019,7 +3005,7 @@ void R_RenderFrameStart()
 
 	R_PrepareDecals();
 	R_StudioStartFrame();
-	
+
 	R_ForceCVars(gEngfuncs.GetMaxClients() > 1);
 	R_CheckVariables();
 	R_AnimateLight();
@@ -3039,14 +3025,14 @@ void R_RenderFrameStart()
 		r_draw_classify &= ~DRAW_CLASSIFY_TRANS_ENTITIES;
 	}
 
-	#if 0 //DO NOT RIP LIGHTMAP OFF
+#if 0 //DO NOT RIP LIGHTMAP OFF
 
 	if ((int)r_lightmap->value <= 0 && AllowCheats())
 	{
 		r_draw_classify &= ~DRAW_CLASSIFY_LIGHTMAP;
 	}
 
-	#endif
+#endif
 }
 
 /*
@@ -4305,7 +4291,7 @@ void R_SetupGLForViewModel(void)
 
 void R_SetupGL(void)
 {
-//	GL_BeginDebugGroup("R_SetupGL");
+	//	GL_BeginDebugGroup("R_SetupGL");
 
 	auto CurrentFBO = GL_GetCurrentSceneFBO();
 
@@ -4471,7 +4457,7 @@ void R_SetupGL(void)
 		InvertMatrix(gWorldToScreen, gScreenToWorld);
 	}
 
-//	GL_EndDebugGroup();
+	//	GL_EndDebugGroup();
 }
 
 void R_CheckVariables(void)
@@ -4672,11 +4658,11 @@ void R_RenderSvenFog(void)
 
 void R_RenderUserFog(void)
 {
-	memcpy(r_fog_color, g_UserFogColor, sizeof(vec4_t));
+	memcpy(r_fog_color, flFinalFogColor, sizeof(vec4_t));
 
-	r_fog_control[0] = (*g_UserFogStart);
-	r_fog_control[1] = (*g_UserFogEnd);
-	r_fog_control[2] = (*g_UserFogDensity);
+	r_fog_control[0] = (*flFogStart);
+	r_fog_control[1] = (*flFogEnd);
+	r_fog_control[2] = (*flFogDensity);
 
 	r_fog_mode = GL_EXP2;
 	r_fog_enabled = true;
@@ -4831,7 +4817,7 @@ model_t* EngineGetModelByIndex(int index)
 	return NULL;
 }
 
-model_t* EngineFindKnownModel(modtype_t type, const char *name)
+model_t* EngineFindKnownModel(modtype_t type, const char* name)
 {
 	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
 	{
@@ -5864,6 +5850,7 @@ void* __cdecl CoreProfile_SDL_CreateWindow(const char* title, int x, int y, int 
 
 int __cdecl CoreProfile_SDL_GL_ExtensionSupported(const char* extension)
 {
+	//Disable framebuffer initialization path completely from GL_Init and GL_SetMode
 	if (!strcmp(extension, "GL_ARB_texture_rectangle"))
 		return 0;
 	if (!strcmp(extension, "GL_NV_texture_rectangle"))
@@ -5876,6 +5863,7 @@ int __cdecl CoreProfile_SDL_GL_ExtensionSupported(const char* extension)
 
 void InitializeGraphicEngine(void* window)
 {
+	//For non-SDL path with legacy engine
 	if (!gPrivateFuncs.SDL_GL_SetAttribute)
 	{
 		g_hDC = GetDC((HWND)window);
@@ -6003,12 +5991,13 @@ void InitializeGraphicEngine(void* window)
 
 qboolean GL_SelectPixelFormat(HDC hDC)
 {
-	//TODO wglSelectPixelFormat?
+	//wglSelectPixelFormat seems doing nothing?
 	return true;
 }
 
 static qboolean GL_SetMode_Internal(void)
 {
+	//For SvEngine
 	if (gPrivateFuncs.SvEngine_glewInit)
 	{
 		auto err = gPrivateFuncs.SvEngine_glewInit();
@@ -6020,6 +6009,7 @@ static qboolean GL_SetMode_Internal(void)
 		}
 	}
 
+	//For GoldSrc with SDL support
 	if (gPrivateFuncs.SDL_InitGL)
 	{
 		gPrivateFuncs.SDL_InitGL();
@@ -6031,32 +6021,12 @@ static qboolean GL_SetMode_Internal(void)
 
 qboolean GL_SetMode_SvEngine(void* window, HDC* pmaindc, HGLRC* pbaseRC)
 {
-#if 1
 	return GL_SetMode_Internal();
-#else
-	auto r = gPrivateFuncs.GL_SetMode_SvEngine(window, pmaindc, pbaseRC);
-
-	if (r)
-	{
-
-	}
-	return r;
-#endif
 }
 
 qboolean GL_SetMode_GoldSrc(void* window, HDC* pmaindc, HGLRC* pbaseRC, int fD3D, const char* pszDriver, const char* pszCmdLine)
 {
-#if 1
 	return GL_SetMode_Internal();
-#else
-	auto r = gPrivateFuncs.GL_SetMode_GoldSrc(window, pmaindc, pbaseRC, fD3D, pszDriver, pszCmdLine);
-
-	if (r)
-	{
-
-	}
-	return r;
-#endif
 }
 
 qboolean GL_SetModeLegacy(void* window, HDC* pmaindc, HGLRC* pbaseRC, int fD3D, const char* pszDriver, const char* pszCmdLine)
@@ -6324,7 +6294,7 @@ void __fastcall CVideoMode_Common_DrawStartupGraphic(void* pthis, int dummy, voi
 
 void __fastcall CGame_DrawStartupVideo(void* pgame, int dummy, const char* filename, void* window)
 {
-	//not available yet.
+	//not available yet. See https://github.com/hzqst/MetaHookSv/issues/699
 }
 
 void LegacyMultiTextureInit()
@@ -6336,7 +6306,6 @@ void LegacyMultiTextureInit()
 
 static int ValidateWRect(const wrect_t* prc)
 {
-
 	if (!prc)
 		return false;
 
@@ -7428,7 +7397,7 @@ public:
 		return R_IsRenderingGammaBlending();
 	}
 
-	void SetCurrentEntity(cl_entity_t* entity) const override 
+	void SetCurrentEntity(cl_entity_t* entity) const override
 	{
 		(*currententity) = entity;
 	}

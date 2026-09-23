@@ -28,7 +28,7 @@ permalink: metahooksv/draw-decals
 - `Plugins/Renderer/enginedef.h` - `decalcache_t`, `FDECAL_CLIPTEST`, `FDECAL_NOCLIP`, `FDECAL_VBO`
 
 ## Architecture
-The lifecycle starts not in `R_DrawDecals` itself, but when the Renderer takes over the engine decal globals. `Engine_FillAddress_R_DecalInit` in `gl_hooks.cpp` disassembles instructions near the engine's `R_DecalInit` and binds the Renderer `gDecalPool` and `gDecalCache` pointers to the actual engine addresses; the same address-fill process also resolves `gDecalSurfCount` / `gDecalSurfs`. The Renderer therefore does not own decal objects, but directly references engine memory.
+The lifecycle starts not in `R_DrawDecals` itself, but when the Renderer takes over the engine decal globals. `Engine_FillAddress_R_DecalInit` in `gl_hooks.cpp` resolves `gDecalPool` and `gDecalCache` from the gamedata catalog (kind GLOBAL) against the real engine module base. `gDecalSurfCount` is resolved the same way from `Engine_FillAddress_R_DrawSequentialPoly`. The Renderer therefore does not own decal objects, but directly references engine memory.
 
 At runtime, `EngineGetDecalByIndex` simply returns `&gDecalPool[index]`, while `EngineGetMaxDecalCount` returns `MAX_DECALS`. At the start of every frame, `R_RenderFrameStart` calls `R_EntityComponents_StartFrame`, and `CEntityComponentContainer::Reset` clears the entity's `Decals` list. `R_PrepareDecals` then scans the full engine decal pool; whenever `decal->psurface` is valid, it finds the target entity through `entityIndex` and places the `decal_t*` in that entity's component container. This effectively projects engine-pool decals into an entity-indexed view that the Renderer can consume each frame.
 
@@ -76,7 +76,7 @@ T --> D
 ```
 
 ## Dependencies
-- Engine address resolution and global binding: `gDecalPool`, `gDecalCache`, `gDecalSurfCount`, `gDecalSurfs`
+- Engine address resolution and global binding: `gDecalPool`, `gDecalCache`, `gDecalSurfCount`
 - Engine decal pool and surface data: `decal_t`, `msurface_t`, `entityIndex`, `Draw_DecalTexture`
 - Entity-component lifecycle: `R_EntityComponents_StartFrame`, `CEntityComponentContainer::Reset`, `R_GetEntityComponentContainer`
 - World-surface GPU resources: `hDecalVAO`, `hDecalVBO`, `hDecalEBO`, `hMaterialSSBO`, `vCachedDecals`

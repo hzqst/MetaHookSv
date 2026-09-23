@@ -24,13 +24,8 @@ typedef struct
 	void (*V_RenderView)(void);
 	void (*R_RenderView)(void);
 	void (*R_RenderView_SvEngine)(int viewIdx);
-	void (*R_RenderScene)(void);
-	void (*R_RenderFinalFog)(void);
 	void (*ClientDLL_DrawNormalTriangles)(void);
 	void (*R_NewMap)(void);
-	void (*R_ClearParticles)(void);
-	void (*R_DecalInit)(void);
-	void (*V_InitLevel)(void);
 	void (*GL_BuildLightmaps)(void);
 	void (*R_DrawParticles)(void);
 	void (*R_TracerDraw)(void);
@@ -38,10 +33,6 @@ typedef struct
 	void (*R_FreeDeadParticles)(particle_t**);
 	void (*R_DrawTEntitiesOnList)(int onlyClientDraw);
 	void (*ClientDLL_DrawTransparentTriangles)(void);
-	ULONG_PTR cl_funcs_pDrawTransparentTriangles;
-	void (*R_DrawWorld)(void);
-	void (*R_SetupFrame)(void);
-	void (*R_SetupGL)(void);
 	qboolean(*R_CullBox)(vec3_t mins, vec3_t maxs);
 	void (*GL_Bind)(int texnum);
 	void (*GL_SelectTexture)(GLenum target);
@@ -56,39 +47,22 @@ typedef struct
 	void (*GL_Finish2D)(void);
 	void (*GL_BeginRendering)(int* x, int* y, int* width, int* height);
 	void (*GL_EndRendering)(void);
-	void (*EmitWaterPolys)(msurface_t* fa, int direction);
 	void (*R_DrawSequentialPoly)(msurface_t* s, int face);
 	void (*R_DrawSequentialPoly_HL25)(msurface_t* s, int face, qboolean cleanUpShaderState);//HL25 added the third stack arg, callee gates shader/program cleanup on it
-	void (*R_RecursiveWorldNode)(mnode_t* node);
-	void (*R_RecursiveWorldNode_HL25)(mnode_t* node, qboolean cleanUpShaderState);//HL25 added the second arg, it is propagated through recursion and into R_DrawSequentialPoly's cleanUpShaderState
 	texture_t* (*R_TextureAnimation)(msurface_t* fa);
-	void(*R_RotateForEntity)(float* origin, cl_entity_t* ent);
-	void (*Draw_MiptexTexture)(cachewad_t* wad, byte* data);
-	void (*GL_UnloadTexture)(const char* identifier);
 	void (*GL_UnloadTextures)(void);
 	void (*GL_LoadFilterTexture)(void);
 	texture_t* (*Draw_DecalTexture)(int index);
-	void* (*Draw_CustomCacheGet)(cachewad_t* wad, void* raw, int rawsize, int index);
-	void* (*Draw_CacheGet)(cachewad_t* wad, int index);
 	//int(*GL_LoadTexture)(char *identifier, int textureType, int width, int height, byte *data, qboolean mipmap, int iPalTextureType, byte *pPal);
 	int(*GL_LoadTexture2)(char* identifier, int textureType, int width, int height, byte* data, qboolean mipmap, int iPalTextureType, byte* pPal, int filter);
 	void (*Mod_UnloadSpriteTextures)(model_t* mod);
 	void (*Mod_LoadSpriteModel)(model_t* mod, void* buffer);
-	void* (*Mod_LoadSpriteFrame)(void* pin, mspriteframe_t** ppframe, int framenum);
-	void (*R_MarkLeaves)(void);
-	void (*R_DrawBrushModel)(cl_entity_t* e);
-	void (*R_DrawSpriteModel)(cl_entity_t* ent);
 	mspriteframe_t* (*R_GetSpriteFrame)(msprite_t* pSprite, int frame);
 	int (*CL_FxBlend)(cl_entity_t* ent);
 	float(*GlowBlend)(cl_entity_t* ent);
-	void (*VID_UpdateWindowVars)(RECT* prc, int x, int y);
 	mleaf_t* (*Mod_PointInLeaf)(vec3_t p, model_t* model);
 	void* (*realloc_SvEngine)(void*, size_t);
-	dlight_t* (*CL_AllocDlight)(int key);
-	dlight_t* (*CL_AllocElight)(int key);
 	void(*S_ExtraUpdate)(void);
-	void(*R_DrawViewModel)(void);//inlined in SvEngine
-	void(*R_PolyBlend)(void);
 	int(*V_FadeAlpha)(void);
 	void(*R_ResetLatched)(cl_entity_t* ent, qboolean full_reset);
 	//One of CheckMultiTextureExtensions / InitMultitexturing / DT_Initialize, whichever
@@ -179,13 +153,11 @@ typedef struct
 	int index_BaseUISurface_DrawSetTexture;
 	int offset_BaseUISurface_m_CurrentTextureId;
 
-	void(*SCR_BeginLoadingPlaque)(qboolean reconnect);
 	qboolean(*Host_IsSinglePlayerGame)(void);
 	void* (*Hunk_AllocName)(int size, const char* name);
 	void* (*Cache_Alloc)(cache_user_t* c, int size, const char* name);
 	void (*Host_ClearMemory)(qboolean bQuite);
 	void(__fastcall* CVideoMode_Common_DrawStartupGraphic)(void* videomode, int dummy, void* window);
-	int offset_CVideoMode_Common_m_ImageID_Size;
 	int offset_CVideoMode_Common_m_ImageID;
 	int offset_CVideoMode_Common_m_iBaseResX;
 	int offset_CVideoMode_Common_m_iBaseResY;
@@ -206,11 +178,6 @@ typedef struct
 
 	//Engine Studio
 	void (*R_GLStudioDrawPoints)(void);
-	void (*R_LightStrength)(int bone, float* vert, float (*light)[4]);
-	void (*R_StudioLighting)(float* lv, int bone, int flags, vec3_t normal);
-	void (*R_StudioSetupSkin)(studiohdr_t* ptexturehdr, int index);
-	skin_t* (*R_StudioGetSkin)(int keynum, int index);
-	void (*R_LightLambert)(float (*light)[4], float* normal, float* src, float* lambert);
 
 	//Engine Studio Exported API
 	void (*studioapi_StudioDynamicLight)(struct cl_entity_s* ent, struct alight_s* plight);
@@ -251,10 +218,6 @@ typedef struct
 	//Engine's SDL2 wrapper
 	void(__cdecl* SDL_InitGL)();
 	decltype(glewInit)* SvEngine_glewInit;
-
-	bool R_SetupFrame_inlined;
-	bool R_RenderScene_inlined;
-	bool R_LightStrength_inlined;
 
 }private_funcs_t;
 
