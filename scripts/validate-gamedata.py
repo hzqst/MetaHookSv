@@ -196,7 +196,7 @@ RENDERER_ENGINE_ALL_FUNCTIONS = (
     "PVSNode", "R_AnimateLight", "R_BeamDrawList", "R_CheckVariables",
     "R_CullBox", "R_DrawParticles", "R_DrawSequentialPoly",
     "R_DrawTEntitiesOnList", "R_ForceCVars", "R_FreeDeadParticles",
-    "R_GLStudioDrawPoints", "R_GetSpriteFrame", "R_MarkLeaves", "R_NewMap", "R_PolyBlend",
+    "R_GLStudioDrawPoints", "R_GetSpriteFrame", "R_MarkLeaves", "R_NewMap",
     "R_RenderView", "R_ResetLatched",
     "R_SetupGL",
     "R_StudioDrawModel", "R_StudioDrawPlayer", "R_StudioMergeBones", "R_StudioRenderFinal",
@@ -207,12 +207,12 @@ RENDERER_ENGINE_ALL_FUNCTIONS = (
 RENDERER_ENGINE_ALL_GLOBALS = (
     "active_particles", "c_brush_polys", "cache_head", "cl_dlights", "cl_elights",
     "cl_entities", "cl_light_level", "cl_max_edicts", "cl_numvisedicts", "cl_oldtime",
-    "cl_parsecount", "cl_simorg", "cl_stats", "cl_time", "cl_viewentity", "cl_visedicts",
+    "cl_parsecount", "cl_sf", "cl_simorg", "cl_stats", "cl_time", "cl_viewentity", "cl_visedicts",
     "cl_waterlevel", "cl_weaponsequence", "cl_weaponstarttime", "cl_worldmodel",
     "cshift_water", "currententity", "currenttexture", "d_lightstylevalue", "detTexSupported",
     "envmap", "filterBrightness", "filterColorBlue", "filterColorGreen", "filterColorRed",
-    "filterMode", "flFinalFogColor", "flFogDensity", "flFogEnd", "flFogStart", "frustum", "gDecalCache", "gDecalPool", "gDecalSurfCount", "gDevOverview", "gSpriteMipMap", "gTempEnts", "gWaterColor", "g_bUserFogOn", "giScissorTest",
-    "gl_filter_max", "gl_filter_min", "host_basepal",
+    "filterMode", "flFinalFogColor", "flFogDensity", "flFogEnd", "flFogStart", "frustum", "gDecalCache", "gDecalPool", "gDecalSurfCount", "gDevOverview", "gHostSpawnCount", "gSpriteMipMap", "gTempEnts", "gWaterColor", "g_bUserFogOn", "giScissorTest",
+    "gl_extensions", "gl_filter_max", "gl_filter_min", "gltextures", "host_basepal",
     "lightgammatable", "lightmaps", "mod_known",
     "mod_numknown", "modelorg", "particletexture", "pstudiohdr",
     "r_ambientlight", "r_blend", "r_entorigin", "r_framecount", "r_origin", "r_plightvec", "r_refdef", "r_shadelight", "r_visframecount",
@@ -229,15 +229,19 @@ RENDERER_ENGINE_NON_SVENGINE_FUNCTIONS = (
 )
 RENDERER_ENGINE_NON_SVENGINE_PATCHES = ("GL_SetMode_call_qwglCreateContext",)
 #SvEngine renamed the alias-poly counter to c_model_polys.
-RENDERER_ENGINE_NON_SVENGINE_GLOBALS = ("c_alias_polys", "r_notexture_mip")
+RENDERER_ENGINE_NON_SVENGINE_GLOBALS = ("c_alias_polys", "numgltextures", "r_notexture_mip")
 RENDERER_ENGINE_E8_FUNCTIONS = ("GL_SelectPixelFormat", "GlowBlend")
 #Draw_FillRGBABuf is SvEngine's buffered eight-integer rectangle body; the catalog used to
 #publish it under the wrong name NET_DrawRect and dropped that name without an alias.
 RENDERER_ENGINE_SVENGINE_FUNCTIONS = (
     "Draw_FillRGBABuf", "Draw_SpriteFrameAdditive_SvEngine", "Draw_SpriteFrameGeneric_SvEngine",
-    "Draw_SpriteFrameHoles_SvEngine", "R_LoadSkyBox_SvEngine",
+    "Draw_SpriteFrameHoles_SvEngine", "R_LoadSkyBox_SvEngine", "realloc",
 )
-RENDERER_SVENGINE_GLOBALS = ("allow_cheats", "c_model_polys", "r_missingtexture")
+RENDERER_SVENGINE_GLOBALS = (
+    "allow_cheats", "c_model_polys", "gltextures.m_Memory.m_nAllocationCount",
+    "gltextures.m_Size", "peakgltextures", "r_missingtexture",
+)
+RENDERER_LEGACY_TEXALLOC_GLOBALS = ("texture_extension_number",)
 RENDERER_MTEX_PROBE_FUNCTIONS = ("CheckMultiTextureExtensions",)
 RENDERER_INLINED_MTEX_PROBE_FUNCTIONS = ("DT_Initialize",)
 RENDERER_ENGINE_HL25_FUNCTIONS = ("CGame_DrawStartupVideo",)
@@ -751,6 +755,7 @@ def validate_renderer(symbols, game_version, include_engine=True, include_client
             errors += _renderer_check(symbols, game_version, RENDERER_SETMODE_FUNCTIONS, "function", "engine")
         if game_version in RENDERER_SETMODE_LEGACY_GAMES:
             errors += _renderer_check(symbols, game_version, RENDERER_SETMODE_LEGACY_FUNCTIONS, "function", "engine")
+            errors += _renderer_check(symbols, game_version, RENDERER_LEGACY_TEXALLOC_GLOBALS, "global", "engine")
         if game_version in RENDERER_SDL_GAMES:
             errors += _renderer_check(symbols, game_version, RENDERER_SDL_FUNCTIONS, "function", "engine")
 

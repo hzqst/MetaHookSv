@@ -154,7 +154,7 @@ texture_t** r_missingtexture = nullptr;
 //Sven Co-op only
 int* allow_cheats = nullptr;
 
-//Blob Engine only
+//Legacy engines without official GL texture allocation
 int* allocated_textures = nullptr;
 
 //client dll
@@ -168,8 +168,6 @@ float* g_iStartDist_SCClient = nullptr;
 float* g_iEndDist_SCClient = nullptr;
 
 void** (*pmainwindow) = nullptr;
-
-float* vid_d3d = nullptr;
 
 const char** gl_extensions = nullptr;
 

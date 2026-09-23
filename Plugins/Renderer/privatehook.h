@@ -65,7 +65,6 @@ typedef struct
 	mleaf_t* (*Mod_PointInLeaf)(vec3_t p, model_t* model);
 	void* (*realloc_SvEngine)(void*, size_t);
 	void(*S_ExtraUpdate)(void);
-	void(*R_PolyBlend)(void);
 	int(*V_FadeAlpha)(void);
 	void(*R_ResetLatched)(cl_entity_t* ent, qboolean full_reset);
 	//One of CheckMultiTextureExtensions / InitMultitexturing / DT_Initialize, whichever

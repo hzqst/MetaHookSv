@@ -472,6 +472,7 @@ class RendererGateTests(unittest.TestCase):
             add(validate.RENDERER_SETMODE_FUNCTIONS, "function")
         if game_version in validate.RENDERER_SETMODE_LEGACY_GAMES:
             add(validate.RENDERER_SETMODE_LEGACY_FUNCTIONS, "function")
+            add(validate.RENDERER_LEGACY_TEXALLOC_GLOBALS, "global")
         if game_version in validate.RENDERER_SDL_GAMES:
             add(validate.RENDERER_SDL_FUNCTIONS, "function")
         symbols.update(self.complete_client_symbols(game_version))

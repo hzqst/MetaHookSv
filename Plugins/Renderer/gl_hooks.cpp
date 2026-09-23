@@ -1,7 +1,6 @@
 
 #include <metahook.h>
 #include <capstone.h>
-#include <set>
 #include "gl_local.h"
 #include <utlvector.h>
 #include <SDL2/SDL_video.h>
@@ -18,8 +17,6 @@
 
 
 #define R_NEWMAP_SIG_COMMON    "\x55\x8B\xEC\x83\xEC\x2A\xC7\x45\xFC\x00\x00\x00\x00\x2A\x2A\x8B\x45\xFC\x83\xC0\x01\x89\x45\xFC"
-
-#define GL_SETMODE_SIG_BLOB "\x8B\x44\x24\x10\xC7\x05\x2A\x2A\x2A\x2A\x00\x00\x00\x00\x85\xC0"
 
 #define GL_SHUTDOWN_SIG_HL25 "\xFF\x35\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xFF\x30\xE8"
 
@@ -152,140 +149,35 @@ void Engine_FillAddress_HasOfficialFBOSupport(const mh_dll_info_t& DllInfo, cons
 	}
 }
 
-void Engine_FillAddress_HasOfficialGLTexAllocSupport(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_HasOfficialGLTexAllocSupport(const mh_dll_info_t& RealDllInfo)
 {
-	const char pattern[] = "\xA8\x16\x00\x00";
-	PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
-	PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
-	while (SearchBegin < SearchLimit)
+	//Legacy engines publish the counter used by the texture allocation redirect.
+	const auto status = g_pMetaHookAPI->IsGameSymbolAvailable(RealDllInfo.ImageBase, "texture_extension_number");
+	if (status == MH_GAMESYMBOL_OK)
 	{
-		PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
-		if (pFound)
-		{
-			typedef struct
-			{
-				bool bFoundPush;
-				bool bFoundCall;
-			}LoadSkys_SearchContext;
-
-			LoadSkys_SearchContext ctx = { 0 };
-
-			g_pMetaHookAPI->DisasmRanges(pFound + 4, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-				auto pinst = (cs_insn*)inst;
-				auto ctx = (LoadSkys_SearchContext*)context;
-
-				if (instCount == 1 && pinst->id == X86_INS_PUSH &&
-					pinst->detail->x86.op_count == 1 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG)
-				{
-					ctx->bFoundPush = true;
-				}
-
-				if (instCount == 2 && address[0] == 0xE8)
-				{
-					ctx->bFoundCall = true;
-				}
-
-				if (ctx->bFoundPush && ctx->bFoundCall)
-					return TRUE;
-
-				if (address[0] == 0xCC)
-					return TRUE;
-
-				if (pinst->id == X86_INS_RET)
-					return TRUE;
-
-				return FALSE;
-
-				}, 0, &ctx);
-
-			if (ctx.bFoundPush && ctx.bFoundCall)
-			{
-				g_bHasOfficialGLTexAllocSupport = false;
-
-				break;
-			}
-
-			SearchBegin = pFound + Sig_Length(pattern);
-		}
-		else
-		{
-			break;
-		}
+		g_bHasOfficialGLTexAllocSupport = false;
+	}
+	else if (status == MH_GAMESYMBOL_SYMBOL_NOT_FOUND)
+	{
+		g_bHasOfficialGLTexAllocSupport = true;
+	}
+	else
+	{
+		Sys_Error("Could not query gamedata symbol: texture_extension_number (%s)\nEngine buildnum: %d",
+			g_pMetaHookAPI->GetGameSymbolStatusString(status), g_dwEngineBuildnum);
 	}
 }
 
-void Engine_FillAddress_GL_Init(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_GL_Init(const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.GL_Init)
 		return;
 
 	gPrivateFuncs.GL_Init = (decltype(gPrivateFuncs.GL_Init))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_Init", MH_GAMESYMBOL_KIND_FUNCTION);
-
-	// 在 GL_Init 中定位 gl_extensions
-	// 模式: push 0x1F03 (GL_EXTENSIONS) -> call glGetString -> mov [imm32], eax
-	if (!gl_extensions && !gPrivateFuncs.SDL_GL_GetProcAddress)
-	{
-		typedef struct GL_Init_ExtSearch_s
-		{
-			const mh_dll_info_t& RealDllInfo;
-			PUCHAR push_GL_EXTENSIONS_address{};
-			int push_GL_EXTENSIONS_instCount{};
-		}GL_Init_ExtSearch;
-
-		GL_Init_ExtSearch extCtx = { RealDllInfo };
-
-		g_pMetaHookAPI->DisasmRanges((void*)gPrivateFuncs.GL_Init, 0x120, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (GL_Init_ExtSearch*)context;
-
-			if (gl_extensions)
-				return TRUE;
-
-			// 检测 push 0x1F03 (GL_EXTENSIONS)
-			if (pinst->id == X86_INS_PUSH &&
-				pinst->detail->x86.op_count == 1 &&
-				pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-				pinst->detail->x86.operands[0].imm == 0x1F03)
-			{
-				ctx->push_GL_EXTENSIONS_address = address;
-				ctx->push_GL_EXTENSIONS_instCount = instCount;
-			}
-
-			// 检测 mov [mem], eax 在 push GL_EXTENSIONS 之后
-			if (ctx->push_GL_EXTENSIONS_address &&
-				address > ctx->push_GL_EXTENSIONS_address &&
-				address < ctx->push_GL_EXTENSIONS_address + 0x30 &&
-				instCount > ctx->push_GL_EXTENSIONS_instCount &&
-				instCount < ctx->push_GL_EXTENSIONS_instCount + 10 &&
-				pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base == 0 &&
-				pinst->detail->x86.operands[0].mem.index == 0 &&
-				pinst->detail->x86.operands[1].type == X86_OP_REG &&
-				pinst->detail->x86.operands[1].reg == X86_REG_EAX &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp >(PUCHAR)ctx->RealDllInfo.DataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize)
-			{
-				gl_extensions = (decltype(gl_extensions))pinst->detail->x86.operands[0].mem.disp;
-			}
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-
-			}, 0, &extCtx);
-	}
+	gl_extensions = (decltype(gl_extensions))GamedataResolvePtr(RealDllInfo.ImageBase, "gl_extensions", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
-void Engine_FillAddress_GL_SetMode(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_GL_SetMode(const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.GL_SetMode_SvEngine || gPrivateFuncs.GL_SetMode_GoldSrc || gPrivateFuncs.GL_SetModeLegacy)
 		return;
@@ -317,189 +209,9 @@ void Engine_FillAddress_GL_SetMode(const mh_dll_info_t& DllInfo, const mh_dll_in
 		gPrivateFuncs.SDL_InitGL = (decltype(gPrivateFuncs.SDL_InitGL))GamedataResolvePtr(RealDllInfo.ImageBase, "SDL_InitGL", MH_GAMESYMBOL_KIND_FUNCTION);
 	}
 
-	PVOID GL_SetMode_VA = gPrivateFuncs.GL_SetMode_SvEngine ? (PVOID)gPrivateFuncs.GL_SetMode_SvEngine :
-		(gPrivateFuncs.GL_SetMode_GoldSrc ? (PVOID)gPrivateFuncs.GL_SetMode_GoldSrc : (PVOID)gPrivateFuncs.GL_SetModeLegacy);
-
-	if (GL_SetMode_VA)
-	{
-		typedef struct GL_SetMode_SearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-			PVOID base{};
-			size_t max_insts{};
-			int max_depth{};
-			std::set<PVOID> code{};
-			std::set<PVOID> branches{};
-			std::vector<walk_context_t> walks{};
-			// 用于定位 gl_extensions
-			PUCHAR push_GL_EXTENSIONS_address{};
-			int push_GL_EXTENSIONS_instCount{};
-		} GL_SetMode_SearchContext;
-
-		GL_SetMode_SearchContext ctx = { RealDllInfo, RealDllInfo };
-		ctx.base = GL_SetMode_VA;
-		ctx.max_insts = 500;
-		ctx.max_depth = 16;
-		ctx.walks.emplace_back(ctx.base, 0x500, 0);
-
-		while (ctx.walks.size())
-		{
-			auto walk = ctx.walks[ctx.walks.size() - 1];
-			ctx.walks.pop_back();
-
-			g_pMetaHookAPI->DisasmRanges(walk.address, walk.len, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-				auto pinst = (cs_insn*)inst;
-				auto ctx = (GL_SetMode_SearchContext*)context;
-
-				if (gl_extensions && (!gPrivateFuncs.GL_SetModeLegacy || vid_d3d))
-					return TRUE;
-
-				if (ctx->code.size() > ctx->max_insts)
-					return TRUE;
-
-				if (ctx->code.find(address) != ctx->code.end())
-					return TRUE;
-
-				ctx->code.emplace(address);
-
-				// 定位 vid_d3d (仅 Legacy 引擎)
-				if (instCount < 10 &&
-					!vid_d3d &&
-					gPrivateFuncs.GL_SetModeLegacy &&
-					pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					((PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->RealDllInfo.DataBase &&
-						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize) &&
-					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-					pinst->detail->x86.operands[1].imm == 0x3F800000)
-				{
-					vid_d3d = (decltype(vid_d3d))pinst->detail->x86.operands[0].mem.disp;
-				}
-
-				// 定位 gl_extensions
-				// 模式: push 0x1F03 -> call glGetString -> mov [imm32], eax
-				if (!gl_extensions)
-				{
-					// 检测 push 0x1F03 (GL_EXTENSIONS)
-					if (pinst->id == X86_INS_PUSH &&
-						pinst->detail->x86.op_count == 1 &&
-						pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-						pinst->detail->x86.operands[0].imm == 0x1F03)
-					{
-						ctx->push_GL_EXTENSIONS_address = address;
-						ctx->push_GL_EXTENSIONS_instCount = instCount;
-					}
-
-					// 检测 mov [mem], eax 在 push GL_EXTENSIONS 之后
-					if (ctx->push_GL_EXTENSIONS_address &&
-						address > ctx->push_GL_EXTENSIONS_address &&
-						address < ctx->push_GL_EXTENSIONS_address + 0x30 &&
-						instCount > ctx->push_GL_EXTENSIONS_instCount &&
-						instCount < ctx->push_GL_EXTENSIONS_instCount + 10 &&
-						pinst->id == X86_INS_MOV &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-						pinst->detail->x86.operands[0].mem.base == 0 &&
-						pinst->detail->x86.operands[0].mem.index == 0 &&
-						pinst->detail->x86.operands[1].type == X86_OP_REG &&
-						pinst->detail->x86.operands[1].reg == X86_REG_EAX &&
-						(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->RealDllInfo.DataBase &&
-						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize)
-					{
-						gl_extensions = (decltype(gl_extensions))pinst->detail->x86.operands[0].mem.disp;
-					}
-				}
-
-				// 分支处理
-				if ((pinst->id == X86_INS_JMP || (pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS)) &&
-					pinst->detail->x86.op_count == 1 &&
-					pinst->detail->x86.operands[0].type == X86_OP_IMM)
-				{
-					PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
-					auto foundbranch = ctx->branches.find(imm);
-					if (foundbranch == ctx->branches.end())
-					{
-						ctx->branches.emplace(imm);
-						if (depth + 1 < ctx->max_depth)
-						{
-							ctx->walks.emplace_back(imm, 0x500, depth + 1);
-						}
-					}
-					if (pinst->id == X86_INS_JMP)
-						return TRUE;
-				}
-
-				if (address[0] == 0xCC)
-					return TRUE;
-
-				if (pinst->id == X86_INS_RET)
-					return TRUE;
-
-				return FALSE;
-				}, walk.depth, &ctx);
-		}
-
-		Sig_VarNotFound(gl_extensions);
-	}
-
 	if (gPrivateFuncs.GL_SetModeLegacy)
 	{
 		gPrivateFuncs.GL_SelectPixelFormat = (decltype(gPrivateFuncs.GL_SelectPixelFormat))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_SelectPixelFormat", MH_GAMESYMBOL_KIND_FUNCTION);
-	}
-}
-
-void Engine_FillAddress_R_PolyBlend(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (gPrivateFuncs.R_PolyBlend)
-		return;
-
-	gPrivateFuncs.R_PolyBlend = (decltype(gPrivateFuncs.R_PolyBlend))GamedataResolvePtr(RealDllInfo.ImageBase, "R_PolyBlend", MH_GAMESYMBOL_KIND_FUNCTION);
-	gPrivateFuncs.V_FadeAlpha = (decltype(gPrivateFuncs.V_FadeAlpha))GamedataResolvePtr(RealDllInfo.ImageBase, "V_FadeAlpha", MH_GAMESYMBOL_KIND_FUNCTION);
-
-	if (!cl_sf)
-	{
-		typedef struct R_PolyBlend_SearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-		}R_PolyBlend_SearchContext;
-
-		R_PolyBlend_SearchContext ctx = { RealDllInfo, RealDllInfo };
-
-		g_pMetaHookAPI->DisasmRanges((void*)gPrivateFuncs.R_PolyBlend, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (R_PolyBlend_SearchContext*)context;
-
-			if (!cl_sf &&
-				pinst->id == X86_INS_TEST &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->RealDllInfo.DataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize &&
-				pinst->detail->x86.operands[0].size == 1 &&
-				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				pinst->detail->x86.operands[1].imm == 2)
-			{
-				cl_sf = (decltype(cl_sf))((PUCHAR)pinst->detail->x86.operands[0].mem.disp - offsetof(screenfade_t, fadeFlags));
-			}
-
-			if (cl_sf)
-				return TRUE;
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-
-			}, 0, &ctx);
-
-		Sig_VarNotFound(cl_sf);
 	}
 }
 
@@ -513,251 +225,29 @@ void Engine_FillAddress_GL_Bind(const mh_dll_info_t& DllInfo, const mh_dll_info_
 	currenttexture = (decltype(currenttexture))GamedataResolvePtr(RealDllInfo.ImageBase, "currenttexture", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
-void Engine_FillAddress_GL_LoadTexture2(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_GL_LoadTexture2(const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.GL_LoadTexture2)
 		return;
 
-	PVOID GL_LoadTexture2_VA = (PVOID)GamedataResolvePtr(RealDllInfo.ImageBase, "GL_LoadTexture2", MH_GAMESYMBOL_KIND_FUNCTION);
-
-	gPrivateFuncs.GL_LoadTexture2 = (decltype(gPrivateFuncs.GL_LoadTexture2))GL_LoadTexture2_VA;
-
-
-	/*
-		int *numgltextures = NULL;
-		gltexture_t *gltextures = NULL;
-		int *maxgltextures_SvEngine = NULL;
-		gltexture_t **gltextures_SvEngine = NULL;
-		int *peakgltextures_SvEngine = NULL;
-		int *allocated_textures = NULL;
-		int *gHostSpawnCount = NULL;
-	*/
+	gPrivateFuncs.GL_LoadTexture2 = (decltype(gPrivateFuncs.GL_LoadTexture2))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_LoadTexture2", MH_GAMESYMBOL_KIND_FUNCTION);
+	gHostSpawnCount = (decltype(gHostSpawnCount))GamedataResolvePtr(RealDllInfo.ImageBase, "gHostSpawnCount", MH_GAMESYMBOL_KIND_GLOBAL);
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		{
-			const char pattern[] = "\x8B\x15\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x8B\x1D";
-			// GL_LoadTexture2
-			//.text : 01D4EBF4 8B 15 F0 C5 0F 03                                   mov     edx, numgltextures
-			//.text : 01D4EBFA 3B F2                                               cmp     esi, edx
-			//.text : 01D4EBFC 7D 4D                                               jge     short loc_1D4EC4B
-			//.text : 01D4EBFE 8B 1D E4 C5 0F 03                                   mov     ebx, gltextures
-
-			ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size((void*)GL_LoadTexture2_VA, 0x300, pattern);
-			Sig_AddrNotFound(numgltextures);
-
-			auto numgltextures_VA = *(PVOID*)(addr + 2);
-			auto gltextures_SvEngine_VA = *(PVOID*)(addr + 12);
-
-			numgltextures = (decltype(numgltextures))(numgltextures_VA);
-			gltextures_SvEngine = (decltype(gltextures_SvEngine))(gltextures_SvEngine_VA);
-		}
-
-		{
-			const char pattern2[] = "\x6B\xC1\x54\x89\x0D";
-			//  GL_LoadTexture2
-			//.text:01D4ED66 6B C1 54                                            imul    eax, ecx, 54h; 'T'
-			//.text:01D4ED69 89 0D F0 C6 0F 03                                   mov     maxgltextures, ecx
-
-			ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size((void*)GL_LoadTexture2_VA, 0x300, pattern2);
-			Sig_AddrNotFound(maxgltextures_SvEngine);
-
-			auto maxgltextures_SvEngine_VA = *(PVOID*)(addr + 5);
-			maxgltextures_SvEngine = (decltype(maxgltextures_SvEngine))(maxgltextures_SvEngine_VA);
-			Sig_VarNotFound(maxgltextures_SvEngine);
-
-			const char pattern3[] = "\x51\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08";
-			addr = (ULONG_PTR)Search_Pattern_From_Size((void*)addr, 0x50, pattern3);
-			Sig_AddrNotFound(realloc_SvEngine);
-			auto realloc_SvEngine_VA = GetCallAddress(addr + 1);
-			gPrivateFuncs.realloc_SvEngine = (decltype(gPrivateFuncs.realloc_SvEngine))(realloc_SvEngine_VA);
-			Sig_FuncNotFound(realloc_SvEngine);
-		}
-
-		{
-			const char pattern4[] = "\x66\x8B\x2A\x2A\x2A\x2A\x2A\x66\x89\x2A\x04";
-			// GL_LoadTexture2
-			//66 8B 0D E0 72 40 08                                mov     cx, word ptr gHostSpawnCount
-			//66 89 4B 04                                         mov     [ebx+4], cx
-
-			ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size((void*)GL_LoadTexture2_VA, 0x200, pattern4);
-			Sig_AddrNotFound(gHostSpawnCount);
-			auto gHostSpawnCount_VA = *(PVOID*)(addr + 3);
-
-			gHostSpawnCount = (decltype(gHostSpawnCount))(gHostSpawnCount_VA);
-			Sig_VarNotFound(gHostSpawnCount);
-		}
-
-		{
-			const char pattern5[] = "\x03\x35\x2A\x2A\x2A\x2A\x3B\x15";
-			// GL_LoadTexture2
-			//.text:01D4EDE8 03 35 EC C6 0F 03                                   add     esi, gltextures
-			//.text : 01D4EDEE 3B 15 00 C7 0F 03                                   cmp     edx, peakgltextures
-
-			ULONG_PTR addr = (ULONG_PTR)g_pMetaHookAPI->SearchPattern((void*)GL_LoadTexture2_VA, 0x200, pattern5, Sig_Length(pattern5));
-			Sig_AddrNotFound(peakgltextures);
-
-			auto peakgltextures_SvEngine_VA = *(PVOID*)(addr + 8);
-
-			peakgltextures_SvEngine = (decltype(peakgltextures_SvEngine))(peakgltextures_SvEngine_VA);
-			Sig_VarNotFound(peakgltextures_SvEngine);
-		}
+		gltextures_SvEngine = (decltype(gltextures_SvEngine))GamedataResolvePtr(RealDllInfo.ImageBase, "gltextures", MH_GAMESYMBOL_KIND_GLOBAL);
+		numgltextures = (decltype(numgltextures))GamedataResolvePtr(RealDllInfo.ImageBase, "gltextures.m_Size", MH_GAMESYMBOL_KIND_GLOBAL);
+		maxgltextures_SvEngine = (decltype(maxgltextures_SvEngine))GamedataResolvePtr(RealDllInfo.ImageBase, "gltextures.m_Memory.m_nAllocationCount", MH_GAMESYMBOL_KIND_GLOBAL);
+		peakgltextures_SvEngine = (decltype(peakgltextures_SvEngine))GamedataResolvePtr(RealDllInfo.ImageBase, "peakgltextures", MH_GAMESYMBOL_KIND_GLOBAL);
+		gPrivateFuncs.realloc_SvEngine = (decltype(gPrivateFuncs.realloc_SvEngine))GamedataResolvePtr(RealDllInfo.ImageBase, "realloc", MH_GAMESYMBOL_KIND_FUNCTION);
 	}
 	else
 	{
-		typedef struct GL_LoadTexture2_SearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-			
-			int xor_exi_exi_instCount{};
-			int xor_exi_exi_reg{};
-			int inc_exx_instCount{};
-			int inc_exx_reg{};
-			int mov_mem_exx_instCount{};
-			int mov_mem_exx_reg{};
-		} GL_LoadTexture2_SearchContext;
-
-		GL_LoadTexture2_SearchContext ctx = { RealDllInfo, RealDllInfo };
-
-		g_pMetaHookAPI->DisasmRanges((void*)GL_LoadTexture2_VA, 0x200, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-			
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (GL_LoadTexture2_SearchContext*)context;
-
-			if (!ctx->xor_exi_exi_instCount && pinst->id == X86_INS_XOR &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				(pinst->detail->x86.operands[0].reg == X86_REG_ESI || pinst->detail->x86.operands[0].reg == X86_REG_EDI)
-				&&
-				pinst->detail->x86.operands[0].reg == pinst->detail->x86.operands[1].reg
-				)
-			{
-				//  xor     esi, esi
-
-				ctx->xor_exi_exi_instCount = instCount;
-				ctx->xor_exi_exi_reg = pinst->detail->x86.operands[0].reg;
-			}
-
-			if (ctx->xor_exi_exi_instCount && pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				(pinst->detail->x86.operands[0].reg == X86_REG_ESI || pinst->detail->x86.operands[0].reg == X86_REG_EDI)
-				&&
-				pinst->detail->x86.operands[0].reg != ctx->xor_exi_exi_reg &&
-				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[1].mem.base == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->RealDllInfo.DataBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize
-				)
-			{
-				//  mov     edi, offset gltextures
-				gltextures = (decltype(gltextures))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->RealDllInfo, ctx->RealDllInfo);
-			}
-
-			if (ctx->xor_exi_exi_instCount && pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				(pinst->detail->x86.operands[0].reg == X86_REG_ESI || pinst->detail->x86.operands[0].reg == X86_REG_EDI)
-				&&
-				pinst->detail->x86.operands[0].reg != ctx->xor_exi_exi_reg &&
-				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->RealDllInfo.DataBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize
-				)
-			{
-				//  mov     edi, offset gltextures
-				gltextures = (decltype(gltextures))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].imm, ctx->RealDllInfo, ctx->RealDllInfo);
-			}
-
-			if (pinst->id == X86_INS_INC &&
-				pinst->detail->x86.op_count == 1 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG)
-			{
-				// inc     ecx
-
-				ctx->inc_exx_instCount = instCount;
-				ctx->inc_exx_reg = pinst->detail->x86.operands[0].reg;
-			}
-
-			if (ctx->xor_exi_exi_instCount && pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[1].type == X86_OP_REG &&
-				pinst->detail->x86.operands[1].reg == ctx->inc_exx_reg &&
-				pinst->detail->x86.operands[0].mem.base == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->RealDllInfo.DataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize
-				)
-			{
-				//  mov     numgltextures, ecx
-				if (!g_bHasOfficialGLTexAllocSupport &&
-					instCount > ctx->mov_mem_exx_instCount && instCount < ctx->mov_mem_exx_instCount + 5 &&
-					pinst->detail->x86.operands[1].reg == ctx->mov_mem_exx_reg)
-				{
-					allocated_textures = (decltype(allocated_textures))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->RealDllInfo, ctx->RealDllInfo);
-				}
-				else
-				{
-					numgltextures = (decltype(numgltextures))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->RealDllInfo, ctx->RealDllInfo);
-				}
-			}
-
-			if (ctx->xor_exi_exi_instCount && (pinst->id == X86_INS_MOV || pinst->id == X86_INS_MOVZX) &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				pinst->detail->x86.operands[1].size == 2 &&
-				pinst->detail->x86.operands[1].mem.base == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->RealDllInfo.DataBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize
-				)
-			{
-				//                        mov     ax, word ptr gHostSpawnCount
-				//                        movzx   eax, word ptr gHostSpawnCount
-				gHostSpawnCount = (decltype(gHostSpawnCount))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->RealDllInfo, ctx->RealDllInfo);
-			}
-
-			if (!g_bHasOfficialGLTexAllocSupport)
-			{
-				if (ctx->xor_exi_exi_instCount && pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].mem.base != 0 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp == 0 &&
-					pinst->detail->x86.operands[1].type == X86_OP_REG
-					)
-				{// 89 06 mov     [esi], eax
-					ctx->mov_mem_exx_instCount = instCount;
-					ctx->mov_mem_exx_reg = pinst->detail->x86.operands[1].reg;
-				}
-			}
-
-			if (!g_bHasOfficialGLTexAllocSupport)
-			{
-				if (gltextures && numgltextures && gHostSpawnCount && allocated_textures)
-					return TRUE;
-			}
-			else
-			{
-				if (gltextures && numgltextures && gHostSpawnCount)
-					return TRUE;
-			}
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-		}, 0, &ctx);
-
-
-		Sig_VarNotFound(gltextures);
-		Sig_VarNotFound(numgltextures);
-		Sig_VarNotFound(gHostSpawnCount);
-
+		gltextures = (decltype(gltextures))GamedataResolvePtr(RealDllInfo.ImageBase, "gltextures", MH_GAMESYMBOL_KIND_GLOBAL);
+		numgltextures = (decltype(numgltextures))GamedataResolvePtr(RealDllInfo.ImageBase, "numgltextures", MH_GAMESYMBOL_KIND_GLOBAL);
 		if (!g_bHasOfficialGLTexAllocSupport)
 		{
-			Sig_VarNotFound(allocated_textures);
+			allocated_textures = (decltype(allocated_textures))GamedataResolvePtr(RealDllInfo.ImageBase, "texture_extension_number", MH_GAMESYMBOL_KIND_GLOBAL);
 		}
 	}
 }
@@ -2168,16 +1658,17 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 
 	Engine_FillAddress_HasOfficialFBOSupport(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_HasOfficialGLTexAllocSupport(DllInfo, RealDllInfo);
+	Engine_FillAddress_HasOfficialGLTexAllocSupport(RealDllInfo);
 
-	Engine_FillAddress_GL_Init(DllInfo, RealDllInfo);
+	Engine_FillAddress_GL_Init(RealDllInfo);
 
-	Engine_FillAddress_GL_SetMode(DllInfo, RealDllInfo);
+	Engine_FillAddress_GL_SetMode(RealDllInfo);
 
 	gPrivateFuncs.GL_Shutdown = (decltype(gPrivateFuncs.GL_Shutdown))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_Shutdown", MH_GAMESYMBOL_KIND_FUNCTION);
 	gPrivateFuncs.Sys_ShutdownGame_call_GL_Shutdown = (decltype(gPrivateFuncs.Sys_ShutdownGame_call_GL_Shutdown))GamedataResolvePtr(RealDllInfo.ImageBase, "Sys_ShutdownGame_to_GL_Shutdown_callsite_0", MH_GAMESYMBOL_KIND_PATCH);
 
-	Engine_FillAddress_R_PolyBlend(DllInfo, RealDllInfo);
+	gPrivateFuncs.V_FadeAlpha = (decltype(gPrivateFuncs.V_FadeAlpha))GamedataResolvePtr(RealDllInfo.ImageBase, "V_FadeAlpha", MH_GAMESYMBOL_KIND_FUNCTION);
+	cl_sf = (decltype(cl_sf))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_sf", MH_GAMESYMBOL_KIND_GLOBAL);
 
 	gPrivateFuncs.S_ExtraUpdate = (decltype(gPrivateFuncs.S_ExtraUpdate))GamedataResolvePtr(RealDllInfo.ImageBase, "S_ExtraUpdate", MH_GAMESYMBOL_KIND_FUNCTION);
 
@@ -2185,7 +1676,7 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 
 	gPrivateFuncs.GL_SelectTexture = (decltype(gPrivateFuncs.GL_SelectTexture))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_SelectTexture", MH_GAMESYMBOL_KIND_FUNCTION);
 
-	Engine_FillAddress_GL_LoadTexture2(DllInfo, RealDllInfo);
+	Engine_FillAddress_GL_LoadTexture2(RealDllInfo);
 
 	Engine_FillAddress_R_CullBox(DllInfo, RealDllInfo);
 
@@ -2522,7 +2013,7 @@ int WINAPI GL_RedirectedGenTexture(void)
 
 /*
 	Purpose: Redirect all "mov eax, allocated_textures" to "call GL_RedirectedGenTexture" for legacy engine
-	"allocated_textures" is actually "texture_extension_number" in blob hw.dll
+	"allocated_textures" is the engine's "texture_extension_number" counter
 */
 
 void R_RedirectEngineLegacyOpenGLTextureAllocation(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)

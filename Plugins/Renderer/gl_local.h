@@ -204,8 +204,6 @@ extern int* g_ViewEntityIndex_SCClient;
 
 extern void** (*pmainwindow);
 
-extern float* vid_d3d;
-
 extern const char** gl_extensions;
 
 extern bool g_bPortalClipPlaneEnabled[6];
