@@ -848,7 +848,7 @@ void Engine_FillAddress_D_FillRect(const mh_dll_info_t& DllInfo, const mh_dll_in
 	gPrivateFuncs.D_FillRect = (decltype(gPrivateFuncs.D_FillRect))GamedataResolvePtr(RealDllInfo.ImageBase, "D_FillRect", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
-void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	auto hSDL2 = GetModuleHandleA("SDL2.dll");
 
@@ -1082,7 +1082,7 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 
 void Engine_InstallHooks(void)
 {
-	Install_InlineHook(GL_Init); 
+	Install_InlineHook(GL_Init);
 
 	if (gPrivateFuncs.GL_SetModeLegacy)
 	{
@@ -1361,8 +1361,8 @@ void R_RedirectEngineLegacyOpenGLCallAPI(const mh_dll_info_t& DllInfo, const mh_
 		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetEngineModule(), "SDL2.dll", "SDL_GL_SetAttribute", CoreProfile_GL_SetAttribute, NULL);
 		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetEngineModule(), "SDL2.dll", "SDL_CreateWindow", CoreProfile_SDL_CreateWindow, NULL);
 	}
-	else if(gPrivateFuncs.SDL_GL_GetProcAddress)
-	{ 
+	else if (gPrivateFuncs.SDL_GL_GetProcAddress)
+	{
 		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetEngineModule(), "SDL2.dll", "SDL_GL_GetProcAddress", CoreProfile_SDL_GL_GetProcAddress, NULL);
 		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetEngineModule(), "SDL2.dll", "SDL_GL_SetAttribute", CoreProfile_GL_SetAttribute, NULL);
 		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetEngineModule(), "SDL2.dll", "SDL_CreateWindow", CoreProfile_SDL_CreateWindow, NULL);
@@ -1707,7 +1707,7 @@ void R_RedirectClientLegacyOpenGLCall(const mh_dll_info_t& DllInfo, const mh_dll
 	}
 }
 
-void R_PatchResetLatched(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealDllInfo)
+void R_PatchResetLatched(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		return;
@@ -1732,7 +1732,7 @@ void R_PatchResetLatched(const mh_dll_info_t &DllInfo, const mh_dll_info_t& Real
 	gPrivateFuncs.R_ResetLatched = (decltype(gPrivateFuncs.R_ResetLatched))GamedataResolvePtr(RealDllInfo.ImageBase, "R_ResetLatched", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
-void Client_FillAddress_ClientPortalManager_ResetAll(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealDllInfo)
+void Client_FillAddress_ClientPortalManager_ResetAll(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.ClientPortalManager_ResetAll)
 		return;
@@ -1824,7 +1824,7 @@ void Client_FillAddress_FogParams(const mh_dll_info_t& DllInfo, const mh_dll_inf
 
 		return FALSE;
 
-	}, 0, &ctx);
+		}, 0, &ctx);
 
 	if (ctx.iNumCandidates >= 5 &&
 		ctx.Candidates[ctx.iNumCandidates - 1] == ctx.Candidates[ctx.iNumCandidates - 2] + sizeof(int) &&
@@ -1901,7 +1901,7 @@ void Client_InstallHooks()
 	Install_InlineHook(UpdatePlayerPitch);
 
 	//Fuck Sniber
-	if(gPrivateFuncs.SCClientDLL_glewInit)
+	if (gPrivateFuncs.SCClientDLL_glewInit)
 		gPrivateFuncs.SCClientDLL_glewInit();
 }
 

@@ -3005,7 +3005,7 @@ void R_RenderFrameStart()
 
 	R_PrepareDecals();
 	R_StudioStartFrame();
-	
+
 	R_ForceCVars(gEngfuncs.GetMaxClients() > 1);
 	R_CheckVariables();
 	R_AnimateLight();
@@ -3025,14 +3025,14 @@ void R_RenderFrameStart()
 		r_draw_classify &= ~DRAW_CLASSIFY_TRANS_ENTITIES;
 	}
 
-	#if 0 //DO NOT RIP LIGHTMAP OFF
+#if 0 //DO NOT RIP LIGHTMAP OFF
 
 	if ((int)r_lightmap->value <= 0 && AllowCheats())
 	{
 		r_draw_classify &= ~DRAW_CLASSIFY_LIGHTMAP;
 	}
 
-	#endif
+#endif
 }
 
 /*
@@ -4291,7 +4291,7 @@ void R_SetupGLForViewModel(void)
 
 void R_SetupGL(void)
 {
-//	GL_BeginDebugGroup("R_SetupGL");
+	//	GL_BeginDebugGroup("R_SetupGL");
 
 	auto CurrentFBO = GL_GetCurrentSceneFBO();
 
@@ -4457,7 +4457,7 @@ void R_SetupGL(void)
 		InvertMatrix(gWorldToScreen, gScreenToWorld);
 	}
 
-//	GL_EndDebugGroup();
+	//	GL_EndDebugGroup();
 }
 
 void R_CheckVariables(void)
@@ -4817,7 +4817,7 @@ model_t* EngineGetModelByIndex(int index)
 	return NULL;
 }
 
-model_t* EngineFindKnownModel(modtype_t type, const char *name)
+model_t* EngineFindKnownModel(modtype_t type, const char* name)
 {
 	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
 	{
@@ -6294,7 +6294,7 @@ void __fastcall CVideoMode_Common_DrawStartupGraphic(void* pthis, int dummy, voi
 
 void __fastcall CGame_DrawStartupVideo(void* pgame, int dummy, const char* filename, void* window)
 {
-	//not available yet.
+	//not available yet. See https://github.com/hzqst/MetaHookSv/issues/699
 }
 
 void LegacyMultiTextureInit()
@@ -6306,7 +6306,6 @@ void LegacyMultiTextureInit()
 
 static int ValidateWRect(const wrect_t* prc)
 {
-
 	if (!prc)
 		return false;
 
@@ -7398,7 +7397,7 @@ public:
 		return R_IsRenderingGammaBlending();
 	}
 
-	void SetCurrentEntity(cl_entity_t* entity) const override 
+	void SetCurrentEntity(cl_entity_t* entity) const override
 	{
 		(*currententity) = entity;
 	}
