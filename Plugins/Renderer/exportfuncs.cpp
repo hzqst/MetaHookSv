@@ -688,11 +688,6 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	return result;
 }
 
-int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
-{
-	return gExportfuncs.HUD_AddEntity(type, ent, model);
-}
-
 void HUD_PlayerMoveInit(struct playermove_s* ppmove)
 {
 	gExportfuncs.HUD_PlayerMoveInit(ppmove);
