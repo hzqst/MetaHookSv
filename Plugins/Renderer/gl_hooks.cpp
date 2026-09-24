@@ -158,18 +158,12 @@ void Engine_FillAddress_HasOfficialGLTexAllocSupport(const mh_dll_info_t& RealDl
 
 void Engine_FillAddress_GL_Init(const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.GL_Init)
-		return;
-
 	gPrivateFuncs.GL_Init = (decltype(gPrivateFuncs.GL_Init))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_Init", MH_GAMESYMBOL_KIND_FUNCTION);
 	gl_extensions = (decltype(gl_extensions))GamedataResolvePtr(RealDllInfo.ImageBase, "gl_extensions", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Engine_FillAddress_GL_SetMode(const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.GL_SetMode_SvEngine || gPrivateFuncs.GL_SetMode_GoldSrc || gPrivateFuncs.GL_SetModeLegacy)
-		return;
-
 	//SvEngine uses the true 3-arg ABI, SDL GoldSrc/HL25 keep the six-arg ABI and
 	//every other identity (legacy GoldSrc, blob builds, CoF) uses the legacy entry.
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -205,9 +199,6 @@ void Engine_FillAddress_GL_SetMode(const mh_dll_info_t& RealDllInfo)
 
 void Engine_FillAddress_GL_Bind(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.GL_Bind)
-		return;
-
 	gPrivateFuncs.GL_Bind = (decltype(gPrivateFuncs.GL_Bind))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_Bind", MH_GAMESYMBOL_KIND_FUNCTION);
 
 	currenttexture = (decltype(currenttexture))GamedataResolvePtr(RealDllInfo.ImageBase, "currenttexture", MH_GAMESYMBOL_KIND_GLOBAL);
@@ -215,9 +206,6 @@ void Engine_FillAddress_GL_Bind(const mh_dll_info_t& DllInfo, const mh_dll_info_
 
 void Engine_FillAddress_GL_LoadTexture2(const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.GL_LoadTexture2)
-		return;
-
 	gPrivateFuncs.GL_LoadTexture2 = (decltype(gPrivateFuncs.GL_LoadTexture2))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_LoadTexture2", MH_GAMESYMBOL_KIND_FUNCTION);
 	gHostSpawnCount = (decltype(gHostSpawnCount))GamedataResolvePtr(RealDllInfo.ImageBase, "gHostSpawnCount", MH_GAMESYMBOL_KIND_GLOBAL);
 
@@ -238,9 +226,6 @@ void Engine_FillAddress_GL_LoadTexture2(const mh_dll_info_t& RealDllInfo)
 
 void Engine_FillAddress_R_CullBox(const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.R_CullBox)
-		return;
-
 	gPrivateFuncs.R_CullBox = (decltype(gPrivateFuncs.R_CullBox))GamedataResolvePtr(RealDllInfo.ImageBase, "R_CullBox", MH_GAMESYMBOL_KIND_FUNCTION);
 	frustum = (decltype(frustum))GamedataResolvePtr(RealDllInfo.ImageBase, "frustum", MH_GAMESYMBOL_KIND_GLOBAL);
 	vpn = (decltype(vpn))GamedataResolvePtr(RealDllInfo.ImageBase, "vpn", MH_GAMESYMBOL_KIND_GLOBAL);
@@ -263,9 +248,6 @@ void Engine_FillAddress_R_SetupGL(const mh_dll_info_t& RealDllInfo)
 
 void Engine_FillAddress_R_RenderView(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.R_RenderView_SvEngine || gPrivateFuncs.R_RenderView)
-		return;
-
 	PVOID R_RenderView_VA = (PVOID)GamedataResolvePtr(RealDllInfo.ImageBase, "R_RenderView", MH_GAMESYMBOL_KIND_FUNCTION);
 
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -289,18 +271,12 @@ void Engine_FillAddress_R_RenderView(const mh_dll_info_t& DllInfo, const mh_dll_
 
 void Engine_FillAddress_V_RenderView(const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.V_RenderView)
-		return;
-
 	gPrivateFuncs.V_RenderView = (decltype(gPrivateFuncs.V_RenderView))GamedataResolvePtr(RealDllInfo.ImageBase, "V_RenderView", MH_GAMESYMBOL_KIND_FUNCTION);
 	r_playerViewportAngles = (decltype(r_playerViewportAngles))GamedataResolvePtr(RealDllInfo.ImageBase, "r_playerViewportAngles", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Engine_FillAddress_R_NewMap(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.R_NewMap)
-		return;
-
 	gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))GamedataResolvePtr(RealDllInfo.ImageBase, "R_NewMap", MH_GAMESYMBOL_KIND_FUNCTION);
 
 	gPrivateFuncs.GL_UnloadTextures = (decltype(gPrivateFuncs.GL_UnloadTextures))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_UnloadTextures", MH_GAMESYMBOL_KIND_FUNCTION);
@@ -308,9 +284,6 @@ void Engine_FillAddress_R_NewMap(const mh_dll_info_t& DllInfo, const mh_dll_info
 
 void Engine_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.R_DrawSequentialPoly || gPrivateFuncs.R_DrawSequentialPoly_HL25)
-		return;
-
 	PVOID R_DrawSequentialPoly_VA = (PVOID)GamedataResolvePtr(RealDllInfo.ImageBase, "R_DrawSequentialPoly", MH_GAMESYMBOL_KIND_FUNCTION);
 
 	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
@@ -359,9 +332,6 @@ void Engine_FillAddress_VID_UpdateWindowVars(const mh_dll_info_t& DllInfo, const
 
 void Engine_FillAddress_BuildGammaTable(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.BuildGammaTable)
-		return;
-
 	gPrivateFuncs.BuildGammaTable = (decltype(gPrivateFuncs.BuildGammaTable))GamedataResolvePtr(RealDllInfo.ImageBase, "BuildGammaTable", MH_GAMESYMBOL_KIND_FUNCTION);
 
 	texgammatable = (decltype(texgammatable))GamedataResolvePtr(RealDllInfo.ImageBase, "texgammatable", MH_GAMESYMBOL_KIND_GLOBAL);
@@ -370,9 +340,6 @@ void Engine_FillAddress_BuildGammaTable(const mh_dll_info_t& DllInfo, const mh_d
 
 void Engine_FillAddress_R_DrawParticles(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.R_DrawParticles)
-		return;
-
 	gPrivateFuncs.R_DrawParticles = (decltype(gPrivateFuncs.R_DrawParticles))GamedataResolvePtr(RealDllInfo.ImageBase, "R_DrawParticles", MH_GAMESYMBOL_KIND_FUNCTION);
 	gPrivateFuncs.R_FreeDeadParticles = (decltype(gPrivateFuncs.R_FreeDeadParticles))GamedataResolvePtr(RealDllInfo.ImageBase, "R_FreeDeadParticles", MH_GAMESYMBOL_KIND_FUNCTION);
 	gPrivateFuncs.R_TracerDraw = (decltype(gPrivateFuncs.R_TracerDraw))GamedataResolvePtr(RealDllInfo.ImageBase, "R_TracerDraw", MH_GAMESYMBOL_KIND_FUNCTION);
@@ -391,9 +358,6 @@ void Engine_FillAddress_R_StudioLighting(const mh_dll_info_t& DllInfo, const mh_
 
 void Engine_FillAddress_Cache_Alloc(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.Cache_Alloc)
-		return;
-
 	gPrivateFuncs.Cache_Alloc = (decltype(gPrivateFuncs.Cache_Alloc))GamedataResolvePtr(RealDllInfo.ImageBase, "Cache_Alloc", MH_GAMESYMBOL_KIND_FUNCTION);
 
 	cache_head = (decltype(cache_head))GamedataResolvePtr(RealDllInfo.ImageBase, "cache_head", MH_GAMESYMBOL_KIND_GLOBAL);
@@ -401,17 +365,11 @@ void Engine_FillAddress_Cache_Alloc(const mh_dll_info_t& DllInfo, const mh_dll_i
 
 void Engine_FillAddress_Draw_DecalTexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.Draw_DecalTexture)
-		return;
-
 	gPrivateFuncs.Draw_DecalTexture = (decltype(gPrivateFuncs.Draw_DecalTexture))GamedataResolvePtr(RealDllInfo.ImageBase, "Draw_DecalTexture", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void Engine_FillAddress_GlowBlend(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.GlowBlend)
-		return;
-
 	//GlowBlend is inlined on SvEngine and HL25 and has no catalog record there.
 	if (g_iEngineType == ENGINE_SVENGINE || g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
@@ -433,9 +391,6 @@ void Engine_FillAddress_Mod_LoadSpriteFrame(const mh_dll_info_t& DllInfo, const 
 
 void Engine_FillAddress_Hunk_AllocName(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.Hunk_AllocName)
-		return;
-
 	gPrivateFuncs.Hunk_AllocName = (decltype(gPrivateFuncs.Hunk_AllocName))GamedataResolvePtr(RealDllInfo.ImageBase, "Hunk_AllocName", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
@@ -710,9 +665,6 @@ void Engine_FillAddress_LegacyMultiTextureInit(const mh_dll_info_t& DllInfo, con
 
 void Engine_FillAddress_DrawStartupGraphic(const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.CVideoMode_Common_DrawStartupGraphic)
-		return;
-
 	gPrivateFuncs.CVideoMode_Common_DrawStartupGraphic = (decltype(gPrivateFuncs.CVideoMode_Common_DrawStartupGraphic))GamedataResolvePtr(RealDllInfo.ImageBase, "CVideoMode_Common_DrawStartupGraphic", MH_GAMESYMBOL_KIND_FUNCTION);
 	gPrivateFuncs.offset_CVideoMode_Common_m_ImageID = GamedataQueryStructMember(RealDllInfo.ImageBase, "CVideoMode_Common.m_ImageID");
 	gPrivateFuncs.offset_CVideoMode_Common_m_iBaseResX = GamedataQueryStructMember(RealDllInfo.ImageBase, "CVideoMode_Common.m_iBaseResX");
@@ -721,9 +673,6 @@ void Engine_FillAddress_DrawStartupGraphic(const mh_dll_info_t& RealDllInfo)
 
 void Engine_FillAddress_DrawStartupVideo(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.CGame_DrawStartupVideo)
-		return;
-
 	//Only available in HL25
 	if (g_iEngineType != ENGINE_GOLDSRC_HL25)
 		return;
@@ -740,9 +689,6 @@ void Engine_FillAddress_Draw_Frame(const mh_dll_info_t& DllInfo, const mh_dll_in
 
 void Engine_FillAddress_Draw_SpriteFrameHoles(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.Draw_SpriteFrameHoles || gPrivateFuncs.Draw_SpriteFrameHoles_SvEngine)
-		return;
-
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gPrivateFuncs.Draw_SpriteFrameHoles_SvEngine = (decltype(gPrivateFuncs.Draw_SpriteFrameHoles_SvEngine))GamedataResolvePtr(RealDllInfo.ImageBase, "Draw_SpriteFrameHoles_SvEngine", MH_GAMESYMBOL_KIND_FUNCTION);
@@ -755,9 +701,6 @@ void Engine_FillAddress_Draw_SpriteFrameHoles(const mh_dll_info_t& DllInfo, cons
 
 void Engine_FillAddress_Draw_SpriteFrameAdditive(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.Draw_SpriteFrameAdditive || gPrivateFuncs.Draw_SpriteFrameAdditive_SvEngine)
-		return;
-
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gPrivateFuncs.Draw_SpriteFrameAdditive_SvEngine = (decltype(gPrivateFuncs.Draw_SpriteFrameAdditive_SvEngine))GamedataResolvePtr(RealDllInfo.ImageBase, "Draw_SpriteFrameAdditive_SvEngine", MH_GAMESYMBOL_KIND_FUNCTION);
@@ -770,9 +713,6 @@ void Engine_FillAddress_Draw_SpriteFrameAdditive(const mh_dll_info_t& DllInfo, c
 
 void Engine_FillAddress_Draw_SpriteFrameGeneric(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.Draw_SpriteFrameGeneric || gPrivateFuncs.Draw_SpriteFrameGeneric_SvEngine)
-		return;
-
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gPrivateFuncs.Draw_SpriteFrameGeneric_SvEngine = (decltype(gPrivateFuncs.Draw_SpriteFrameGeneric_SvEngine))GamedataResolvePtr(RealDllInfo.ImageBase, "Draw_SpriteFrameGeneric_SvEngine", MH_GAMESYMBOL_KIND_FUNCTION);
@@ -790,9 +730,6 @@ void Engine_FillAddress_Draw_SpriteFrameGeneric(const mh_dll_info_t& DllInfo, co
 //resolves. No other engine identity carries it.
 void Engine_FillAddress_Draw_FillRGBABuf(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.Draw_FillRGBABuf)
-		return;
-
 	if (g_iEngineType != ENGINE_SVENGINE)
 		return;
 
@@ -805,9 +742,6 @@ void Engine_FillAddress_Draw_FillRGBABuf(const mh_dll_info_t& DllInfo, const mh_
 //take it carefully with linux build ! Mod_UnloadSpriteTextures can be inlined into SPR_Shutdown in linux build !
 void Engine_FillAddress_Mod_UnloadSpriteTextures(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.Mod_UnloadSpriteTextures)
-		return;
-
 	gPrivateFuncs.Mod_UnloadSpriteTextures = (decltype(gPrivateFuncs.Mod_UnloadSpriteTextures))GamedataResolvePtr(RealDllInfo.ImageBase, "Mod_UnloadSpriteTextures", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
@@ -816,17 +750,11 @@ void Engine_FillAddress_Mod_UnloadSpriteTextures(const mh_dll_info_t& DllInfo, c
 //the dispatch has no branch left to keep.
 void Engine_FillAddress_Draw_FillRGBA(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.Draw_FillRGBA)
-		return;
-
 	gPrivateFuncs.Draw_FillRGBA = (decltype(gPrivateFuncs.Draw_FillRGBA))GamedataResolvePtr(RealDllInfo.ImageBase, "Draw_FillRGBA", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void Engine_FillAddress_Draw_FillRGBABlend(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.Draw_FillRGBABlend)
-		return;
-
 	gPrivateFuncs.Draw_FillRGBABlend = (decltype(gPrivateFuncs.Draw_FillRGBABlend))GamedataResolvePtr(RealDllInfo.ImageBase, "Draw_FillRGBABlend", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
@@ -835,13 +763,191 @@ void Engine_FillAddress_Draw_FillRGBABlend(const mh_dll_info_t& DllInfo, const m
 //on its own, so there is nothing left to resolve or hook here on that engine.
 void Engine_FillAddress_D_FillRect(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.D_FillRect)
-		return;
-
 	if (g_iEngineType == ENGINE_SVENGINE)
 		return;
 
 	gPrivateFuncs.D_FillRect = (decltype(gPrivateFuncs.D_FillRect))GamedataResolvePtr(RealDllInfo.ImageBase, "D_FillRect", MH_GAMESYMBOL_KIND_FUNCTION);
+}
+
+void Engine_FillAddress_GL_Shutdown(const mh_dll_info_t& RealDllInfo)
+{
+	gPrivateFuncs.GL_Shutdown = (decltype(gPrivateFuncs.GL_Shutdown))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_Shutdown", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.Sys_ShutdownGame_call_GL_Shutdown = (decltype(gPrivateFuncs.Sys_ShutdownGame_call_GL_Shutdown))GamedataResolvePtr(RealDllInfo.ImageBase, "Sys_ShutdownGame_to_GL_Shutdown_callsite_0", MH_GAMESYMBOL_KIND_PATCH);
+}
+
+void Engine_FillAddress_V_FadeAlpha(const mh_dll_info_t& RealDllInfo)
+{
+	gPrivateFuncs.V_FadeAlpha = (decltype(gPrivateFuncs.V_FadeAlpha))GamedataResolvePtr(RealDllInfo.ImageBase, "V_FadeAlpha", MH_GAMESYMBOL_KIND_FUNCTION);
+	cl_sf = (decltype(cl_sf))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_sf", MH_GAMESYMBOL_KIND_GLOBAL);
+}
+
+void Engine_FillAddress_S_ExtraUpdate(const mh_dll_info_t& RealDllInfo)
+{
+	gPrivateFuncs.S_ExtraUpdate = (decltype(gPrivateFuncs.S_ExtraUpdate))GamedataResolvePtr(RealDllInfo.ImageBase, "S_ExtraUpdate", MH_GAMESYMBOL_KIND_FUNCTION);
+}
+
+void Engine_FillAddress_GL_SelectTexture(const mh_dll_info_t& RealDllInfo)
+{
+	gPrivateFuncs.GL_SelectTexture = (decltype(gPrivateFuncs.GL_SelectTexture))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_SelectTexture", MH_GAMESYMBOL_KIND_FUNCTION);
+}
+
+void Engine_FillAddress_R_ForceCVars(const mh_dll_info_t& RealDllInfo)
+{
+	gPrivateFuncs.R_ForceCVars = (decltype(gPrivateFuncs.R_ForceCVars))GamedataResolvePtr(RealDllInfo.ImageBase, "R_ForceCVars", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.R_CheckVariables = (decltype(gPrivateFuncs.R_CheckVariables))GamedataResolvePtr(RealDllInfo.ImageBase, "R_CheckVariables", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.R_AnimateLight = (decltype(gPrivateFuncs.R_AnimateLight))GamedataResolvePtr(RealDllInfo.ImageBase, "R_AnimateLight", MH_GAMESYMBOL_KIND_FUNCTION);
+}
+
+void Engine_FillAddress_GL_LoadFilterTexture(const mh_dll_info_t& RealDllInfo)
+{
+	gPrivateFuncs.GL_LoadFilterTexture = (decltype(gPrivateFuncs.GL_LoadFilterTexture))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_LoadFilterTexture", MH_GAMESYMBOL_KIND_FUNCTION);
+}
+
+void Engine_FillAddress_GL_BuildLightmaps(const mh_dll_info_t& RealDllInfo)
+{
+	gPrivateFuncs.GL_BuildLightmaps = (decltype(gPrivateFuncs.GL_BuildLightmaps))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_BuildLightmaps", MH_GAMESYMBOL_KIND_FUNCTION);
+}
+
+void Engine_FillAddress_R_TextureAnimation(const mh_dll_info_t& RealDllInfo)
+{
+	gPrivateFuncs.R_TextureAnimation = (decltype(gPrivateFuncs.R_TextureAnimation))GamedataResolvePtr(RealDllInfo.ImageBase, "R_TextureAnimation", MH_GAMESYMBOL_KIND_FUNCTION);
+	rtable = (decltype(rtable))GamedataResolvePtr(RealDllInfo.ImageBase, "rtable", MH_GAMESYMBOL_KIND_GLOBAL);
+}
+
+void Engine_FillAddress_GL_Set2D(const mh_dll_info_t& RealDllInfo)
+{
+	gPrivateFuncs.GL_Set2D = (decltype(gPrivateFuncs.GL_Set2D))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_Set2D", MH_GAMESYMBOL_KIND_FUNCTION);
+}
+
+void Engine_FillAddress_GL_Finish2D(const mh_dll_info_t& RealDllInfo)
+{
+	gPrivateFuncs.GL_Finish2D = (decltype(gPrivateFuncs.GL_Finish2D))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_Finish2D", MH_GAMESYMBOL_KIND_FUNCTION);
+}
+
+void Engine_FillAddress_GL_BeginRendering(const mh_dll_info_t& RealDllInfo)
+{
+	gPrivateFuncs.GL_BeginRendering = (decltype(gPrivateFuncs.GL_BeginRendering))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_BeginRendering", MH_GAMESYMBOL_KIND_FUNCTION);
+}
+
+void Engine_FillAddress_GL_EndRendering(const mh_dll_info_t& RealDllInfo)
+{
+	gPrivateFuncs.GL_EndRendering = (decltype(gPrivateFuncs.GL_EndRendering))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_EndRendering", MH_GAMESYMBOL_KIND_FUNCTION);
+}
+
+void Engine_FillAddress_Mod_PointInLeaf(const mh_dll_info_t& RealDllInfo)
+{
+	gPrivateFuncs.Mod_PointInLeaf = (decltype(gPrivateFuncs.Mod_PointInLeaf))GamedataResolvePtr(RealDllInfo.ImageBase, "Mod_PointInLeaf", MH_GAMESYMBOL_KIND_FUNCTION);
+}
+
+void Engine_FillAddress_R_DrawTEntitiesOnList(const mh_dll_info_t& RealDllInfo)
+{
+	gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))GamedataResolvePtr(RealDllInfo.ImageBase, "R_DrawTEntitiesOnList", MH_GAMESYMBOL_KIND_FUNCTION);
+}
+
+void Engine_FillAddress_CL_DlightVars(const mh_dll_info_t& RealDllInfo)
+{
+	cl_dlights = (decltype(cl_dlights))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_dlights", MH_GAMESYMBOL_KIND_GLOBAL);
+	cl_elights = (decltype(cl_elights))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_elights", MH_GAMESYMBOL_KIND_GLOBAL);
+}
+
+void Engine_FillAddress_R_GLStudioDrawPoints(const mh_dll_info_t& RealDllInfo)
+{
+	gPrivateFuncs.R_GLStudioDrawPoints = (decltype(gPrivateFuncs.R_GLStudioDrawPoints))GamedataResolvePtr(RealDllInfo.ImageBase, "R_GLStudioDrawPoints", MH_GAMESYMBOL_KIND_FUNCTION);
+}
+
+void Engine_FillAddress_Host_ClearMemory(const mh_dll_info_t& RealDllInfo)
+{
+	gPrivateFuncs.Host_ClearMemory = (decltype(gPrivateFuncs.Host_ClearMemory))GamedataResolvePtr(RealDllInfo.ImageBase, "Host_ClearMemory", MH_GAMESYMBOL_KIND_FUNCTION);
+}
+
+void Engine_FillAddress_R_GetSpriteFrame(const mh_dll_info_t& RealDllInfo)
+{
+	gPrivateFuncs.R_GetSpriteFrame = (decltype(gPrivateFuncs.R_GetSpriteFrame))GamedataResolvePtr(RealDllInfo.ImageBase, "R_GetSpriteFrame", MH_GAMESYMBOL_KIND_FUNCTION);
+}
+
+void Engine_FillAddress_Host_IsSinglePlayerGame(const mh_dll_info_t& RealDllInfo)
+{
+	gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))GamedataResolvePtr(RealDllInfo.ImageBase, "Host_IsSinglePlayerGame", MH_GAMESYMBOL_KIND_FUNCTION);
+}
+
+void Engine_FillAddress_Mod_LoadSpriteModel(const mh_dll_info_t& RealDllInfo)
+{
+	gPrivateFuncs.Mod_LoadSpriteModel = (decltype(gPrivateFuncs.Mod_LoadSpriteModel))GamedataResolvePtr(RealDllInfo.ImageBase, "Mod_LoadSpriteModel", MH_GAMESYMBOL_KIND_FUNCTION);
+}
+
+void Engine_FillAddress_VisEdicts(const mh_dll_info_t& RealDllInfo)
+{
+	cl_numvisedicts = (decltype(cl_numvisedicts))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_numvisedicts", MH_GAMESYMBOL_KIND_GLOBAL);
+	cl_visedicts = (decltype(cl_visedicts))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_visedicts", MH_GAMESYMBOL_KIND_GLOBAL);
+}
+
+void Engine_FillAddress_CL_SimOrgVars(const mh_dll_info_t& RealDllInfo)
+{
+	cl_simorg = (decltype(cl_simorg))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_simorg", MH_GAMESYMBOL_KIND_GLOBAL);
+}
+
+void Engine_FillAddress_CL_ViewEntityVars(const mh_dll_info_t& RealDllInfo)
+{
+	cl_viewentity = (decltype(cl_viewentity))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_viewentity", MH_GAMESYMBOL_KIND_GLOBAL);
+}
+
+void Engine_FillAddress_CL_ReallocateDynamicData(const mh_dll_info_t& RealDllInfo)
+{
+	cl_max_edicts = (decltype(cl_max_edicts))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_max_edicts", MH_GAMESYMBOL_KIND_GLOBAL);
+	cl_entities = (decltype(cl_entities))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_entities", MH_GAMESYMBOL_KIND_GLOBAL);
+}
+
+void Engine_FillAddress_TempEntsVars(const mh_dll_info_t& RealDllInfo)
+{
+	gTempEnts = (decltype(gTempEnts))GamedataResolvePtr(RealDllInfo.ImageBase, "gTempEnts", MH_GAMESYMBOL_KIND_GLOBAL);
+}
+
+void Engine_FillAddress_ModKnownVars(const mh_dll_info_t& RealDllInfo)
+{
+	mod_known = (decltype(mod_known))GamedataResolvePtr(RealDllInfo.ImageBase, "mod_known", MH_GAMESYMBOL_KIND_GLOBAL);
+	mod_numknown = (decltype(mod_numknown))GamedataResolvePtr(RealDllInfo.ImageBase, "mod_numknown", MH_GAMESYMBOL_KIND_GLOBAL);
+}
+
+void Engine_FillAddress_Mod_LoadStudioModel(const mh_dll_info_t& RealDllInfo)
+{
+	gPrivateFuncs.Mod_LoadStudioModel = (decltype(gPrivateFuncs.Mod_LoadStudioModel))GamedataResolvePtr(RealDllInfo.ImageBase, "Mod_LoadStudioModel", MH_GAMESYMBOL_KIND_FUNCTION);
+}
+
+void Engine_FillAddress_Mod_LoadBrushModel(const mh_dll_info_t& RealDllInfo)
+{
+	gPrivateFuncs.Mod_LoadBrushModel = (decltype(gPrivateFuncs.Mod_LoadBrushModel))GamedataResolvePtr(RealDllInfo.ImageBase, "Mod_LoadBrushModel", MH_GAMESYMBOL_KIND_FUNCTION);
+}
+
+void Engine_FillAddress_Mod_LoadModel(const mh_dll_info_t& RealDllInfo)
+{
+	gPrivateFuncs.Mod_LoadModel = (decltype(gPrivateFuncs.Mod_LoadModel))GamedataResolvePtr(RealDllInfo.ImageBase, "Mod_LoadModel", MH_GAMESYMBOL_KIND_FUNCTION);
+}
+
+void Engine_FillAddress_SetFilterMode(const mh_dll_info_t& RealDllInfo)
+{
+	filterMode = (decltype(filterMode))GamedataResolvePtr(RealDllInfo.ImageBase, "filterMode", MH_GAMESYMBOL_KIND_GLOBAL);
+}
+
+void Engine_FillAddress_SetFilterColor(const mh_dll_info_t& RealDllInfo)
+{
+	filterColorRed = (decltype(filterColorRed))GamedataResolvePtr(RealDllInfo.ImageBase, "filterColorRed", MH_GAMESYMBOL_KIND_GLOBAL);
+	filterColorGreen = (decltype(filterColorGreen))GamedataResolvePtr(RealDllInfo.ImageBase, "filterColorGreen", MH_GAMESYMBOL_KIND_GLOBAL);
+	filterColorBlue = (decltype(filterColorBlue))GamedataResolvePtr(RealDllInfo.ImageBase, "filterColorBlue", MH_GAMESYMBOL_KIND_GLOBAL);
+}
+
+void Engine_FillAddress_SetFilterBrightness(const mh_dll_info_t& RealDllInfo)
+{
+	filterBrightness = (decltype(filterBrightness))GamedataResolvePtr(RealDllInfo.ImageBase, "filterBrightness", MH_GAMESYMBOL_KIND_GLOBAL);
+}
+
+void Engine_FillAddress_PVSNode(const mh_dll_info_t& RealDllInfo)
+{
+	gPrivateFuncs.PVSNode = (decltype(gPrivateFuncs.PVSNode))GamedataResolvePtr(RealDllInfo.ImageBase, "PVSNode", MH_GAMESYMBOL_KIND_FUNCTION);
+}
+
+void Engine_FillAddress_Draw_Pic(const mh_dll_info_t& RealDllInfo)
+{
+	gPrivateFuncs.Draw_Pic = (decltype(gPrivateFuncs.Draw_Pic))GamedataResolvePtr(RealDllInfo.ImageBase, "Draw_Pic", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -893,25 +999,21 @@ void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealD
 
 	Engine_FillAddress_GL_SetMode(RealDllInfo);
 
-	gPrivateFuncs.GL_Shutdown = (decltype(gPrivateFuncs.GL_Shutdown))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_Shutdown", MH_GAMESYMBOL_KIND_FUNCTION);
-	gPrivateFuncs.Sys_ShutdownGame_call_GL_Shutdown = (decltype(gPrivateFuncs.Sys_ShutdownGame_call_GL_Shutdown))GamedataResolvePtr(RealDllInfo.ImageBase, "Sys_ShutdownGame_to_GL_Shutdown_callsite_0", MH_GAMESYMBOL_KIND_PATCH);
+	Engine_FillAddress_GL_Shutdown(RealDllInfo);
 
-	gPrivateFuncs.V_FadeAlpha = (decltype(gPrivateFuncs.V_FadeAlpha))GamedataResolvePtr(RealDllInfo.ImageBase, "V_FadeAlpha", MH_GAMESYMBOL_KIND_FUNCTION);
-	cl_sf = (decltype(cl_sf))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_sf", MH_GAMESYMBOL_KIND_GLOBAL);
+	Engine_FillAddress_V_FadeAlpha(RealDllInfo);
 
-	gPrivateFuncs.S_ExtraUpdate = (decltype(gPrivateFuncs.S_ExtraUpdate))GamedataResolvePtr(RealDllInfo.ImageBase, "S_ExtraUpdate", MH_GAMESYMBOL_KIND_FUNCTION);
+	Engine_FillAddress_S_ExtraUpdate(RealDllInfo);
 
 	Engine_FillAddress_GL_Bind(DllInfo, RealDllInfo);
 
-	gPrivateFuncs.GL_SelectTexture = (decltype(gPrivateFuncs.GL_SelectTexture))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_SelectTexture", MH_GAMESYMBOL_KIND_FUNCTION);
+	Engine_FillAddress_GL_SelectTexture(RealDllInfo);
 
 	Engine_FillAddress_GL_LoadTexture2(RealDllInfo);
 
 	Engine_FillAddress_R_CullBox(RealDllInfo);
 
-	gPrivateFuncs.R_ForceCVars = (decltype(gPrivateFuncs.R_ForceCVars))GamedataResolvePtr(RealDllInfo.ImageBase, "R_ForceCVars", MH_GAMESYMBOL_KIND_FUNCTION);
-	gPrivateFuncs.R_CheckVariables = (decltype(gPrivateFuncs.R_CheckVariables))GamedataResolvePtr(RealDllInfo.ImageBase, "R_CheckVariables", MH_GAMESYMBOL_KIND_FUNCTION);
-	gPrivateFuncs.R_AnimateLight = (decltype(gPrivateFuncs.R_AnimateLight))GamedataResolvePtr(RealDllInfo.ImageBase, "R_AnimateLight", MH_GAMESYMBOL_KIND_FUNCTION);
+	Engine_FillAddress_R_ForceCVars(RealDllInfo);
 
 	Engine_FillAddress_R_SetupGL(RealDllInfo);
 
@@ -921,14 +1023,13 @@ void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealD
 
 	Engine_FillAddress_R_NewMap(DllInfo, RealDllInfo);
 
-	gPrivateFuncs.GL_LoadFilterTexture = (decltype(gPrivateFuncs.GL_LoadFilterTexture))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_LoadFilterTexture", MH_GAMESYMBOL_KIND_FUNCTION);
+	Engine_FillAddress_GL_LoadFilterTexture(RealDllInfo);
 
-	gPrivateFuncs.GL_BuildLightmaps = (decltype(gPrivateFuncs.GL_BuildLightmaps))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_BuildLightmaps", MH_GAMESYMBOL_KIND_FUNCTION);
+	Engine_FillAddress_GL_BuildLightmaps(RealDllInfo);
 
 	Engine_FillAddress_R_DrawSequentialPoly(DllInfo, RealDllInfo);
 
-	gPrivateFuncs.R_TextureAnimation = (decltype(gPrivateFuncs.R_TextureAnimation))GamedataResolvePtr(RealDllInfo.ImageBase, "R_TextureAnimation", MH_GAMESYMBOL_KIND_FUNCTION);
-	rtable = (decltype(rtable))GamedataResolvePtr(RealDllInfo.ImageBase, "rtable", MH_GAMESYMBOL_KIND_GLOBAL);
+	Engine_FillAddress_R_TextureAnimation(RealDllInfo);
 
 	Engine_FillAddress_R_DrawWorld(DllInfo, RealDllInfo);
 
@@ -936,49 +1037,47 @@ void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealD
 
 	Engine_FillAddress_R_MarkLeaves(RealDllInfo);
 
-	gPrivateFuncs.GL_Set2D = (decltype(gPrivateFuncs.GL_Set2D))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_Set2D", MH_GAMESYMBOL_KIND_FUNCTION);
+	Engine_FillAddress_GL_Set2D(RealDllInfo);
 
-	gPrivateFuncs.GL_Finish2D = (decltype(gPrivateFuncs.GL_Finish2D))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_Finish2D", MH_GAMESYMBOL_KIND_FUNCTION);
+	Engine_FillAddress_GL_Finish2D(RealDllInfo);
 
-	gPrivateFuncs.GL_BeginRendering = (decltype(gPrivateFuncs.GL_BeginRendering))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_BeginRendering", MH_GAMESYMBOL_KIND_FUNCTION);
+	Engine_FillAddress_GL_BeginRendering(RealDllInfo);
 
-	gPrivateFuncs.GL_EndRendering = (decltype(gPrivateFuncs.GL_EndRendering))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_EndRendering", MH_GAMESYMBOL_KIND_FUNCTION);
+	Engine_FillAddress_GL_EndRendering(RealDllInfo);
 
 	Engine_FillAddress_VID_UpdateWindowVars(DllInfo, RealDllInfo);
 
-	gPrivateFuncs.Mod_PointInLeaf = (decltype(gPrivateFuncs.Mod_PointInLeaf))GamedataResolvePtr(RealDllInfo.ImageBase, "Mod_PointInLeaf", MH_GAMESYMBOL_KIND_FUNCTION);
+	Engine_FillAddress_Mod_PointInLeaf(RealDllInfo);
 
-	gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))GamedataResolvePtr(RealDllInfo.ImageBase, "R_DrawTEntitiesOnList", MH_GAMESYMBOL_KIND_FUNCTION);
+	Engine_FillAddress_R_DrawTEntitiesOnList(RealDllInfo);
 
 	Engine_FillAddress_BuildGammaTable(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_R_DrawParticles(DllInfo, RealDllInfo);
 
-	cl_dlights = (decltype(cl_dlights))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_dlights", MH_GAMESYMBOL_KIND_GLOBAL);
+	Engine_FillAddress_CL_DlightVars(RealDllInfo);
 
-	cl_elights = (decltype(cl_elights))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_elights", MH_GAMESYMBOL_KIND_GLOBAL);
-
-	gPrivateFuncs.R_GLStudioDrawPoints = (decltype(gPrivateFuncs.R_GLStudioDrawPoints))GamedataResolvePtr(RealDllInfo.ImageBase, "R_GLStudioDrawPoints", MH_GAMESYMBOL_KIND_FUNCTION);
+	Engine_FillAddress_R_GLStudioDrawPoints(RealDllInfo);
 
 	Engine_FillAddress_R_StudioLighting(DllInfo, RealDllInfo);
 
-	gPrivateFuncs.Host_ClearMemory = (decltype(gPrivateFuncs.Host_ClearMemory))GamedataResolvePtr(RealDllInfo.ImageBase, "Host_ClearMemory", MH_GAMESYMBOL_KIND_FUNCTION);
+	Engine_FillAddress_Host_ClearMemory(RealDllInfo);
 
 	Engine_FillAddress_Cache_Alloc(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_Draw_DecalTexture(DllInfo, RealDllInfo);
 
-	gPrivateFuncs.R_GetSpriteFrame = (decltype(gPrivateFuncs.R_GetSpriteFrame))GamedataResolvePtr(RealDllInfo.ImageBase, "R_GetSpriteFrame", MH_GAMESYMBOL_KIND_FUNCTION);
+	Engine_FillAddress_R_GetSpriteFrame(RealDllInfo);
 
 	Engine_FillAddress_GlowBlend(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_SCR_BeginLoadingPlaque(DllInfo, RealDllInfo);
 
-	gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))GamedataResolvePtr(RealDllInfo.ImageBase, "Host_IsSinglePlayerGame", MH_GAMESYMBOL_KIND_FUNCTION);
+	Engine_FillAddress_Host_IsSinglePlayerGame(RealDllInfo);
 
 	Engine_FillAddress_Mod_UnloadSpriteTextures(DllInfo, RealDllInfo);
 
-	gPrivateFuncs.Mod_LoadSpriteModel = (decltype(gPrivateFuncs.Mod_LoadSpriteModel))GamedataResolvePtr(RealDllInfo.ImageBase, "Mod_LoadSpriteModel", MH_GAMESYMBOL_KIND_FUNCTION);
+	Engine_FillAddress_Mod_LoadSpriteModel(RealDllInfo);
 
 	Engine_FillAddress_Mod_LoadSpriteFrame(DllInfo, RealDllInfo);
 
@@ -986,8 +1085,7 @@ void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealD
 
 	Engine_FillAddress_GL_EndRenderingVars(RealDllInfo);
 
-	cl_numvisedicts = (decltype(cl_numvisedicts))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_numvisedicts", MH_GAMESYMBOL_KIND_GLOBAL);
-	cl_visedicts = (decltype(cl_visedicts))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_visedicts", MH_GAMESYMBOL_KIND_GLOBAL);
+	Engine_FillAddress_VisEdicts(RealDllInfo);
 
 	Engine_FillAddress_R_AllocTransObjectsVars(RealDllInfo);
 
@@ -1015,33 +1113,31 @@ void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealD
 
 	Engine_FillAddress_LightstyleVars(DllInfo, RealDllInfo);
 
-	cl_simorg = (decltype(cl_simorg))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_simorg", MH_GAMESYMBOL_KIND_GLOBAL);
+	Engine_FillAddress_CL_SimOrgVars(RealDllInfo);
 
-	cl_viewentity = (decltype(cl_viewentity))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_viewentity", MH_GAMESYMBOL_KIND_GLOBAL);
+	Engine_FillAddress_CL_ViewEntityVars(RealDllInfo);
 
-	cl_max_edicts = (decltype(cl_max_edicts))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_max_edicts", MH_GAMESYMBOL_KIND_GLOBAL);
-	cl_entities = (decltype(cl_entities))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_entities", MH_GAMESYMBOL_KIND_GLOBAL);
+	Engine_FillAddress_CL_ReallocateDynamicData(RealDllInfo);
 
-	gTempEnts = (decltype(gTempEnts))GamedataResolvePtr(RealDllInfo.ImageBase, "gTempEnts", MH_GAMESYMBOL_KIND_GLOBAL);
+	Engine_FillAddress_TempEntsVars(RealDllInfo);
 
 	Engine_FillAddress_WaterVars(DllInfo, RealDllInfo);
 
-	mod_known = (decltype(mod_known))GamedataResolvePtr(RealDllInfo.ImageBase, "mod_known", MH_GAMESYMBOL_KIND_GLOBAL);
-	mod_numknown = (decltype(mod_numknown))GamedataResolvePtr(RealDllInfo.ImageBase, "mod_numknown", MH_GAMESYMBOL_KIND_GLOBAL);
+	Engine_FillAddress_ModKnownVars(RealDllInfo);
 
-	gPrivateFuncs.Mod_LoadStudioModel = (decltype(gPrivateFuncs.Mod_LoadStudioModel))GamedataResolvePtr(RealDllInfo.ImageBase, "Mod_LoadStudioModel", MH_GAMESYMBOL_KIND_FUNCTION);
+	Engine_FillAddress_Mod_LoadStudioModel(RealDllInfo);
 
-	gPrivateFuncs.Mod_LoadBrushModel = (decltype(gPrivateFuncs.Mod_LoadBrushModel))GamedataResolvePtr(RealDllInfo.ImageBase, "Mod_LoadBrushModel", MH_GAMESYMBOL_KIND_FUNCTION);
+	Engine_FillAddress_Mod_LoadBrushModel(RealDllInfo);
 
-	gPrivateFuncs.Mod_LoadModel = (decltype(gPrivateFuncs.Mod_LoadModel))GamedataResolvePtr(RealDllInfo.ImageBase, "Mod_LoadModel", MH_GAMESYMBOL_KIND_FUNCTION);
+	Engine_FillAddress_Mod_LoadModel(RealDllInfo);
 
 	Engine_FillAddress_BasePalette(DllInfo, RealDllInfo);
 
-	filterMode = (decltype(filterMode))GamedataResolvePtr(RealDllInfo.ImageBase, "filterMode", MH_GAMESYMBOL_KIND_GLOBAL);
-	filterColorRed = (decltype(filterColorRed))GamedataResolvePtr(RealDllInfo.ImageBase, "filterColorRed", MH_GAMESYMBOL_KIND_GLOBAL);
-	filterColorGreen = (decltype(filterColorGreen))GamedataResolvePtr(RealDllInfo.ImageBase, "filterColorGreen", MH_GAMESYMBOL_KIND_GLOBAL);
-	filterColorBlue = (decltype(filterColorBlue))GamedataResolvePtr(RealDllInfo.ImageBase, "filterColorBlue", MH_GAMESYMBOL_KIND_GLOBAL);
-	filterBrightness = (decltype(filterBrightness))GamedataResolvePtr(RealDllInfo.ImageBase, "filterBrightness", MH_GAMESYMBOL_KIND_GLOBAL);
+	Engine_FillAddress_SetFilterMode(RealDllInfo);
+
+	Engine_FillAddress_SetFilterColor(RealDllInfo);
+
+	Engine_FillAddress_SetFilterBrightness(RealDllInfo);
 
 	Engine_FillAddress_MoveVars(RealDllInfo);
 
@@ -1051,7 +1147,7 @@ void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealD
 
 	Engine_FillAddress_LegacyMultiTextureInit(DllInfo, RealDllInfo);
 
-	gPrivateFuncs.PVSNode = (decltype(gPrivateFuncs.PVSNode))GamedataResolvePtr(RealDllInfo.ImageBase, "PVSNode", MH_GAMESYMBOL_KIND_FUNCTION);
+	Engine_FillAddress_PVSNode(RealDllInfo);
 
 	Engine_FillAddress_DrawStartupGraphic(RealDllInfo);
 
@@ -1073,7 +1169,7 @@ void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealD
 
 	Engine_FillAddress_D_FillRect(DllInfo, RealDllInfo);
 
-	gPrivateFuncs.Draw_Pic = (decltype(gPrivateFuncs.Draw_Pic))GamedataResolvePtr(RealDllInfo.ImageBase, "Draw_Pic", MH_GAMESYMBOL_KIND_FUNCTION);
+	Engine_FillAddress_Draw_Pic(RealDllInfo);
 }
 
 void Engine_InstallHooks(void)
@@ -1708,7 +1804,6 @@ void Client_FillAddress_UpdatePlayerPitch(const mh_dll_info_t& DllInfo, const mh
 		return;
 
 	gPrivateFuncs.UpdatePlayerPitch = (decltype(gPrivateFuncs.UpdatePlayerPitch))GamedataResolvePtr(RealDllInfo.ImageBase, "UpdatePlayerPitch", MH_GAMESYMBOL_KIND_FUNCTION);
-
 }
 
 void Client_FillAddress_FogParams(const mh_dll_info_t& RealDllInfo)
@@ -1749,7 +1844,6 @@ void Client_FillAddress_SCClient(const mh_dll_info_t& DllInfo, const mh_dll_info
 
 void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-
 	Client_FillAddress_SCClient(DllInfo, RealDllInfo);
 
 	if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "cstrike") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czero") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror"))
