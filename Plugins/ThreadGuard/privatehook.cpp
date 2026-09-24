@@ -60,31 +60,9 @@ void Engine_WaitForShutdown(HMODULE hModule, BlobHandle_t hBlobModule)
 
 void Engine_FillAddress(void)
 {
-	PVOID address = NULL;
-	mh_gamesymbol_status_t st = g_pMetaHookAPI->ResolveGameSymbol(g_EngineDLLInfo.ImageBase, "engine", MH_GAMESYMBOL_KIND_GLOBAL, &address);
-
-	if (st != MH_GAMESYMBOL_OK)
-	{
-		uint64_t crc64 = 0;
-		mh_gamesymbol_status_t crcSt = g_pMetaHookAPI->GetModuleCRC64(g_EngineDLLInfo.ImageBase, &crc64);
-
-		if (crcSt == MH_GAMESYMBOL_OK)
-		{
-			Sys_Error("Failed to resolve \"%s\"\nEngine buildnum: %d\nCRC64: %016llx\nReason: %s",
-				"engine", g_dwEngineBuildnum, (unsigned long long)crc64, g_pMetaHookAPI->GetGameSymbolStatusString(st));
-		}
-		else
-		{
-			Sys_Error("Failed to resolve \"%s\"\nEngine buildnum: %d\nReason: %s",
-				"engine", g_dwEngineBuildnum, g_pMetaHookAPI->GetGameSymbolStatusString(st));
-		}
-
-		return;
-	}
-
 	// gamedata provides the address of the engine module's global IEngine* slot,
 	// so GetEngineDLLState keeps dereferencing it exactly once.
-	engine = (decltype(engine))address;
+	engine = (decltype(engine))GamedataResolvePtr(g_EngineDLLInfo.ImageBase, "engine", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Engine_InstallHook(HMODULE hModule, BlobHandle_t hBlobModule)
