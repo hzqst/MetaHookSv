@@ -270,7 +270,9 @@ RENDERER_CLIENT_SVEN_FUNCTIONS = (
     "ClientPortalManager_RenderPortals", "ClientPortalManager_ResetAll", "UpdatePlayerPitch",
     "ClientPortalManager_GetOriginalSurfaceTexture", "ClientPortalManager_DrawPortalSurface",
 )
-RENDERER_CLIENT_SVEN_GLOBALS = ("g_bRenderingPortals_SCClient",)
+RENDERER_CLIENT_SVEN_GLOBALS = (
+    "g_bRenderingPortals_SCClient", "g_iFogColor", "g_iStartDist", "g_iEndDist",
+)
 RENDERER_CLIENT_10257_FUNCTIONS = ("ClientPortalManager_EnableClipPlane",)
 RENDERER_CLIENT_10257_GLOBALS = ("g_ViewEntityIndex_SCClient",)
 RENDERER_CLIENT_STUDIO_VFUNCS = (

@@ -1711,68 +1711,11 @@ void Client_FillAddress_UpdatePlayerPitch(const mh_dll_info_t& DllInfo, const mh
 
 }
 
-void Client_FillAddress_FogParams(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Client_FillAddress_FogParams(const mh_dll_info_t& RealDllInfo)
 {
-	const char pattern[] = "\x68\x01\x26\x00\x00\x68\x65\x0B\x00\x00";
-
-	PVOID addr = Search_Pattern(pattern, DllInfo);
-
-	Sig_AddrNotFound(g_iFogColor);
-
-	typedef struct V_CalcNormalRefdef_SearchContext_s
-	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-		ULONG_PTR Candidates[16]{};
-		int iNumCandidates{};
-	}V_CalcNormalRefdef_SearchContext;
-
-	V_CalcNormalRefdef_SearchContext ctx = { DllInfo, RealDllInfo };
-
-	g_pMetaHookAPI->DisasmRanges(addr, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto ctx = (V_CalcNormalRefdef_SearchContext*)context;
-		auto pinst = (cs_insn*)inst;
-
-		if (ctx->iNumCandidates < 16)
-		{
-			if (pinst->id == X86_INS_MOVSS &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				pinst->detail->x86.operands[0].reg == X86_REG_XMM0 &&
-				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[1].mem.base == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.ImageBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.ImageBase + ctx->DllInfo.ImageSize)
-			{
-				ctx->Candidates[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
-				ctx->iNumCandidates++;
-			}
-		}
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-		}, 0, &ctx);
-
-	if (ctx.iNumCandidates >= 5 &&
-		ctx.Candidates[ctx.iNumCandidates - 1] == ctx.Candidates[ctx.iNumCandidates - 2] + sizeof(int) &&
-		ctx.Candidates[ctx.iNumCandidates - 2] == ctx.Candidates[ctx.iNumCandidates - 3] + sizeof(int) &&
-		ctx.Candidates[ctx.iNumCandidates - 3] == ctx.Candidates[ctx.iNumCandidates - 4] + sizeof(int))
-	{
-		g_iFogColor_SCClient = (decltype(g_iFogColor_SCClient))ConvertDllInfoSpace((PVOID)ctx.Candidates[0], DllInfo, RealDllInfo);
-		g_iStartDist_SCClient = (decltype(g_iStartDist_SCClient))ConvertDllInfoSpace((PVOID)ctx.Candidates[3], DllInfo, RealDllInfo);
-		g_iEndDist_SCClient = (decltype(g_iEndDist_SCClient))ConvertDllInfoSpace((PVOID)ctx.Candidates[4], DllInfo, RealDllInfo);
-	}
-
-	Sig_VarNotFound(g_iFogColor_SCClient);
-	Sig_VarNotFound(g_iStartDist_SCClient);
-	Sig_VarNotFound(g_iEndDist_SCClient);
+	g_iFogColor_SCClient = (decltype(g_iFogColor_SCClient))GamedataResolvePtr(RealDllInfo.ImageBase, "g_iFogColor", MH_GAMESYMBOL_KIND_GLOBAL);
+	g_iStartDist_SCClient = (decltype(g_iStartDist_SCClient))GamedataResolvePtr(RealDllInfo.ImageBase, "g_iStartDist", MH_GAMESYMBOL_KIND_GLOBAL);
+	g_iEndDist_SCClient = (decltype(g_iEndDist_SCClient))GamedataResolvePtr(RealDllInfo.ImageBase, "g_iEndDist", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Client_FillAddress_SCClient(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -1792,7 +1735,7 @@ void Client_FillAddress_SCClient(const mh_dll_info_t& DllInfo, const mh_dll_info
 			Client_FillAddress_ClientPortalManager_EnableClipPlane(DllInfo, RealDllInfo);
 			Client_FillAddress_ClientPortalManager_RenderPoratals(DllInfo, RealDllInfo);
 			Client_FillAddress_UpdatePlayerPitch(DllInfo, RealDllInfo);
-			Client_FillAddress_FogParams(DllInfo, RealDllInfo);
+			Client_FillAddress_FogParams(RealDllInfo);
 
 			g_bRenderingPortals_SCClient = (decltype(g_bRenderingPortals_SCClient))GamedataResolvePtr(RealDllInfo.ImageBase, "g_bRenderingPortals_SCClient", MH_GAMESYMBOL_KIND_GLOBAL);
 			//Only svencoop-10257 publishes this slot; 8948 keeps it null and the

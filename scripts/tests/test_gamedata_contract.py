@@ -603,6 +603,14 @@ class RendererGateTests(unittest.TestCase):
         errors = validate.validate_renderer(symbols, "svencoop-10257")
         self.assertTrue(any("Draw_SpriteFrameHoles_SvEngine" in e for e in errors), errors)
 
+    def test_gate_requires_sven_client_fog_globals(self):
+        for gv in validate.RENDERER_SVENGINE_GAMES:
+            for name in ("g_iFogColor", "g_iStartDist", "g_iEndDist"):
+                symbols = self.complete_engine_symbols(gv)
+                del symbols[name]
+                errors = validate.validate_renderer(symbols, gv)
+                self.assertTrue(any(name in e for e in errors), (gv, name, errors))
+
     def test_gate_does_not_require_base_symbol_for_svengine(self):
         symbols = self.complete_engine_symbols("svencoop-10257")
         self.assertNotIn("Draw_SpriteFrameHoles", symbols)
