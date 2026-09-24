@@ -1,6 +1,7 @@
 
 #include <metahook.h>
 #include <capstone.h>
+#include <cstring>
 #include "gl_local.h"
 #include <utlvector.h>
 #include <SDL2/SDL_video.h>
@@ -1343,6 +1344,11 @@ void R_RedirectEngineLegacyOpenGLTextureAllocation(const mh_dll_info_t& RealDllI
 	if (g_bHasOfficialGLTexAllocSupport)
 		return;
 
+	constexpr size_t kCallInstructionLength = 5;
+	constexpr size_t kMaxX86InstructionLength = 15;
+	constexpr BYTE kCallOpcode = 0xE8;
+	constexpr BYTE kNopOpcode = 0x90;
+
 	static constexpr const char* patchNames[] = {
 		"texture_extension_number_mov_site_GL_BuildLightmaps",
 		"texture_extension_number_mov_site_GL_LoadFilterTexture",
@@ -1365,9 +1371,33 @@ void R_RedirectEngineLegacyOpenGLTextureAllocation(const mh_dll_info_t& RealDllI
 		}
 
 		auto patchSite = (PUCHAR)GamedataResolvePtr(RealDllInfo.ImageBase, patchName, MH_GAMESYMBOL_KIND_PATCH);
-		char redirectCode[] = "\xE8\x00\x00\x00\x00";
-		*(int*)(redirectCode + 1) = (PUCHAR)GL_RedirectedGenTexture - (patchSite + 5);
-		g_pMetaHookAPI->WriteMemory(patchSite, redirectCode, sizeof(redirectCode) - 1);
+		size_t patchLength = 0;
+		const int decodedLength = g_pMetaHookAPI->DisasmSingleInstruction(patchSite,
+			[](void* inst, PUCHAR, size_t instLen, PVOID context) {
+				auto pinst = (cs_insn*)inst;
+				const auto& x86 = pinst->detail->x86;
+				if (pinst->id == X86_INS_MOV &&
+					x86.op_count == 2 &&
+					x86.operands[0].type == X86_OP_REG &&
+					x86.operands[0].reg == X86_REG_EAX &&
+					x86.operands[1].type == X86_OP_MEM &&
+					instLen >= kCallInstructionLength)
+				{
+					*(size_t*)context = instLen;
+				}
+			}, &patchLength);
+		if (!patchLength)
+		{
+			Sys_Error("Invalid texture allocation patch %s at %p: expected MOV EAX, [mem] of at least 5 bytes (decoded length %d)",
+				patchName, patchSite, decodedLength);
+			continue;
+		}
+
+		BYTE redirectCode[kMaxX86InstructionLength];
+		std::memset(redirectCode, kNopOpcode, patchLength);
+		redirectCode[0] = kCallOpcode;
+		*(int*)(redirectCode + 1) = (PUCHAR)GL_RedirectedGenTexture - (patchSite + kCallInstructionLength);
+		g_pMetaHookAPI->WriteMemory(patchSite, redirectCode, (DWORD)patchLength);
 	}
 }
 
