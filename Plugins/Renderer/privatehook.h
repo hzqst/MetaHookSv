@@ -239,7 +239,7 @@ void EngineStudio_UninstallHooks();
 void EngineSurface_UninstallHooks();
 void VideoMode_UninstallHooks();
 
-void R_RedirectEngineLegacyOpenGLTextureAllocation(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void R_RedirectEngineLegacyOpenGLTextureAllocation(const mh_dll_info_t& RealDllInfo);
 void R_RedirectEngineLegacyOpenGLCall(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void R_RedirectClientLegacyOpenGLCall(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void R_PatchResetLatched(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);

@@ -239,8 +239,6 @@ extern texture_t** r_missingtexture;
 
 extern int* allow_cheats;
 
-extern int* allocated_textures;
-
 
 extern int glx;
 extern int gly;

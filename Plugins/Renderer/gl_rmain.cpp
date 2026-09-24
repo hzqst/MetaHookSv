@@ -148,9 +148,6 @@ texture_t** r_missingtexture = nullptr;
 //Sven Co-op only
 int* allow_cheats = nullptr;
 
-//Legacy engines without official GL texture allocation
-int* allocated_textures = nullptr;
-
 //client dll
 
 

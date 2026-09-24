@@ -166,6 +166,9 @@ RENDERER_SDL_GAMES = ("hl-10210", "hl-6153", "hl-8684")
 RENDERER_SETMODE_GAMES = ("hl-10210", "hl-6153", "hl-8684", "svencoop-10257", "svencoop-8948")
 RENDERER_SETMODE_LEGACY_GAMES = ("cof-5936", "hl-3248", "hl-3266", "hl-3329",
                                  "hl-3647", "hl-4554")
+RENDERER_LEGACY_TEXALLOC_HL_GAMES = tuple(
+    game for game in RENDERER_SETMODE_LEGACY_GAMES if game != "cof-5936"
+)
 RENDERER_SVEN_10257_GAMES = ("svencoop-10257",)
 # Renderer neuters exactly one legacy multitexture / detail-texture init per engine.
 # HL/CoF/blob publish the probe as CheckMultiTextureExtensions; HL25 and SvEngine
@@ -246,6 +249,17 @@ RENDERER_ENGINE_STRUCT_MEMBERS = (
     "CVideoMode_Common.m_iBaseResY",
 )
 RENDERER_LEGACY_TEXALLOC_GLOBALS = ("texture_extension_number",)
+RENDERER_LEGACY_TEXALLOC_COMMON_PATCHES = (
+    "texture_extension_number_mov_site_GL_LoadFilterTexture",
+    "texture_extension_number_mov_site_R_InitParticleTexture",
+)
+RENDERER_LEGACY_TEXALLOC_HL_PATCHES = (
+    "texture_extension_number_mov_site_GL_BuildLightmaps",
+    "texture_extension_number_mov_site_GL_LoadTexture2",
+    "texture_extension_number_mov_site_LoadTransPic_bind",
+    "texture_extension_number_mov_site_LoadTransPic_increment",
+    "texture_extension_number_mov_site_R_Init_playertextures",
+)
 RENDERER_MTEX_PROBE_FUNCTIONS = ("CheckMultiTextureExtensions",)
 RENDERER_INLINED_MTEX_PROBE_FUNCTIONS = ("DT_Initialize",)
 RENDERER_ENGINE_HL25_FUNCTIONS = ("CGame_DrawStartupVideo",)
@@ -777,6 +791,9 @@ def validate_renderer(symbols, game_version, include_engine=True, include_client
         if game_version in RENDERER_SETMODE_LEGACY_GAMES:
             errors += _renderer_check(symbols, game_version, RENDERER_SETMODE_LEGACY_FUNCTIONS, "function", "engine")
             errors += _renderer_check(symbols, game_version, RENDERER_LEGACY_TEXALLOC_GLOBALS, "global", "engine")
+            errors += _renderer_check(symbols, game_version, RENDERER_LEGACY_TEXALLOC_COMMON_PATCHES, "patch", "engine")
+        if game_version in RENDERER_LEGACY_TEXALLOC_HL_GAMES:
+            errors += _renderer_check(symbols, game_version, RENDERER_LEGACY_TEXALLOC_HL_PATCHES, "patch", "engine")
         if game_version in RENDERER_SDL_GAMES:
             errors += _renderer_check(symbols, game_version, RENDERER_SDL_FUNCTIONS, "function", "engine")
 

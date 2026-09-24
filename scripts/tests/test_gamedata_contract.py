@@ -511,6 +511,9 @@ class RendererGateTests(unittest.TestCase):
         if game_version in validate.RENDERER_SETMODE_LEGACY_GAMES:
             add(validate.RENDERER_SETMODE_LEGACY_FUNCTIONS, "function")
             add(validate.RENDERER_LEGACY_TEXALLOC_GLOBALS, "global")
+            add(validate.RENDERER_LEGACY_TEXALLOC_COMMON_PATCHES, "patch")
+        if game_version in validate.RENDERER_LEGACY_TEXALLOC_HL_GAMES:
+            add(validate.RENDERER_LEGACY_TEXALLOC_HL_PATCHES, "patch")
         if game_version in validate.RENDERER_SDL_GAMES:
             add(validate.RENDERER_SDL_FUNCTIONS, "function")
         symbols.update(self.complete_client_symbols(game_version))
@@ -619,6 +622,22 @@ class RendererGateTests(unittest.TestCase):
         del symbols["GL_SetModeLegacy"]
         errors = validate.validate_renderer(symbols, "cof-5936")
         self.assertTrue(any("GL_SetModeLegacy" in e for e in errors), errors)
+
+    def test_gate_requires_legacy_texture_allocation_patch_sites(self):
+        for gv in validate.RENDERER_SETMODE_LEGACY_GAMES:
+            names = validate.RENDERER_LEGACY_TEXALLOC_COMMON_PATCHES
+            if gv in validate.RENDERER_LEGACY_TEXALLOC_HL_GAMES:
+                names += validate.RENDERER_LEGACY_TEXALLOC_HL_PATCHES
+            for name in names:
+                symbols = self.complete_engine_symbols(gv)
+                del symbols[name]
+                errors = validate.validate_renderer(symbols, gv)
+                self.assertTrue(any(name in e for e in errors), (gv, name, errors))
+
+        symbols = self.complete_engine_symbols("cof-5936")
+        for name in validate.RENDERER_LEGACY_TEXALLOC_HL_PATCHES:
+            self.assertNotIn(name, symbols)
+        self.assertEqual([], validate.validate_renderer(symbols, "cof-5936"))
 
     def test_gate_does_not_require_sdl_initgl_without_sdl(self):
         symbols = self.complete_engine_symbols("hl-4554")

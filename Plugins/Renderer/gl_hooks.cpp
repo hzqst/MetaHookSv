@@ -233,10 +233,6 @@ void Engine_FillAddress_GL_LoadTexture2(const mh_dll_info_t& RealDllInfo)
 	{
 		gltextures = (decltype(gltextures))GamedataResolvePtr(RealDllInfo.ImageBase, "gltextures", MH_GAMESYMBOL_KIND_GLOBAL);
 		numgltextures = (decltype(numgltextures))GamedataResolvePtr(RealDllInfo.ImageBase, "numgltextures", MH_GAMESYMBOL_KIND_GLOBAL);
-		if (!g_bHasOfficialGLTexAllocSupport)
-		{
-			allocated_textures = (decltype(allocated_textures))GamedataResolvePtr(RealDllInfo.ImageBase, "texture_extension_number", MH_GAMESYMBOL_KIND_GLOBAL);
-		}
 	}
 }
 
@@ -1244,100 +1240,38 @@ int WINAPI GL_RedirectedGenTexture(void)
 }
 
 /*
-	Purpose: Redirect all "mov eax, allocated_textures" to "call GL_RedirectedGenTexture" for legacy engine
-	"allocated_textures" is the engine's "texture_extension_number" counter
+	Purpose: Redirect legacy texture allocation sites to GL_RedirectedGenTexture.
 */
-
-void R_RedirectEngineLegacyOpenGLTextureAllocation(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void R_RedirectEngineLegacyOpenGLTextureAllocation(const mh_dll_info_t& RealDllInfo)
 {
 	if (g_bHasOfficialGLTexAllocSupport)
 		return;
 
-	auto allocated_textures_VA = ConvertDllInfoSpace(allocated_textures, RealDllInfo, DllInfo);
+	static constexpr const char* patchNames[] = {
+		"texture_extension_number_mov_site_GL_BuildLightmaps",
+		"texture_extension_number_mov_site_GL_LoadFilterTexture",
+		"texture_extension_number_mov_site_GL_LoadTexture2",
+		"texture_extension_number_mov_site_LoadTransPic_bind",
+		"texture_extension_number_mov_site_LoadTransPic_increment",
+		"texture_extension_number_mov_site_R_InitParticleTexture",
+		"texture_extension_number_mov_site_R_Init_playertextures",
+	};
 
-	const char pattern[] = "\xA1\x2A\x2A\x2A\x2A";
-	*(ULONG_PTR*)(pattern + 1) = (ULONG_PTR)allocated_textures_VA;
-
-	PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
-	PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
-	while (SearchBegin < SearchLimit)
+	for (const char* patchName : patchNames)
 	{
-		PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
-		if (pFound)
+		const auto status = g_pMetaHookAPI->IsGameSymbolAvailable(RealDllInfo.ImageBase, patchName);
+		if (status == MH_GAMESYMBOL_SYMBOL_NOT_FOUND)
+			continue;
+		if (status != MH_GAMESYMBOL_OK)
 		{
-			typedef struct RedirectBlobEngineOpenGLTexture_SearchContext_s
-			{
-				const mh_dll_info_t& DllInfo;
-				const mh_dll_info_t& RealDllInfo;
-				bool bFoundWriteBack{};
-				bool bFoundGL_Bind{};
-			}RedirectBlobEngineOpenGLTexture_SearchContext;
-
-			RedirectBlobEngineOpenGLTexture_SearchContext ctx = { DllInfo, RealDllInfo };
-
-			g_pMetaHookAPI->DisasmRanges(pFound, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-				auto pinst = (cs_insn*)inst;
-				auto ctx = (RedirectBlobEngineOpenGLTexture_SearchContext*)context;
-
-				if (pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-
-					pinst->detail->x86.operands[0].mem.base == 0 &&
-					pinst->detail->x86.operands[0].mem.index == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.ImageBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.ImageBase + ctx->DllInfo.ImageSize &&
-
-					pinst->detail->x86.operands[1].type == X86_OP_REG &&
-					pinst->detail->x86.operands[1].reg == X86_REG_EAX)
-				{
-					auto ConvertedImm = ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-
-					if (ConvertedImm == allocated_textures)
-					{
-						ctx->bFoundWriteBack = true;
-					}
-				}
-
-				if (address[0] == 0xE8)
-				{
-					auto ConvertedImm = ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].imm, ctx->DllInfo, ctx->RealDllInfo);
-
-					if (ConvertedImm == gPrivateFuncs.GL_Bind)
-					{
-						ctx->bFoundGL_Bind = true;
-					}
-				}
-
-				if (ctx->bFoundWriteBack || ctx->bFoundGL_Bind)
-					return TRUE;
-
-				if (address[0] == 0xCC)
-					return TRUE;
-
-				if (pinst->id == X86_INS_RET)
-					return TRUE;
-
-				return FALSE;
-
-				}, 0, &ctx);
-
-			if (ctx.bFoundWriteBack || ctx.bFoundGL_Bind)
-			{
-				auto pFound_RealDllBase = (PUCHAR)ConvertDllInfoSpace(pFound, ctx.DllInfo, ctx.RealDllInfo);
-
-				char redirectCode[] = "\xE8\x2A\x2A\x2A\x2A";
-				*(int*)(redirectCode + 1) = (PUCHAR)GL_RedirectedGenTexture - (pFound_RealDllBase + 5);
-				g_pMetaHookAPI->WriteMemory(pFound_RealDllBase, redirectCode, sizeof(redirectCode) - 1);
-			}
-
-			SearchBegin = pFound + Sig_Length(pattern);
+			Sys_Error("Could not query gamedata symbol: %s (%s)\nEngine buildnum: %d",
+				patchName, g_pMetaHookAPI->GetGameSymbolStatusString(status), g_dwEngineBuildnum);
 		}
-		else
-		{
-			break;
-		}
+
+		auto patchSite = (PUCHAR)GamedataResolvePtr(RealDllInfo.ImageBase, patchName, MH_GAMESYMBOL_KIND_PATCH);
+		char redirectCode[] = "\xE8\x00\x00\x00\x00";
+		*(int*)(redirectCode + 1) = (PUCHAR)GL_RedirectedGenTexture - (patchSite + 5);
+		g_pMetaHookAPI->WriteMemory(patchSite, redirectCode, sizeof(redirectCode) - 1);
 	}
 }
 
@@ -1386,7 +1320,7 @@ void R_RedirectEngineLegacyOpenGLCallAPI(const mh_dll_info_t& DllInfo, const mh_
 
 void R_RedirectEngineLegacyOpenGLCall(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	R_RedirectEngineLegacyOpenGLTextureAllocation(DllInfo, RealDllInfo);
+	R_RedirectEngineLegacyOpenGLTextureAllocation(RealDllInfo);
 	R_RedirectEngineLegacyOpenGLCallAPI(DllInfo, RealDllInfo);
 }
 
