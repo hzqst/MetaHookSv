@@ -50,6 +50,8 @@ COMMON_REQUIRED = {
     "cl_players_model": "global",
     # ThreadGuard (plugin resolves the engine IEngine* slot via ResolveGameSymbol)
     "engine": "global",
+    # StudioEvents (plugin resolves the engine current-render-model slot via ResolveGameSymbol)
+    "r_model": "global",
 }
 
 # Numbered patch sets required for every declared engine family. Each set is
