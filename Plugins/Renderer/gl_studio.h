@@ -315,7 +315,6 @@ public:
 
 //engine
 extern mstudiomodel_t **psubmodel;
-extern mstudiobodyparts_t **pbodypart;
 extern studiohdr_t **pstudiohdr;
 extern float *r_blend;
 extern float (*pbonetransform)[MAXSTUDIOBONES][3][4];

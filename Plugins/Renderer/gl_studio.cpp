@@ -42,7 +42,6 @@ static CEnginePlayerInfoStorage g_PlayerInfoStorage[MAX_CLIENTS]{};
 model_t* cl_sprite_white = NULL;
 model_t* cl_sprite_shell = NULL;
 mstudiomodel_t** psubmodel = NULL;
-mstudiobodyparts_t** pbodypart = NULL;
 studiohdr_t** pstudiohdr = NULL;
 float* r_blend = NULL;
 float(*pbonetransform)[MAXSTUDIOBONES][3][4] = NULL;

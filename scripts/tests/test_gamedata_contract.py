@@ -796,6 +796,22 @@ class RendererGateTests(unittest.TestCase):
         self.assertIn("Draw_Frame", validate.RENDERER_ENGINE_ALL_FUNCTIONS)
         self.assertNotIn("R_StudioLighting", validate.RENDERER_ENGINE_ALL_FUNCTIONS)
 
+    def test_gate_requires_direct_resolved_studio_globals_on_every_identity(self):
+        names = (
+            "g_ForcedFaceFlags", "psubmodel", "r_bottomcolor",
+            "r_colormix", "r_topcolor",
+        )
+        for name in names:
+            self.assertIn(name, validate.RENDERER_ENGINE_ALL_GLOBALS)
+            for gv in validate.RENDERER_ALL_GAMES:
+                symbols = self.complete_engine_symbols(gv)
+                del symbols[name]
+                errors = validate.validate_renderer(symbols, gv)
+                self.assertTrue(any(name in e for e in errors), (name, gv, errors))
+        #pbodypart was written by the studio setup locator but never read; it must
+        #not become a release dependency.
+        self.assertNotIn("pbodypart", validate.RENDERER_ENGINE_ALL_GLOBALS)
+
     def test_gate_requires_the_consumed_fallback_texture_for_each_engine_family(self):
         for gv in validate.RENDERER_SVENGINE_GAMES:
             symbols = self.complete_engine_symbols(gv)

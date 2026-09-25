@@ -357,6 +357,45 @@ void Engine_FillAddress_R_StudioLighting(const mh_dll_info_t& DllInfo, const mh_
 	r_plightvec = (decltype(r_plightvec))GamedataResolvePtr(RealDllInfo.ImageBase, "r_plightvec", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
+void Engine_FillAddress_StudioGlobals(const mh_dll_info_t& RealDllInfo)
+{
+	currententity = (decltype(currententity))GamedataResolvePtr(RealDllInfo.ImageBase, "currententity", MH_GAMESYMBOL_KIND_GLOBAL);
+	pstudiohdr = (decltype(pstudiohdr))GamedataResolvePtr(RealDllInfo.ImageBase, "pstudiohdr", MH_GAMESYMBOL_KIND_GLOBAL);
+	r_origin = (decltype(r_origin))GamedataResolvePtr(RealDllInfo.ImageBase, "r_origin", MH_GAMESYMBOL_KIND_GLOBAL);
+}
+
+void Engine_FillAddress_StudioGetTimes(const mh_dll_info_t& RealDllInfo)
+{
+	cl_time = (decltype(cl_time))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_time", MH_GAMESYMBOL_KIND_GLOBAL);
+	cl_oldtime = (decltype(cl_oldtime))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_oldtime", MH_GAMESYMBOL_KIND_GLOBAL);
+}
+
+void Engine_FillAddress_StudioSetForceFaceFlags(const mh_dll_info_t& RealDllInfo)
+{
+	g_ForcedFaceFlags = (decltype(g_ForcedFaceFlags))GamedataResolvePtr(RealDllInfo.ImageBase, "g_ForcedFaceFlags", MH_GAMESYMBOL_KIND_GLOBAL);
+}
+
+void Engine_FillAddress_StudioSetRemapColors(const mh_dll_info_t& RealDllInfo)
+{
+	r_topcolor = (decltype(r_topcolor))GamedataResolvePtr(RealDllInfo.ImageBase, "r_topcolor", MH_GAMESYMBOL_KIND_GLOBAL);
+	r_bottomcolor = (decltype(r_bottomcolor))GamedataResolvePtr(RealDllInfo.ImageBase, "r_bottomcolor", MH_GAMESYMBOL_KIND_GLOBAL);
+}
+
+void Engine_FillAddress_StudioSetRenderamt(const mh_dll_info_t& RealDllInfo)
+{
+	gPrivateFuncs.CL_FxBlend = (decltype(gPrivateFuncs.CL_FxBlend))GamedataResolvePtr(RealDllInfo.ImageBase, "CL_FxBlend", MH_GAMESYMBOL_KIND_FUNCTION);
+}
+
+void Engine_FillAddress_StudioSetupModel(const mh_dll_info_t& RealDllInfo)
+{
+	psubmodel = (decltype(psubmodel))GamedataResolvePtr(RealDllInfo.ImageBase, "psubmodel", MH_GAMESYMBOL_KIND_GLOBAL);
+}
+
+void Engine_FillAddress_StudioSetupLighting(const mh_dll_info_t& RealDllInfo)
+{
+	r_colormix = (decltype(r_colormix))GamedataResolvePtr(RealDllInfo.ImageBase, "r_colormix", MH_GAMESYMBOL_KIND_GLOBAL);
+}
+
 void Engine_FillAddress_Cache_Alloc(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	gPrivateFuncs.Cache_Alloc = (decltype(gPrivateFuncs.Cache_Alloc))GamedataResolvePtr(RealDllInfo.ImageBase, "Cache_Alloc", MH_GAMESYMBOL_KIND_FUNCTION);
@@ -1061,6 +1100,20 @@ void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealD
 	Engine_FillAddress_R_GLStudioDrawPoints(RealDllInfo);
 
 	Engine_FillAddress_R_StudioLighting(DllInfo, RealDllInfo);
+
+	Engine_FillAddress_StudioGlobals(RealDllInfo);
+
+	Engine_FillAddress_StudioGetTimes(RealDllInfo);
+
+	Engine_FillAddress_StudioSetForceFaceFlags(RealDllInfo);
+
+	Engine_FillAddress_StudioSetRemapColors(RealDllInfo);
+
+	Engine_FillAddress_StudioSetRenderamt(RealDllInfo);
+
+	Engine_FillAddress_StudioSetupModel(RealDllInfo);
+
+	Engine_FillAddress_StudioSetupLighting(RealDllInfo);
 
 	Engine_FillAddress_Host_ClearMemory(RealDllInfo);
 
