@@ -22,7 +22,7 @@
 
 using namespace vgui;
 
-ScClient_Sentence_t* ScClient_SoundEngine_GetSentenceByName(void* pSoundEngine, const char* name);
+SCClient_Sentence_t* SCClient_SoundEngine_GetSentenceByName(void* pSoundEngine, const char* name);
 
 CViewport* g_pViewPort = NULL;
 
@@ -192,7 +192,7 @@ void CDictionary::LoadFromRow(
 
 	if (g_bIsSvenCoop)
 	{
-		auto sentenceObject = ScClient_SoundEngine_GetSentenceByName(gPrivateFuncs.ScClient_soundengine(), m_szTitle[0] == '#' ? &m_szTitle[1] : &m_szTitle[0]);
+		auto sentenceObject = SCClient_SoundEngine_GetSentenceByName(gPrivateFuncs.SCClient_soundengine(), m_szTitle[0] == '#' ? &m_szTitle[1] : &m_szTitle[0]);
 
 		if (sentenceObject)
 		{

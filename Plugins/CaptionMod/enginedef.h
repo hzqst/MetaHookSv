@@ -101,7 +101,7 @@ typedef struct voxword
 }
 voxword_t;
 
-typedef struct ScClient_SentenceWord_s
+typedef struct SCClient_SentenceWord_s
 {
 	float unk;
 	float unk2;
@@ -109,12 +109,12 @@ typedef struct ScClient_SentenceWord_s
 	float unk4;
 	float unk5;
 	char name[260];
-	struct ScClient_SentenceWord_s* next;
-} ScClient_SentenceWord_t;
+	struct SCClient_SentenceWord_s* next;
+} SCClient_SentenceWord_t;
 
-typedef struct ScClient_Sentence_s
+typedef struct SCClient_Sentence_s
 {
 	char name[32];
-	ScClient_SentenceWord_t* word;
+	SCClient_SentenceWord_t* word;
 	int padding;
-} ScClient_Sentence_t;
+} SCClient_Sentence_t;
