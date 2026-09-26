@@ -28,9 +28,6 @@ typedef struct
 
 extern private_funcs_t gPrivateFuncs;
 
-void Engine_InstallHooks();
-void Engine_UninstallHooks();
-
 extern vec3_t* v_origin;
 extern vec3_t* g_vVecViewangles;
 
