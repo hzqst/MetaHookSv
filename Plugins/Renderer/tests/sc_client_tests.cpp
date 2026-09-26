@@ -190,8 +190,55 @@ static void __fastcall DrawParticle(void* self, int, void* unit)
     CoreProfile_glEnd();
 }
 
+static void TestPortalTransformAndMode()
+{
+    alignas(void*) unsigned char portal[160]{};
+    const float expectedOrigin[] = { 1, 2, 3 };
+    const float expectedAngles[] = { 45, 90, 180 };
+    float origin[3]{}, angles[3]{};
+    // Include relocated fields to prove the readers use the supplied layout.
+    for (uint32_t shift : { 0u, 16u })
+    {
+        g_SCClientPortalLayout.transformFromEntity = false;
+        g_SCClientPortalLayout.origin = shift;
+        g_SCClientPortalLayout.angles = shift + 12;
+        g_SCClientPortalLayout.mode = shift + 64;
+        memcpy(portal + shift, expectedOrigin, sizeof(expectedOrigin));
+        memcpy(portal + shift + 12, expectedAngles, sizeof(expectedAngles));
+        *reinterpret_cast<int*>(portal + shift + 64) = 1;
+        assert(ClientPortal_GetPortalTransform(portal, origin, angles));
+        assert(0 == memcmp(expectedOrigin, origin, sizeof(origin)));
+        assert(0 == memcmp(expectedAngles, angles, sizeof(angles)));
+        assert(1 == ClientPortal_GetPortalMode(portal));
+    }
+    cl_entity_t entity{};
+    memcpy(entity.origin, expectedOrigin, sizeof(expectedOrigin));
+    memcpy(entity.angles, expectedAngles, sizeof(expectedAngles));
+    for (uint32_t shift : { 0u, 16u })
+    {
+        g_SCClientPortalLayout.transformFromEntity = true;
+        g_SCClientPortalLayout.entity = shift + 112;
+        g_SCClientPortalLayout.mode = shift + 40;
+        *reinterpret_cast<cl_entity_t**>(portal + shift + 112) = &entity;
+        *reinterpret_cast<int*>(portal + shift + 40) = 0;
+        memset(origin, 0, sizeof(origin));
+        memset(angles, 0, sizeof(angles));
+        assert(ClientPortal_GetPortalTransform(portal, origin, angles));
+        assert(0 == memcmp(expectedOrigin, origin, sizeof(origin)));
+        assert(0 == memcmp(expectedAngles, angles, sizeof(angles)));
+        assert(0 == ClientPortal_GetPortalMode(portal));
+        *reinterpret_cast<cl_entity_t**>(portal + shift + 112) = nullptr;
+        assert(!ClientPortal_GetPortalTransform(portal, origin, angles));
+        assert(0 == memcmp(expectedOrigin, origin, sizeof(origin)));
+        assert(0 == memcmp(expectedAngles, angles, sizeof(angles)));
+    }
+    assert(!ClientPortal_GetPortalTransform(nullptr, origin, angles));
+    assert(-1 == ClientPortal_GetPortalMode(nullptr));
+}
+
 int main()
 {
+    TestPortalTransformAndMode();
     CoreProfile_glBegin(GL_TRIANGLES);
     CoreProfile_glEnd();
     assert(0 == begins && 0 == ends);

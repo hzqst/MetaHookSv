@@ -168,6 +168,32 @@ void __fastcall ClientPortalManager_InitShader(void* pthis, int)
 	*((byte*)pthis + gPrivateFuncs.offset_ClientPortalManager_m_bShadersAvailable) = 0;
 }
 
+bool ClientPortal_GetPortalTransform(void* pClientPortal, float* outOrigin, float* outAngles)
+{
+	if (!pClientPortal)
+		return false;
+	const auto portal = (const byte*)pClientPortal;
+	if (g_SCClientPortalLayout.transformFromEntity)
+	{
+		const auto ent = *(cl_entity_t* const*)(portal + g_SCClientPortalLayout.entity);
+		if (!ent)
+			return false;
+		VectorCopy(ent->origin, outOrigin);
+		VectorCopy(ent->angles, outAngles);
+	}
+	else
+	{
+		VectorCopy((const float*)(portal + g_SCClientPortalLayout.origin), outOrigin);
+		VectorCopy((const float*)(portal + g_SCClientPortalLayout.angles), outAngles);
+	}
+	return true;
+}
+
+int ClientPortal_GetPortalMode(void* pClientPortal)
+{
+	return pClientPortal ? *(const int*)((const byte*)pClientPortal + g_SCClientPortalLayout.mode) : -1;
+}
+
 int ClientPortal_GetIndex(void* pClientPortal)
 {
 	auto vectorBase = *(void***)((byte*)g_pClientPortalManager + g_SCClientPortalLayout.vectorBegin);

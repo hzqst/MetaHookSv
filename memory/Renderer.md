@@ -302,3 +302,11 @@ After building, files are automatically copied to the game directory:
 - Correct implementation: gl_portal.h, privatehook.h and gl_scclient.cpp now declare and forward ref_params_t*. Do not hide the failure with a null check or substitute global refdef state; preserve the original caller's pointer and callee stack cleanup.
 - Verification: the actual handler is called in sc_client_tests through an x86 thiscall pointer, with a fake original that asserts pointer identity; the test also checks ESP before/after normal returns. This regression failed before the fix and passes after it, together with all Renderer tests. Release and Release_AVX2 Win32 builds exited 0. Replaying the game scenario remains unverified.
 - Lesson / scope: a mock sharing a hook's incorrect prototype cannot validate the binary ABI. For new or modified client hooks, corroborate explicit stack arguments and ret cleanup from both binary versions and make the test exercise the caller's convention.
+
+## Sven Portal Transform and Mode Gamedata (2026-09-26)
+
+- Trigger: ClientPortal_GetPortalTransform / ClientPortal_GetPortalMode still selected hardcoded offsets using the engine build number despite available client layout scalars.
+- Constraint: 10257 stores origin/angles directly at ClientPortal_origin_offset / ClientPortal_angles_offset, with ClientPortalSource_mode_offset. 8948 uses ClientPortal_entity_offset to reach cl_entity_t and ClientPortal_mode_offset; its PortalSource origin/angles describe a different object. Offset zero is valid.
+- Implementation: Client_FillAddress_CoreProfile selects the entity layout by ClientPortal_entity_offset availability and queries all required fields through the existing fatal-error scalar loader. The readers now live in gl_scclient.cpp, use cached SCClientPortalLayout fields, and reject null portal/entity pointers without writing transform outputs. No engine-build fallback or gamedata changes.
+- Verification: actual-reader tests cover both layouts, zero origin offset, relocated fields, mode values, and null entity/portal handling. All Renderer tests and Release / Release_AVX2 Win32 builds passed; gameplay rendering remains unverified.
+- Scope: Sven client portal/monitor transform and mode reads only.

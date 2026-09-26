@@ -1524,6 +1524,20 @@ void Client_FillAddress_CoreProfile(const mh_dll_info_t& RealDllInfo)
 	g_SCClientPortalLayout.textureId = queryOffset(legacySource ? "PortalSource_texture_id_offset" : "ClientPortal_texture_id_offset");
 	g_SCClientPortalLayout.textureWidth = queryOffset(legacySource ? "PortalSource_texture_width_offset" : "ClientPortal_texture_width_offset");
 	g_SCClientPortalLayout.textureHeight = queryOffset(legacySource ? "PortalSource_texture_height_offset" : "ClientPortal_texture_height_offset");
+	g_SCClientPortalLayout.transformFromEntity =
+		g_pMetaHookAPI->IsGameSymbolAvailable(base, "ClientPortal_entity_offset") == MH_GAMESYMBOL_OK;
+	if (g_SCClientPortalLayout.transformFromEntity)
+	{
+		g_SCClientPortalLayout.entity = queryOffset("ClientPortal_entity_offset");
+		g_SCClientPortalLayout.mode = queryOffset("ClientPortal_mode_offset");
+	}
+	else
+	{
+		// A zero origin offset is valid; query status determines availability.
+		g_SCClientPortalLayout.origin = queryOffset("ClientPortal_origin_offset");
+		g_SCClientPortalLayout.angles = queryOffset("ClientPortal_angles_offset");
+		g_SCClientPortalLayout.mode = queryOffset("ClientPortalSource_mode_offset");
+	}
 }
 
 void Client_FillAddress_ClientPortalManager_RenderPoratals(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)

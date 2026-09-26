@@ -121,42 +121,6 @@ void R_InitPortal(void)
 	
 }
 
-bool ClientPortal_GetPortalTransform(void* pClientPortal, float *outOrigin, float *outAngles)
-{
-	if (g_dwEngineBuildnum >= 10000)//5.26
-	{
-		const auto origin = (const float*)((ULONG_PTR)pClientPortal + 0);
-		const auto angles = (const float*)((ULONG_PTR)pClientPortal + 12);
-
-		VectorCopy(origin, outOrigin);
-		VectorCopy(angles, outAngles);
-		return true;
-	}
-	if (g_dwEngineBuildnum >= 8948)//5.25
-	{
-		auto ent = *(cl_entity_t**)((ULONG_PTR)pClientPortal + 0x70);
-		VectorCopy(ent->origin, outOrigin);
-		VectorCopy(ent->angles, outAngles);
-		return true;
-	}
-
-	return false;
-}
-
-int ClientPortal_GetPortalMode(void * pClientPortal)
-{
-	if (g_dwEngineBuildnum >= 10000 )//5.26
-	{
-		return *(int*)((ULONG_PTR)pClientPortal + 0x40);
-	}
-	if (g_dwEngineBuildnum >= 8948)//5.25
-	{
-		return *(int*)((ULONG_PTR)pClientPortal + 0x28);
-	}
-
-	return -1;
-}
-
 void __fastcall ClientPortalManager_ResetAll(void * pthis, int)
 {
 #if 0

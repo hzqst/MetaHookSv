@@ -83,6 +83,8 @@ struct SCClientPortalLayout
 {
 	uint32_t vectorBegin{}, vectorEnd{};
 	uint32_t textureId{}, textureWidth{}, textureHeight{};
+	bool transformFromEntity{};
+	uint32_t origin{}, angles{}, entity{}, mode{};
 };
 extern SCClientPortalLayout g_SCClientPortalLayout;
 extern bool g_bIsRenderingPortalViews;
