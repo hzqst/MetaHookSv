@@ -63,12 +63,12 @@ private:
 };
 
 struct SCClientPortalViewsScope;
-SCClientPortalViewsScope* currentPortalViews = nullptr;
+SCClientPortalViewsScope* g_currentPortalViewScope = nullptr;
 
 struct SCClientPortalViewsScope
 {
 	SCClientFramebufferScope framebuffer;
-	SCClientPortalViewsScope* previous = currentPortalViews;
+	SCClientPortalViewsScope* previous = g_currentPortalViewScope;
 	bool wasRendering = g_bIsRenderingPortalViews;
 	void* previousManager = g_pClientPortalManager;
 	void* previousPortal = g_pCurrentClientPortal;
@@ -76,7 +76,7 @@ struct SCClientPortalViewsScope
 
 	explicit SCClientPortalViewsScope(void* manager)
 	{
-		currentPortalViews = this;
+		g_currentPortalViewScope = this;
 		g_bIsRenderingPortalViews = true;
 		g_pClientPortalManager = manager;
 		g_pCurrentClientPortal = nullptr;
@@ -87,7 +87,7 @@ struct SCClientPortalViewsScope
 		g_pCurrentClientPortal = previousPortal;
 		g_pClientPortalManager = previousManager;
 		g_bIsRenderingPortalViews = wasRendering;
-		currentPortalViews = previous;
+		g_currentPortalViewScope = previous;
 	}
 };
 }
@@ -103,10 +103,10 @@ void __fastcall ClientPortalManager_RenderPortals(void* pthis, int, ref_params_t
 
 void __stdcall SCClient_glClear(GLbitfield mask)
 {
-	if (g_bIsRenderingPortalViews && currentPortalViews && g_pCurrentClientPortal
-		&& mask == GL_COLOR_BUFFER_BIT && !currentPortalViews->target)
+	if (g_bIsRenderingPortalViews && g_currentPortalViewScope && g_pCurrentClientPortal
+		&& mask == GL_COLOR_BUFFER_BIT && !g_currentPortalViewScope->target)
 	{
-		currentPortalViews->target = std::make_unique<SCClientPortalTargetScope>(g_pCurrentClientPortal);
+		g_currentPortalViewScope->target = std::make_unique<SCClientPortalTargetScope>(g_pCurrentClientPortal);
 	}
 	glClear(mask);
 }
@@ -114,18 +114,18 @@ void __stdcall SCClient_glClear(GLbitfield mask)
 void __stdcall SCClient_glCopyTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset,
 	GLint x, GLint y, GLsizei width, GLsizei height)
 {
-	if (g_bIsRenderingPortalViews && currentPortalViews && currentPortalViews->target
+	if (g_bIsRenderingPortalViews && g_currentPortalViewScope && g_currentPortalViewScope->target
 		&& target == GL_TEXTURE_2D && level == 0 && xoffset == 0 && yoffset == 0
-		&& width == currentPortalViews->target->width && height == currentPortalViews->target->height)
+		&& width == g_currentPortalViewScope->target->width && height == g_currentPortalViewScope->target->height)
 	{
 		GLint texture = 0;
 		glGetIntegerv(GL_TEXTURE_BINDING_2D, &texture);
-		if (static_cast<GLuint>(texture) == currentPortalViews->target->texture)
+		if (static_cast<GLuint>(texture) == g_currentPortalViewScope->target->texture)
 		{
 			// The legacy source y is screenHeight - textureHeight. RenderView
 			// already wrote the entire texture through the portal FBO, so no
 			// screen-space source rectangle needs to be copied.
-			currentPortalViews->target.reset();
+			g_currentPortalViewScope->target.reset();
 			g_pCurrentClientPortal = nullptr;
 			return;
 		}

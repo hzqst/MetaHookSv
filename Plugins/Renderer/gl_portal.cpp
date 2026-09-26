@@ -368,7 +368,7 @@ void R_DrawMonitor(void *ClientPortalManager, void * ClientPortal, msurface_t *s
 
 void ClientPortalManager_AngleVectors(const float* a1, float *a2, float* a3, float* a4)
 {
-	g_pCurrentClientPortal = (void*)((ULONG_PTR)a1 - 12);
+	g_pCurrentClientPortal = (void*)((ULONG_PTR)a1 - sizeof(vec3_t));
 
 	AngleVectors(a1, a2, a3, a4);
 }
