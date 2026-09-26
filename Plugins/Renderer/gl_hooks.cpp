@@ -3,73 +3,6 @@
 #include <capstone.h>
 #include <cstring>
 #include "gl_local.h"
-#include <utlvector.h>
-#include <SDL2/SDL_video.h>
-
-
-
-#define R_DRAWPARTICLES_SIG_BLOB "\x83\xEC\x40\xA1\x2A\x2A\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x68\xC0\x0B\x00\x00"
-
-
-#define S_EXTRAUPDATE_SVENGINE "\xE8\x2A\x2A\x2A\x2A\x85\xC0\x75\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xD9\x05"
-#define S_EXTRAUPDATE_BLOB "\xE8\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x2A\x2A\x2A\xE9\x2A\x2A\x2A\x2A\xC3"
-
-#define R_DECALSHOTINTERNAL_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x2A\x8B\x54\x24\x2A\x8B\x4C\x24\x2A\x53\x8B\x5C\x24\x2A\x56\x69\xF2\xB8\x0B\x00\x00"
-
-
-#define R_NEWMAP_SIG_COMMON    "\x55\x8B\xEC\x83\xEC\x2A\xC7\x45\xFC\x00\x00\x00\x00\x2A\x2A\x8B\x45\xFC\x83\xC0\x01\x89\x45\xFC"
-
-#define GL_SHUTDOWN_SIG_HL25 "\xFF\x35\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xFF\x30\xE8"
-
-#define R_DRAWTENTITIESONLIST_SIG_BLOB "\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x2A\x0F\x2A\x2A\x2A\x00\x00\x8B\x44\x24\x04"
-
-#define R_DRAWSEQUENTIALPOLY_SIG_BLOB "\xA1\x2A\x2A\x2A\x2A\x53\x55\x56\x8B\x88\xF8\x02\x00\x00\xBE\x01\x00\x00\x00"
-
-#define R_DECALMPOLY_SIG "\xA1\x2A\x2A\x2A\x2A\x57\x50\xE8\x2A\x2A\x2A\x2A\x8B\x4C\x24\x10\x8B\x51\x18"
-#define R_DECALMPOLY_SIG_NEW "\x55\x8B\xEC\xA1\x2A\x2A\x2A\x2A\x57\x50\xE8\x2A\x2A\x2A\x2A\x8B\x4D\x0C\x8B\x51\x18\x52\xE8"
-
-#define R_DRAWDECALS_SIG "\xB8\x0C\x00\x00\x00\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x85\xC0"
-#define R_DRAWDECALS_SIG_NEW "\x55\x8B\xEC\xB8\x10\x00\x00\x00\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x85\xC0\x0F\x84"
-#define R_DRAWDECALS_SIG_SVENGINE "\xB8\x2A\x2A\x00\x00\xE8\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x84\x2A\x2A\x2A\x2A\x53\x8B\x1D"
-
-#define R_RENDERVIEW_SIG_BLOB "\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\x83\xEC\x14\xDF\xE0\xF6\xC4"
-
-#define V_RENDERVIEW_SIG_BLOB "\xA1\x2A\x2A\x2A\x2A\x81\xEC\x2A\x00\x00\x00\x2A\x2A\x33\x2A\x33\x2A\x2A\x2A\x89\x35\x2A\x2A\x2A\x2A\x89\x35"
-
-#define R_FORCECVARS_SIG_SVENGINE "\x83\x7C\x24\x2A\x00\x2A\x2A\x2A\x2A\x00\x00\x81\x3D\x2A\x2A\x2A\x2A\xFF\x00\x00\x00"
-#define R_FORCECVARS_SIG_NEW "\x55\x8B\xEC\x8B\x45\x08\x85\xC0\x0F\x84\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D"
-
-//Studio Funcs
-#define R_GLSTUDIODRAWPOINTS_SIG_BLOB2    "\x83\xEC\x48\x8B\x0D\x2A\x2A\x2A\x2A\x8B\x15\x2A\x2A\x2A\x2A\x53\x55\x8B\x41\x54\x8B\x59\x60"
-
-#define BUILDNORMALINDEXTABLE_SIG_BLOB "\x8B\x15\x2A\x2A\x2A\x2A\x2A\x8B\x4A\x50\x85\xC9\x2A\x2A\x83\xC8\xFF"
-#define BUILDNORMALINDEXTABLE_SIG_NEW "\x55\x8B\xEC\x51\x8B\x15\x2A\x2A\x2A\x2A\x57\x8B\x4A\x50\x85\xC9\x7E\x0A\x83\xC8\xFF\xBF"
-#define BUILDNORMALINDEXTABLE_SIG_HL25 ""
-#define BUILDNORMALINDEXTABLE_SIG_SVENGINE ""
-
-#define MOD_LOADSPRITEMODEL_BLOB		"\x53\x55\x56\x57\x8B\x7C\x24\x18\x8B\x47\x04\x50\xFF\x15"
-
-#define R_INITPARTICLETEXTURE_BLOB "\xA1\x2A\x2A\x2A\x2A\x81\xEC\x2A\x2A\x00\x00\x8B\xC8\x40"
-#define R_INITPARTICLETEXTURE_COMMON "\x68\x01\x14\x00\x00\x68\x08\x19\x00\x00\x6A\x00\x6A\x08\x6A\x08"
-
-#define DRAWSTARTUPGRAPHIC_BLOB "\x55\x8B\xEC\x83\xE4\xF8\x83\xEC\x2C\x53\x56\x57\x8B\xF9\x8B\x87\xA8\x01\x00\x00"
-
-
-#define DRAW_SPRITEFRAMEHOLES_BLOB "\x68\xC0\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D"
-
-#define DRAW_SPRITEFRAMEADDITIVE_BLOB "\x68\xE2\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x6A\x01\x6A\x01\xFF\x15\x2A\x2A\x2A\x2A\x8B\x44\x24\x14"
-#define DRAW_SPRITEFRAMEADDITIVE_NEW "\x55\x8B\xEC\x68\xE2\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x6A\x01\x6A\x01\xFF\x15"
-
-#define DRAW_SPRITEFRAMEGENERIC_BLOB "\x8B\x44\x24\x20\x8B\x4C\x24\x24\x2A\x2A\x8B\x74\x24\x0C\x2A\x68\xE2\x0B\x00\x00\x8B\x3E"
-
-#define DRAW_FILLEDRGBA_BLOB "\x83\xEC\x08\x8D\x44\x24\x28\x8D\x4C\x24\x24\x50\x8D\x54\x24\x24\x51\x8D\x44\x24\x24\x52\x8D\x4C\x24\x24\x50\x8D\x54\x24\x24\x51\x8D\x44\x24\x24\x52\x8D\x4C\x24\x24\x50\x51\xFF\x15\x2A\x2A\x2A\x2A\x83\xC4\x20\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\xE2\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\x00\x00\x04\x46\x68\x00\x22\x00\x00\x68\x00\x23\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x6A\x01"
-
-#define DRAW_FILLEDRGBABLEND_BLOB "\x83\xEC\x08\x8D\x44\x24\x28\x8D\x4C\x24\x24\x50\x8D\x54\x24\x24\x51\x8D\x44\x24\x24\x52\x8D\x4C\x24\x24\x50\x8D\x54\x24\x24\x51\x8D\x44\x24\x24\x52\x8D\x4C\x24\x24\x50\x51\xFF\x15\x2A\x2A\x2A\x2A\x83\xC4\x20\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\xE2\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\x00\x00\x04\x46\x68\x00\x22\x00\x00\x68\x00\x23\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\x03\x03\x00\x00"
-
-
-#define D_FILLRECT_BLOB "\x83\xEC\x08\x2A\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\xE2\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\x00\x00\x04\x46\x68\x00\x22\x00\x00\x68\x00\x23\x00\x00"
-
-#define DRAW_PIC_BLOB "\x51\x56\x8B\x74\x24\x14\x85\xF6\x0F\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\xE1\x0D\x00\x00"
 
 static hook_t* g_phook_GL_Init = NULL;
 static hook_t* g_phook_GL_SetMode_SvEngine = NULL;
@@ -96,24 +29,9 @@ static hook_t* g_phook_GL_LoadTexture2 = NULL;
 static hook_t* g_phook_GL_BuildLightmaps = NULL;
 static hook_t* g_phook_LegacyMultiTextureInit = NULL;
 static hook_t* g_phook_Mod_LoadStudioModel = NULL;
-static hook_t* g_phook_Mod_LoadBrushModel = NULL;
 static hook_t* g_phook_Mod_LoadSpriteModel = NULL;
 static hook_t* g_phook_Mod_UnloadSpriteTextures = NULL;
-static hook_t* g_phook_triapi_RenderMode = NULL;
-static hook_t* g_phook_triapi_Begin = NULL;
-static hook_t* g_phook_triapi_End = NULL;
-static hook_t* g_phook_triapi_Color4f = NULL;
-static hook_t* g_phook_triapi_Color4ub = NULL;
-static hook_t* g_phook_triapi_TexCoord2f = NULL;
-static hook_t* g_phook_triapi_Vertex3fv = NULL;
-static hook_t* g_phook_triapi_Vertex3f = NULL;
-static hook_t* g_phook_triapi_Brightness = NULL;
-static hook_t* g_phook_triapi_Color4fRendermode = NULL;
-static hook_t* g_phook_triapi_Fog = NULL;
-static hook_t* g_phook_triapi_GetMatrix = NULL;
 static hook_t* g_phook_BuildGammaTable = NULL;
-static hook_t* g_phook_DLL_SetModKey = NULL;
-static hook_t* g_phook_SDL_GL_SetAttribute = NULL;
 static hook_t* g_phook_PVSNode = NULL;
 static hook_t* g_phook_Host_ClearMemory = NULL;
 static hook_t* g_phook_CVideoMode_Common_DrawStartupGraphic = NULL;
@@ -132,7 +50,6 @@ static hook_t* g_phook_Draw_Pic = NULL;
 static hook_t* g_phook_D_FillRect = NULL;
 static hook_t* g_phook_R_GetSpriteFrame = NULL;
 
-static hook_t* g_phook_ClientPortalManager_ResetAll = NULL;
 static hook_t* g_phook_ClientPortalManager_DrawPortalSurface = NULL;
 static hook_t* g_phook_ClientPortalManager_EnableClipPlane = NULL;
 static hook_t* g_phook_ClientPortalManager_RenderPortals = NULL;
@@ -285,18 +202,6 @@ void Engine_FillAddress_R_NewMap(const mh_dll_info_t& DllInfo, const mh_dll_info
 
 void Engine_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	PVOID R_DrawSequentialPoly_VA = (PVOID)GamedataResolvePtr(RealDllInfo.ImageBase, "R_DrawSequentialPoly", MH_GAMESYMBOL_KIND_FUNCTION);
-
-	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		gPrivateFuncs.R_DrawSequentialPoly_HL25 = (decltype(gPrivateFuncs.R_DrawSequentialPoly_HL25))R_DrawSequentialPoly_VA;
-	}
-	else
-	{
-		gPrivateFuncs.R_DrawSequentialPoly = (decltype(gPrivateFuncs.R_DrawSequentialPoly))R_DrawSequentialPoly_VA;
-	}
-
-
 	/*
 		//Global pointers that link into engine vars
 		byte *lightmaps = NULL;
@@ -341,7 +246,6 @@ void Engine_FillAddress_BuildGammaTable(const mh_dll_info_t& DllInfo, const mh_d
 
 void Engine_FillAddress_R_DrawParticles(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	gPrivateFuncs.R_DrawParticles = (decltype(gPrivateFuncs.R_DrawParticles))GamedataResolvePtr(RealDllInfo.ImageBase, "R_DrawParticles", MH_GAMESYMBOL_KIND_FUNCTION);
 	gPrivateFuncs.R_FreeDeadParticles = (decltype(gPrivateFuncs.R_FreeDeadParticles))GamedataResolvePtr(RealDllInfo.ImageBase, "R_FreeDeadParticles", MH_GAMESYMBOL_KIND_FUNCTION);
 	gPrivateFuncs.R_TracerDraw = (decltype(gPrivateFuncs.R_TracerDraw))GamedataResolvePtr(RealDllInfo.ImageBase, "R_TracerDraw", MH_GAMESYMBOL_KIND_FUNCTION);
 	gPrivateFuncs.R_BeamDrawList = (decltype(gPrivateFuncs.R_BeamDrawList))GamedataResolvePtr(RealDllInfo.ImageBase, "R_BeamDrawList", MH_GAMESYMBOL_KIND_FUNCTION);
@@ -811,7 +715,6 @@ void Engine_FillAddress_D_FillRect(const mh_dll_info_t& DllInfo, const mh_dll_in
 
 void Engine_FillAddress_GL_Shutdown(const mh_dll_info_t& RealDllInfo)
 {
-	gPrivateFuncs.GL_Shutdown = (decltype(gPrivateFuncs.GL_Shutdown))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_Shutdown", MH_GAMESYMBOL_KIND_FUNCTION);
 	gPrivateFuncs.Sys_ShutdownGame_call_GL_Shutdown = (decltype(gPrivateFuncs.Sys_ShutdownGame_call_GL_Shutdown))GamedataResolvePtr(RealDllInfo.ImageBase, "Sys_ShutdownGame_to_GL_Shutdown_callsite_0", MH_GAMESYMBOL_KIND_PATCH);
 }
 
@@ -850,7 +753,6 @@ void Engine_FillAddress_GL_BuildLightmaps(const mh_dll_info_t& RealDllInfo)
 
 void Engine_FillAddress_R_TextureAnimation(const mh_dll_info_t& RealDllInfo)
 {
-	gPrivateFuncs.R_TextureAnimation = (decltype(gPrivateFuncs.R_TextureAnimation))GamedataResolvePtr(RealDllInfo.ImageBase, "R_TextureAnimation", MH_GAMESYMBOL_KIND_FUNCTION);
 	rtable = (decltype(rtable))GamedataResolvePtr(RealDllInfo.ImageBase, "rtable", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
@@ -877,11 +779,6 @@ void Engine_FillAddress_GL_EndRendering(const mh_dll_info_t& RealDllInfo)
 void Engine_FillAddress_Mod_PointInLeaf(const mh_dll_info_t& RealDllInfo)
 {
 	gPrivateFuncs.Mod_PointInLeaf = (decltype(gPrivateFuncs.Mod_PointInLeaf))GamedataResolvePtr(RealDllInfo.ImageBase, "Mod_PointInLeaf", MH_GAMESYMBOL_KIND_FUNCTION);
-}
-
-void Engine_FillAddress_R_DrawTEntitiesOnList(const mh_dll_info_t& RealDllInfo)
-{
-	gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))GamedataResolvePtr(RealDllInfo.ImageBase, "R_DrawTEntitiesOnList", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void Engine_FillAddress_CL_DlightVars(const mh_dll_info_t& RealDllInfo)
@@ -1013,18 +910,6 @@ void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealD
 		gPrivateFuncs.SvEngine_glewInit = (decltype(gPrivateFuncs.SvEngine_glewInit))GetProcAddress(g_pMetaHookAPI->GetEngineModule(), "_glewInit@0");
 	}
 
-	gPrivateFuncs.triapi_RenderMode = gEngfuncs.pTriAPI->RenderMode;
-	gPrivateFuncs.triapi_Begin = gEngfuncs.pTriAPI->Begin;
-	gPrivateFuncs.triapi_End = gEngfuncs.pTriAPI->End;
-	gPrivateFuncs.triapi_Color4f = gEngfuncs.pTriAPI->Color4f;
-	gPrivateFuncs.triapi_Color4ub = gEngfuncs.pTriAPI->Color4ub;
-	gPrivateFuncs.triapi_TexCoord2f = gEngfuncs.pTriAPI->TexCoord2f;
-	gPrivateFuncs.triapi_Vertex3fv = gEngfuncs.pTriAPI->Vertex3fv;
-	gPrivateFuncs.triapi_Vertex3f = gEngfuncs.pTriAPI->Vertex3f;
-	gPrivateFuncs.triapi_Brightness = gEngfuncs.pTriAPI->Brightness;
-	gPrivateFuncs.triapi_Color4fRendermode = gEngfuncs.pTriAPI->Color4fRendermode;
-	gPrivateFuncs.triapi_GetMatrix = gEngfuncs.pTriAPI->GetMatrix;
-	gPrivateFuncs.triapi_BoxInPVS = gEngfuncs.pTriAPI->BoxInPVS;
 	gPrivateFuncs.triapi_Fog = gEngfuncs.pTriAPI->Fog;
 	gPrivateFuncs.triapi_FogParams = gEngfuncs.pTriAPI->FogParams;
 	gPrivateFuncs.triapi_SpriteTexture = gEngfuncs.pTriAPI->SpriteTexture;
@@ -1088,8 +973,6 @@ void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealD
 	Engine_FillAddress_VID_UpdateWindowVars(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_Mod_PointInLeaf(RealDllInfo);
-
-	Engine_FillAddress_R_DrawTEntitiesOnList(RealDllInfo);
 
 	Engine_FillAddress_BuildGammaTable(DllInfo, RealDllInfo);
 

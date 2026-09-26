@@ -27,11 +27,9 @@ typedef struct
 	void (*ClientDLL_DrawNormalTriangles)(void);
 	void (*R_NewMap)(void);
 	void (*GL_BuildLightmaps)(void);
-	void (*R_DrawParticles)(void);
 	void (*R_TracerDraw)(void);
 	void (*R_BeamDrawList)(void);
 	void (*R_FreeDeadParticles)(particle_t**);
-	void (*R_DrawTEntitiesOnList)(int onlyClientDraw);
 	void (*ClientDLL_DrawTransparentTriangles)(void);
 	qboolean(*R_CullBox)(vec3_t mins, vec3_t maxs);
 	void (*GL_Bind)(int texnum);
@@ -42,14 +40,10 @@ typedef struct
 	qboolean (*GL_SetModeLegacy)(void* window, HDC* pmaindc, HGLRC* pbaseRC, int fD3D, const char* pszDriver, const char* pszCmdLine);
 	qboolean (*GL_SelectPixelFormat)(HDC hDC);
 	void* Sys_ShutdownGame_call_GL_Shutdown;
-	void (*GL_Shutdown)(void* window, HDC pmaindc, HGLRC pbaseRC);
 	void (*GL_Set2D)(void);
 	void (*GL_Finish2D)(void);
 	void (*GL_BeginRendering)(int* x, int* y, int* width, int* height);
 	void (*GL_EndRendering)(void);
-	void (*R_DrawSequentialPoly)(msurface_t* s, int face);
-	void (*R_DrawSequentialPoly_HL25)(msurface_t* s, int face, qboolean cleanUpShaderState);//HL25 added the third stack arg, callee gates shader/program cleanup on it
-	texture_t* (*R_TextureAnimation)(msurface_t* fa);
 	void (*GL_UnloadTextures)(void);
 	void (*GL_LoadFilterTexture)(void);
 	texture_t* (*Draw_DecalTexture)(int index);
@@ -76,18 +70,6 @@ typedef struct
 	void(*Mod_LoadStudioModel)(model_t* mod, void* buffer);
 	void(*Mod_LoadBrushModel)(model_t* mod, void* buffer);
 	model_t* (*Mod_LoadModel)(model_t* mod, qboolean crash, qboolean trackCRC);
-	void(*triapi_RenderMode)(int mode);
-	void(*triapi_Begin)(int primitiveCode);
-	void(*triapi_End)();
-	void(*triapi_Color4f)(float r, float g, float b, float a);
-	void(*triapi_Color4ub)(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
-	void(*triapi_TexCoord2f)(float s, float t);
-	void(*triapi_Vertex3fv)(float* v);
-	void(*triapi_Vertex3f)(float x, float y, float z);
-	void(*triapi_Brightness)(float brightness);
-	void(*triapi_Color4fRendermode)(float r, float g, float b, float a, int rendermode);
-	void(*triapi_GetMatrix) (const int pname, float* matrix);
-	int (*triapi_BoxInPVS)(float* mins, float* maxs);
 	void (*triapi_Fog)(float* flFogColor, float flStart, float flEnd, qboolean bOn);
 	void (*triapi_FogParams)(float flDensity, qboolean bFogAffectsSkybox);
 	qboolean(*triapi_SpriteTexture)(model_t* pSpriteModel, int frame);

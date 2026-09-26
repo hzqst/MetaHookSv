@@ -846,7 +846,6 @@ class RendererGateTests(unittest.TestCase):
 
     def test_gate_requires_lightmap_and_decal_symbols_on_every_identity(self):
         names = (
-            "R_TextureAnimation",
             "d_lightstylevalue", "frustum", "gDecalCache", "gDecalPool", "gDecalSurfCount",
             "lightmaps", "rtable",
         )
@@ -881,6 +880,29 @@ class RendererGateTests(unittest.TestCase):
             self.assertNotIn(name, validate.RENDERER_ENGINE_NON_SVENGINE_FUNCTIONS)
             self.assertNotIn(name, validate.RENDERER_ENGINE_NON_SVENGINE_GLOBALS)
             self.assertNotIn(name, validate.RENDERER_ENGINE_SVENGINE_FUNCTIONS)
+            self.assertNotIn(name, validate.RENDERER_SVENGINE_GLOBALS)
+        for gv in validate.RENDERER_ALL_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            for name in retired:
+                self.assertNotIn(name, symbols, (gv, name))
+            self.assertEqual([], validate.validate_renderer(symbols, gv), gv)
+
+    def test_gate_ignores_function_resolutions_the_renderer_never_read(self):
+        #These five were captured into gPrivateFuncs but had no reader: the plugin
+        #draws particles, T-entities and the engine surface through its own bodies
+        #instead of chaining to the engine originals, and it obtains
+        #R_DrawSequentialPoly by leaving the engine body alone. The plugin no longer
+        #resolves any of them, so the gate must not keep the release dependent on
+        #records nobody consumes.
+        retired = ("GL_Shutdown", "R_DrawParticles", "R_DrawSequentialPoly",
+                   "R_DrawTEntitiesOnList", "R_TextureAnimation")
+        for name in retired:
+            self.assertNotIn(name, validate.RENDERER_ENGINE_ALL_FUNCTIONS)
+            self.assertNotIn(name, validate.RENDERER_ENGINE_ALL_GLOBALS)
+            self.assertNotIn(name, validate.RENDERER_ENGINE_NON_SVENGINE_FUNCTIONS)
+            self.assertNotIn(name, validate.RENDERER_ENGINE_NON_SVENGINE_GLOBALS)
+            self.assertNotIn(name, validate.RENDERER_ENGINE_SVENGINE_FUNCTIONS)
+            self.assertNotIn(name, validate.RENDERER_ENGINE_HL25_FUNCTIONS)
             self.assertNotIn(name, validate.RENDERER_SVENGINE_GLOBALS)
         for gv in validate.RENDERER_ALL_GAMES:
             symbols = self.complete_engine_symbols(gv)
