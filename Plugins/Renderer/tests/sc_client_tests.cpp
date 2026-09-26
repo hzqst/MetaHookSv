@@ -33,6 +33,7 @@ static int groups{}, portalGroups{}, clears{}, copies{};
 static GLbitfield lastClear{};
 static int renderMode{};
 static void* sources[2]{};
+static ref_params_t portalViewParams{};
 
 FBO_Container_t* GL_GetCurrentSceneFBO() { return sceneFBO; }
 FBO_Container_t* GL_GetCurrentRenderingFBO() { return renderingFBO; }
@@ -89,8 +90,9 @@ static void TestViewport(GLint x, GLint y, GLsizei width, GLsizei height)
     viewport[0] = x; viewport[1] = y; viewport[2] = width; viewport[3] = height;
 }
 static void CopyPortal() { SCClient_glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 344, 512, 256); }
-static void __fastcall RenderPortals(void* self, int)
+static void __fastcall RenderPortals(void* self, int, ref_params_t* params)
 {
+    assert(&portalViewParams == params);
     assert(g_bIsRenderingPortalViews && g_pClientPortalManager == self);
     if (renderMode == 0)
     {
@@ -140,7 +142,18 @@ static void TestPortalScopes(void* manager, void* source)
     g_pClientPortalManager = &outerManager;
     for (renderMode = 0; renderMode < 4; ++renderMode)
     {
-        try { ClientPortalManager_RenderPortals(manager, 0); }
+        try
+        {
+            // The real client supplies ECX=this and one stack argument; EDX is
+            // not an argument. Exercise that ABI rather than calling fastcall.
+            using ClientRenderPortals = void(__thiscall*)(void*, ref_params_t*);
+            auto render = reinterpret_cast<ClientRenderPortals>(ClientPortalManager_RenderPortals);
+            uintptr_t stackBefore{}, stackAfter{};
+            __asm mov stackBefore, esp
+            render(manager, &portalViewParams);
+            __asm mov stackAfter, esp
+            assert(stackBefore == stackAfter);
+        }
         catch (const std::runtime_error&) { assert(3 == renderMode); }
         assert(!g_bIsRenderingPortalViews && nullptr == g_pCurrentClientPortal);
         assert(&outerManager == g_pClientPortalManager);

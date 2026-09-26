@@ -92,12 +92,13 @@ struct SCClientPortalViewsScope
 };
 }
 
-void __fastcall ClientPortalManager_RenderPortals(void* pthis, int)
+void __fastcall ClientPortalManager_RenderPortals(void* pthis, int, ref_params_t* params)
 {
 	// PushView/PopView surround the entire list, while clear/copy surround each
 	// portal. Save the outer state before PushView can change the real binding.
 	SCClientPortalViewsScope scope(pthis);
-	gPrivateFuncs.ClientPortalManager_RenderPortals(pthis, 0);
+	// Both Windows clients use thiscall with one stack argument (ret 4).
+	gPrivateFuncs.ClientPortalManager_RenderPortals(pthis, 0, params);
 }
 
 void __stdcall SCClient_glClear(GLbitfield mask)

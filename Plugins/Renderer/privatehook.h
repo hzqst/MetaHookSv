@@ -151,7 +151,7 @@ typedef struct
 	mtexinfo_t* (__fastcall* ClientPortalManager_GetOriginalSurfaceTexture)(void* pthis, int dummy, msurface_t* surf);
 	void(__fastcall* ClientPortalManager_DrawPortalSurface)(void* pthis, int dummy, void* ClientPortal, msurface_t* surf, GLuint texture);
 	void(__fastcall* ClientPortalManager_EnableClipPlane)(void* pthis, int dummy, int index, vec3_t a1, vec3_t a2, vec3_t a3);
-	void(__fastcall* ClientPortalManager_RenderPortals)(void* pthis, int dummy);
+	void(__fastcall* ClientPortalManager_RenderPortals)(void* pthis, int dummy, ref_params_t* params);
 	void(__fastcall* ClientPortalManager_InitShader)(void* pthis, int dummy);
 	uint32_t offset_ClientPortalManager_m_bShadersAvailable;
 	void(__fastcall* CParticleSystem_ParticleDraw)(void* pthis, int dummy, void* particle);
