@@ -122,7 +122,6 @@ typedef struct
 	void(__fastcall* enginesurface_drawGetTextureSize)(void* pthis, int, int textureId, int& wide, int& tall);
 	bool(__fastcall* enginesurface_isTextureIDValid)(void* pthis, int, int textureID);
 	void(__fastcall* enginesurface_drawSetSubTextureRGBA)(void* pthis, int, int textureID, int drawX, int drawY, const unsigned char* rgba, int subTextureWide, int subTextureTall);
-	void(__fastcall* enginesurface_drawFlushText)(void* pthis, int);
 	void(__fastcall* enginesurface_drawSetTextureBGRA)(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, bool forceUpload);
 	void(__fastcall* enginesurface_drawUpdateRegionTextureBGRA)(void* pthis, int, int textureID, int x, int y, const unsigned char* pchData, int wide, int tall);
 

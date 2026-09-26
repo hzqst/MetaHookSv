@@ -44,102 +44,10 @@ static void(__fastcall* m_pfnEngineSurface_drawSetTextureBGRA)(void* pthis, int,
 static void(__fastcall* m_pfnEngineSurface_drawUpdateRegionTextureBGRA)(void* pthis, int, int textureID, int x, int y, const unsigned char* pchData, int wide, int tall) = NULL;
 static void(__fastcall* m_pfnBaseUISurface_DrawSetTexture)(void* pthis, int, int textureID);
 
-void Engine_FillAddress_EngineSurface_drawFlushText(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_EngineSurface_drawFlushText(const mh_dll_info_t& RealDllInfo)
 {
-	auto enginesurface_drawFlushText_VA = ConvertDllInfoSpace(gPrivateFuncs.enginesurface_drawFlushText, RealDllInfo, DllInfo);
-
-	if (!enginesurface_drawFlushText_VA)
-	{
-		Sig_NotFound(enginesurface_drawFlushText);
-	}
-	typedef struct enginesurface_drawFlushText_SearchContext_s
-	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-		int g_iVertexBufferEntriesUsed_candidate_instCount{};
-		int g_iVertexBufferEntriesUsed_candidate_reg{};
-		PVOID g_iVertexBufferEntriesUsed_candidate_VA{};
-	}enginesurface_drawFlushText_SearchContext;
-
-	enginesurface_drawFlushText_SearchContext ctx = { DllInfo, RealDllInfo };
-
-	g_pMetaHookAPI->DisasmRanges(enginesurface_drawFlushText_VA, 0x150, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (enginesurface_drawFlushText_SearchContext*)context;
-
-		if (!g_iVertexBufferEntriesUsed &&
-			pinst->id == X86_INS_CMP &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[0].mem.base == 0 &&
-			(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-			(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
-			pinst->detail->x86.operands[1].type == X86_OP_IMM
-			)
-		{
-			g_iVertexBufferEntriesUsed = (decltype(g_iVertexBufferEntriesUsed))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-		}
-
-		if (!g_iVertexBufferEntriesUsed &&
-			!ctx->g_iVertexBufferEntriesUsed_candidate_reg &&
-			pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[1].mem.base == 0 &&
-			(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-			(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize
-			)
-		{
-			ctx->g_iVertexBufferEntriesUsed_candidate_instCount = instCount;
-			ctx->g_iVertexBufferEntriesUsed_candidate_reg = pinst->detail->x86.operands[0].reg;
-			ctx->g_iVertexBufferEntriesUsed_candidate_VA = (PVOID)pinst->detail->x86.operands[1].mem.disp;
-		}
-
-		if (ctx->g_iVertexBufferEntriesUsed_candidate_reg &&
-			instCount > ctx->g_iVertexBufferEntriesUsed_candidate_instCount &&
-			instCount < ctx->g_iVertexBufferEntriesUsed_candidate_instCount + 5)
-		{
-			if (!g_iVertexBufferEntriesUsed &&
-				pinst->id == X86_INS_CMP &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				pinst->detail->x86.operands[0].reg == ctx->g_iVertexBufferEntriesUsed_candidate_reg &&
-				pinst->detail->x86.operands[1].type == X86_OP_IMM
-				)
-			{
-				g_iVertexBufferEntriesUsed = (decltype(g_iVertexBufferEntriesUsed))ConvertDllInfoSpace((PVOID)ctx->g_iVertexBufferEntriesUsed_candidate_VA, ctx->DllInfo, ctx->RealDllInfo);
-			}
-		}
-
-		if (!g_VertexBuffer &&
-			g_iVertexBufferEntriesUsed &&
-			pinst->id == X86_INS_PUSH &&
-			pinst->detail->x86.op_count == 1 &&
-			pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-			(PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)ctx->DllInfo.DataBase &&
-			(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize
-			)
-		{
-			g_VertexBuffer = (decltype(g_VertexBuffer))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].imm, ctx->DllInfo, ctx->RealDllInfo);
-		}
-
-		if(g_iVertexBufferEntriesUsed && g_VertexBuffer)
-			return TRUE;
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-		}, 0, &ctx);
-
-	Sig_VarNotFound(g_VertexBuffer);
-	Sig_VarNotFound(g_iVertexBufferEntriesUsed);
+	g_VertexBuffer = (decltype(g_VertexBuffer))GamedataResolvePtr(RealDllInfo.ImageBase, "g_VertexBuffer", MH_GAMESYMBOL_KIND_GLOBAL);
+	g_iVertexBufferEntriesUsed = (decltype(g_iVertexBufferEntriesUsed))GamedataResolvePtr(RealDllInfo.ImageBase, "g_iVertexBufferEntriesUsed", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Engine_FillAddress_EngineSurface_pushMakeCurrent(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -1527,7 +1435,6 @@ void EngineSurface_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t
 			gPrivateFuncs.enginesurface_drawGetTextureSize = (decltype(gPrivateFuncs.enginesurface_drawGetTextureSize))GetVFunctionFromVFTable(engineSurface_vftable, gPrivateFuncs.index_enginesurface_drawGetTextureSize, DllInfo, RealDllInfo, RealDllInfo);
 			gPrivateFuncs.enginesurface_isTextureIDValid = (decltype(gPrivateFuncs.enginesurface_isTextureIDValid))GetVFunctionFromVFTable(engineSurface_vftable, gPrivateFuncs.index_enginesurface_isTextureIDValid, DllInfo, RealDllInfo, RealDllInfo);
 			gPrivateFuncs.enginesurface_drawSetSubTextureRGBA = (decltype(gPrivateFuncs.enginesurface_drawSetSubTextureRGBA))GetVFunctionFromVFTable(engineSurface_vftable, gPrivateFuncs.index_enginesurface_drawSetSubTextureRGBA, DllInfo, RealDllInfo, RealDllInfo);
-			gPrivateFuncs.enginesurface_drawFlushText = (decltype(gPrivateFuncs.enginesurface_drawFlushText))GetVFunctionFromVFTable(engineSurface_vftable, gPrivateFuncs.index_enginesurface_drawFlushText, DllInfo, RealDllInfo, RealDllInfo);
 			gPrivateFuncs.enginesurface_drawSetTextureBGRA = (decltype(gPrivateFuncs.enginesurface_drawSetTextureBGRA))GetVFunctionFromVFTable(engineSurface_vftable, gPrivateFuncs.index_enginesurface_drawSetTextureBGRA, DllInfo, RealDllInfo, RealDllInfo);
 			gPrivateFuncs.enginesurface_drawUpdateRegionTextureBGRA = (decltype(gPrivateFuncs.enginesurface_drawUpdateRegionTextureBGRA))GetVFunctionFromVFTable(engineSurface_vftable, gPrivateFuncs.index_enginesurface_drawUpdateRegionTextureBGRA, DllInfo, RealDllInfo, RealDllInfo);
 
@@ -1574,14 +1481,13 @@ void EngineSurface_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t
 			gPrivateFuncs.enginesurface_drawGetTextureSize = (decltype(gPrivateFuncs.enginesurface_drawGetTextureSize))GetVFunctionFromVFTable(engineSurface_vftable, gPrivateFuncs.index_enginesurface_drawGetTextureSize, DllInfo, RealDllInfo, RealDllInfo);
 			gPrivateFuncs.enginesurface_isTextureIDValid = (decltype(gPrivateFuncs.enginesurface_isTextureIDValid))GetVFunctionFromVFTable(engineSurface_vftable, gPrivateFuncs.index_enginesurface_isTextureIDValid, DllInfo, RealDllInfo, RealDllInfo);
 			gPrivateFuncs.enginesurface_drawSetSubTextureRGBA = (decltype(gPrivateFuncs.enginesurface_drawSetSubTextureRGBA))GetVFunctionFromVFTable(engineSurface_vftable, gPrivateFuncs.index_enginesurface_drawSetSubTextureRGBA, DllInfo, RealDllInfo, RealDllInfo);
-			gPrivateFuncs.enginesurface_drawFlushText = (decltype(gPrivateFuncs.enginesurface_drawFlushText))GetVFunctionFromVFTable(engineSurface_vftable, gPrivateFuncs.index_enginesurface_drawFlushText, DllInfo, RealDllInfo, RealDllInfo);
 			gPrivateFuncs.enginesurface_drawSetTextureBGRA = (decltype(gPrivateFuncs.enginesurface_drawSetTextureBGRA))GetVFunctionFromVFTable(engineSurface_vftable, gPrivateFuncs.index_enginesurface_drawSetTextureBGRA, DllInfo, RealDllInfo, RealDllInfo);
 			gPrivateFuncs.enginesurface_drawUpdateRegionTextureBGRA = (decltype(gPrivateFuncs.enginesurface_drawUpdateRegionTextureBGRA))GetVFunctionFromVFTable(engineSurface_vftable, gPrivateFuncs.index_enginesurface_drawUpdateRegionTextureBGRA, DllInfo, RealDllInfo, RealDllInfo);
 
 		}
 
 		Engine_FillAddress_EngineSurface_pushMakeCurrent(DllInfo, RealDllInfo);
-		Engine_FillAddress_EngineSurface_drawFlushText(DllInfo, RealDllInfo);
+		Engine_FillAddress_EngineSurface_drawFlushText(RealDllInfo);
 
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{

@@ -781,6 +781,15 @@ class RendererGateTests(unittest.TestCase):
             errors = validate.validate_renderer(symbols, gv)
             self.assertTrue(any("particletexture" in e for e in errors), (gv, errors))
 
+    def test_gate_requires_enginesurface_vertexbuffer_globals_on_every_identity(self):
+        for name in ("g_VertexBuffer", "g_iVertexBufferEntriesUsed"):
+            self.assertIn(name, validate.RENDERER_ENGINE_ALL_GLOBALS)
+            for gv in validate.RENDERER_ALL_GAMES:
+                symbols = self.complete_engine_symbols(gv)
+                del symbols[name]
+                errors = validate.validate_renderer(symbols, gv)
+                self.assertTrue(any(name in e for e in errors), (gv, errors))
+
     def test_gate_requires_direct_resolved_palette_scissor_and_studio_globals(self):
         names = (
             "giScissorTest", "host_basepal", "lightgammatable",

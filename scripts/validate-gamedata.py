@@ -215,7 +215,7 @@ RENDERER_ENGINE_ALL_GLOBALS = (
     "cl_waterlevel", "cl_weaponsequence", "cl_weaponstarttime", "cl_worldmodel",
     "cshift_water", "currententity", "currenttexture", "d_lightstylevalue", "detTexSupported",
     "envmap", "filterBrightness", "filterColorBlue", "filterColorGreen", "filterColorRed",
-    "filterMode", "flFinalFogColor", "flFogDensity", "flFogEnd", "flFogStart", "frustum", "gDecalCache", "gDecalPool", "gDecalSurfCount", "gDevOverview", "gHostSpawnCount", "gProjectionMatrix", "gScreenToWorld", "gSpriteMipMap", "gTempEnts", "gWaterColor", "gWorldToScreen", "g_ForcedFaceFlags", "g_bUserFogOn", "giScissorTest",
+    "filterMode", "flFinalFogColor", "flFogDensity", "flFogEnd", "flFogStart", "frustum", "gDecalCache", "gDecalPool", "gDecalSurfCount", "gDevOverview", "gHostSpawnCount", "gProjectionMatrix", "gScreenToWorld", "gSpriteMipMap", "gTempEnts", "gWaterColor", "gWorldToScreen", "g_ForcedFaceFlags", "g_VertexBuffer", "g_bUserFogOn", "g_iVertexBufferEntriesUsed", "giScissorTest",
     "gl_extensions", "gl_filter_max", "gl_filter_min", "gltextures", "host_basepal",
     "lightgammatable", "lightmaps", "mod_known",
     "maxTransObjs", "mod_numknown", "modelorg", "movevars", "numTransObjs", "particletexture", "pstudiohdr", "psubmodel",
