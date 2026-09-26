@@ -270,11 +270,21 @@ RENDERER_SDL_FUNCTIONS = ("SDL_InitGL",)
 RENDERER_CLIENT_SVEN_FUNCTIONS = (
     "ClientPortalManager_RenderPortals", "ClientPortalManager_ResetAll", "UpdatePlayerPitch",
     "ClientPortalManager_GetOriginalSurfaceTexture", "ClientPortalManager_DrawPortalSurface",
+    "ClientPortalManager_EnableClipPlane", "ClientPortalManager_InitShader", "CParticleSystem_ParticleDraw",
+)
+RENDERER_CLIENT_SVEN_STRUCT_MEMBERS = ("ClientPortalManager.m_bShadersAvailable",)
+RENDERER_CLIENT_SVEN_SCALARS = (
+    "ClientPortalManager_vector_begin_offset", "ClientPortalManager_vector_end_offset",
+)
+RENDERER_CLIENT_10257_SCALARS = (
+    "ClientPortal_texture_id_offset", "ClientPortal_texture_width_offset", "ClientPortal_texture_height_offset",
+)
+RENDERER_CLIENT_8948_SCALARS = (
+    "PortalSource_texture_id_offset", "PortalSource_texture_width_offset", "PortalSource_texture_height_offset",
 )
 RENDERER_CLIENT_SVEN_GLOBALS = (
     "g_bRenderingPortals_SCClient", "g_iFogColor", "g_iStartDist", "g_iEndDist",
 )
-RENDERER_CLIENT_10257_FUNCTIONS = ("ClientPortalManager_EnableClipPlane",)
 RENDERER_CLIENT_10257_GLOBALS = ("g_ViewEntityIndex_SCClient",)
 RENDERER_CLIENT_STUDIO_VFUNCS = (
     "GameStudioRenderer_StudioDrawModel", "GameStudioRenderer_StudioDrawPlayer",
@@ -806,8 +816,11 @@ def validate_renderer(symbols, game_version, include_engine=True, include_client
     if game_version in RENDERER_SVENGINE_GAMES:
         errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_SVEN_FUNCTIONS, "function", "client")
         errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_SVEN_GLOBALS, "global", "client")
+        errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_SVEN_STRUCT_MEMBERS, "structMember", "client")
+        errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_SVEN_SCALARS, "scalar", "client")
+        texture_scalars = RENDERER_CLIENT_10257_SCALARS if game_version in RENDERER_SVEN_10257_GAMES else RENDERER_CLIENT_8948_SCALARS
+        errors += _renderer_check(symbols, game_version, texture_scalars, "scalar", "client")
     if game_version in RENDERER_SVEN_10257_GAMES:
-        errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_10257_FUNCTIONS, "function", "client")
         errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_10257_GLOBALS, "global", "client")
     if game_version in RENDERER_CLIENT_GAMES:
         errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_STUDIO_GLOBALS, "global", "client")

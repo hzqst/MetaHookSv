@@ -529,8 +529,11 @@ class RendererGateTests(unittest.TestCase):
         if game_version in validate.RENDERER_SVENGINE_GAMES:
             add(validate.RENDERER_CLIENT_SVEN_FUNCTIONS, "function")
             add(validate.RENDERER_CLIENT_SVEN_GLOBALS, "global")
+            add(validate.RENDERER_CLIENT_SVEN_STRUCT_MEMBERS, "structMember")
+            add(validate.RENDERER_CLIENT_SVEN_SCALARS, "scalar")
+            add(validate.RENDERER_CLIENT_10257_SCALARS if game_version in validate.RENDERER_SVEN_10257_GAMES
+                else validate.RENDERER_CLIENT_8948_SCALARS, "scalar")
         if game_version in validate.RENDERER_SVEN_10257_GAMES:
-            add(validate.RENDERER_CLIENT_10257_FUNCTIONS, "function")
             add(validate.RENDERER_CLIENT_10257_GLOBALS, "global")
         if game_version in validate.RENDERER_CLIENT_GAMES:
             add(validate.RENDERER_CLIENT_STUDIO_GLOBALS, "global")
@@ -551,6 +554,22 @@ class RendererGateTests(unittest.TestCase):
                 continue
             symbols = self.complete_client_symbols(gv)
             self.assertEqual([], validate.validate_renderer(symbols, gv, include_engine=False), gv)
+
+    def test_sven_core_hooks_are_required_on_both_clients(self):
+        for gv in validate.RENDERER_SVENGINE_GAMES:
+            for name in ("ClientPortalManager_EnableClipPlane", "ClientPortalManager_InitShader",
+                         "CParticleSystem_ParticleDraw", "ClientPortalManager.m_bShadersAvailable"):
+                symbols = self.complete_client_symbols(gv)
+                del symbols[name]
+                errors = validate.validate_renderer(symbols, gv, include_engine=False)
+                self.assertTrue(any(name in e for e in errors), (gv, name, errors))
+
+    def test_sven_shader_flag_requires_struct_member_kind(self):
+        for gv in validate.RENDERER_SVENGINE_GAMES:
+            symbols = self.complete_client_symbols(gv)
+            symbols["ClientPortalManager.m_bShadersAvailable"]["kind"] = "global"
+            errors = validate.validate_renderer(symbols, gv, include_engine=False)
+            self.assertTrue(any("must be a structMember record" in e for e in errors), errors)
 
     def test_gate_flags_missing_engine_function(self):
         symbols = self.complete_engine_symbols("hl-8684")

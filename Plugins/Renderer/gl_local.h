@@ -513,6 +513,10 @@ void __stdcall CoreProfile_glTexEnvf(GLenum target, GLenum pname, GLfloat param)
 void __stdcall CoreProfile_glTexParameterf(GLenum target, GLenum pname, GLfloat param);
 GLboolean __stdcall CoreProfile_glIsEnabled(GLenum cap);
 void __stdcall CoreProfile_glBegin(int GLPrimitiveCode);
+void __stdcall CoreProfile_glEnd();
+void __stdcall CoreProfile_glNormal3f(float x, float y, float z);
+void __fastcall CParticleSystem_ParticleDraw(void* pthis, int dummy, void* particle);
+extern bool g_bIsSCClientParticleDrawing;
 void __stdcall CoreProfile_glGenTextures(GLsizei n, GLuint* textures);
 void __stdcall CoreProfile_glCopyTexSubImage2D_RenderPortals(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height);
 void __stdcall CoreProfile_glClear_RenderPortals(GLbitfield mask);

@@ -5691,11 +5691,6 @@ GLboolean __stdcall CoreProfile_glIsEnabled(GLenum cap)
 	return glIsEnabled(cap);
 }
 
-void __stdcall CoreProfile_glBegin(int GLPrimitiveCode)
-{
-
-}
-
 void __stdcall CoreProfile_glGenTextures(GLsizei n, GLuint* textures)
 {
 	for (GLsizei i = 0; i < n; ++i)

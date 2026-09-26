@@ -121,24 +121,6 @@ void R_InitPortal(void)
 	
 }
 
-int ClientPortal_GetIndex(void* pClientPortal)
-{
-	auto vectorBase = *(void***)((ULONG_PTR)g_pClientPortalManager + 140);
-	auto vectorEnd = *(void***)((ULONG_PTR)g_pClientPortalManager + 140);
-	
-	int index = 0;
-
-	for (auto vectorItor = vectorBase; vectorItor < vectorEnd; ++vectorItor, index++)
-	{
-		auto clientPortal = (*vectorItor);
-
-		if (clientPortal == pClientPortal)
-			return index;
-	}
-
-	return -1;
-}
-
 bool ClientPortal_GetPortalTransform(void* pClientPortal, float *outOrigin, float *outAngles)
 {
 	if (g_dwEngineBuildnum >= 10000)//5.26
@@ -172,33 +154,6 @@ int ClientPortal_GetPortalMode(void * pClientPortal)
 		return *(int*)((ULONG_PTR)pClientPortal + 0x28);
 	}
 
-	return -1;
-}
-
-int ClientPortal_GetTextureId(void* pClientPortal)
-{
-	if (g_dwEngineBuildnum >= 10000)//5.26
-	{
-		return *(int*)((ULONG_PTR)pClientPortal + 204);
-	}
-	return -1;
-}
-
-int ClientPortal_GetTextureWidth(void* pClientPortal)
-{
-	if (g_dwEngineBuildnum >= 10000)//5.26
-	{
-		return *(int*)((ULONG_PTR)pClientPortal + 208);
-	}
-	return -1;
-}
-
-int ClientPortal_GetTextureHeight(void* pClientPortal)
-{
-	if (g_dwEngineBuildnum >= 10000)//5.26
-	{
-		return *(int*)((ULONG_PTR)pClientPortal + 212);
-	}
 	return -1;
 }
 
