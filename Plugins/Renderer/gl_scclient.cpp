@@ -14,7 +14,6 @@ public:
 	SCClientFramebufferScope()
 		: scene(GL_GetCurrentSceneFBO()), rendering(GL_GetCurrentRenderingFBO())
 	{
-		GL_PushFrameBuffer();
 		glGetIntegerv(GL_VIEWPORT, viewport);
 	}
 	~SCClientFramebufferScope()
@@ -27,7 +26,6 @@ public:
 			return;
 		GL_SetCurrentSceneFBO(scene);
 		GL_BindFrameBuffer(rendering);
-		GL_PopFrameBuffer();
 		glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
 		restored = true;
 	}
