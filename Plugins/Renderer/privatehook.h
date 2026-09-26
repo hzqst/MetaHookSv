@@ -87,7 +87,6 @@ typedef struct
 	void (*D_FillRect)(vrect_t* r, unsigned char* color);
 	bool(__fastcall* BaseUISurface_DeleteTextureByID)(void* pthis, int, int textureId);
 
-	void(__fastcall* enginesurface_pushMakeCurrent)(void* pthis, int, int* insets, int* absExtents, int* clipRect, bool translateToScreenSpace);
 	void(__fastcall* enginesurface_popMakeCurrent)(void* pthis, int);
 	void(__fastcall* enginesurface_drawFilledRect)(void* pthis, int, int x0, int y0, int x1, int y1);
 	void(__fastcall* enginesurface_drawOutlinedRect)(void* pthis, int, int x0, int y0, int x1, int y1);

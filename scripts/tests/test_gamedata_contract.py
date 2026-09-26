@@ -790,6 +790,19 @@ class RendererGateTests(unittest.TestCase):
                 errors = validate.validate_renderer(symbols, gv)
                 self.assertTrue(any(name in e for e in errors), (gv, errors))
 
+    def test_gate_requires_the_engine_surface_scissor_and_window_globals(self):
+        #Renderer and VGUI2Extension each located these three by disassembling the
+        #mirror engine's EngineSurface::pushMakeCurrent body. Both now resolve them
+        #from gamedata and both key the lookup on the loaded engine module's CRC64,
+        #so pinning them on the Renderer identities pins their shared dependency.
+        for name in ("pmainwindow", "g_bScissor", "g_ScissorRect"):
+            self.assertIn(name, validate.RENDERER_ENGINE_ALL_GLOBALS)
+            for gv in validate.RENDERER_ALL_GAMES:
+                symbols = self.complete_engine_symbols(gv)
+                del symbols[name]
+                errors = validate.validate_renderer(symbols, gv)
+                self.assertTrue(any(name in e for e in errors), (gv, errors))
+
     def test_gate_requires_direct_resolved_palette_scissor_and_studio_globals(self):
         names = (
             "giScissorTest", "host_basepal", "lightgammatable",

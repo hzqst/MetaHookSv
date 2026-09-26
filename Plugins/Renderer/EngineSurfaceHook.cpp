@@ -1,12 +1,9 @@
 #include <metahook.h>
-#include <capstone.h>
 #include "gl_local.h"
 #include "privatehook.h"
 #include "plugins.h"
 
 #include <VGUI/VGuiVertex.h>
-
-#include <cstdlib>
 
 extern IEngineSurface * staticSurface;
 extern IEngineSurface_HL25 * staticSurface_HL25;
@@ -50,123 +47,11 @@ void Engine_FillAddress_EngineSurface_drawFlushText(const mh_dll_info_t& RealDll
 	g_iVertexBufferEntriesUsed = (decltype(g_iVertexBufferEntriesUsed))GamedataResolvePtr(RealDllInfo.ImageBase, "g_iVertexBufferEntriesUsed", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
-void Engine_FillAddress_EngineSurface_pushMakeCurrent(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_EngineSurface_pushMakeCurrent(const mh_dll_info_t& RealDllInfo)
 {
-	auto enginesurface_pushMakeCurrent_VA = ConvertDllInfoSpace(gPrivateFuncs.enginesurface_pushMakeCurrent, RealDllInfo, DllInfo);
-
-	typedef struct pushMakeCurrent_SearchContext_s
-	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-		ULONG_PTR mainwindow_candidate{};
-		int mainwindow_candidate_reg{};
-		int mainwindow_candidate_InstCount{};
-		int g_bScissor_InstCount{};
-		ULONG_PTR candidate[4]{};
-		int candidate_count{};
-	}pushMakeCurrent_SearchContext;
-
-	pushMakeCurrent_SearchContext ctx = { DllInfo,RealDllInfo };
-
-	g_pMetaHookAPI->DisasmRanges(enginesurface_pushMakeCurrent_VA, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (pushMakeCurrent_SearchContext*)context;
-
-		if (!pmainwindow &&
-			instCount < 35 &&
-			pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[1].mem.base == 0 &&
-			pinst->detail->x86.operands[1].mem.index == 0 &&
-			(PUCHAR)pinst->detail->x86.operands[1].mem.disp >(PUCHAR)ctx->DllInfo.DataBase &&
-			(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-		{
-			ctx->mainwindow_candidate = (decltype(ctx->mainwindow_candidate))pinst->detail->x86.operands[1].mem.disp;
-			ctx->mainwindow_candidate_reg = pinst->detail->x86.operands[0].reg;
-			ctx->mainwindow_candidate_InstCount = instCount;
-		}
-
-		if (!pmainwindow &&
-			instCount < 40 && ctx->mainwindow_candidate &&
-			instCount > ctx->mainwindow_candidate_InstCount &&
-			instCount < ctx->mainwindow_candidate_InstCount + 6 &&
-			pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[1].mem.base == ctx->mainwindow_candidate_reg)
-		{
-			pmainwindow = (decltype(pmainwindow))ConvertDllInfoSpace((PVOID)ctx->mainwindow_candidate, ctx->DllInfo, ctx->RealDllInfo);
-		}
-
-		if (!pmainwindow &&
-			instCount < 40 && ctx->mainwindow_candidate &&
-			instCount > ctx->mainwindow_candidate_InstCount &&
-			instCount < ctx->mainwindow_candidate_InstCount + 6 &&
-			pinst->id == X86_INS_PUSH &&
-			pinst->detail->x86.op_count == 1 &&
-			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[0].mem.base == ctx->mainwindow_candidate_reg)
-		{
-			pmainwindow = (decltype(pmainwindow))ConvertDllInfoSpace((PVOID)ctx->mainwindow_candidate, ctx->DllInfo, ctx->RealDllInfo);
-		}
-
-		if (!g_bScissor && pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-			pinst->detail->x86.operands[1].imm == 1 &&
-			pinst->detail->x86.operands[0].mem.base == 0 &&
-			pinst->detail->x86.operands[0].mem.index == 0 &&
-			(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-			(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-		{
-			g_bScissor = (decltype(g_bScissor))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-			ctx->g_bScissor_InstCount = instCount;
-		}
-
-		if (ctx->g_bScissor_InstCount > 0 && instCount > ctx->g_bScissor_InstCount && ctx->candidate_count < 4)
-		{
-			if (pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[1].type == X86_OP_REG &&
-				pinst->detail->x86.operands[0].mem.base == 0 &&
-				pinst->detail->x86.operands[0].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-			{
-				ctx->candidate[ctx->candidate_count] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
-				ctx->candidate_count++;
-			}
-		}
-
-		if (ctx->candidate_count >= 4 && g_bScissor)
-			return TRUE;
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-		}, 0, &ctx);
-
-	if (ctx.candidate_count >= 4)
-	{
-		std::qsort(ctx.candidate, ctx.candidate_count, sizeof(ctx.candidate[0]), [](const void* a, const void* b) {
-			return (int)(*(LONG_PTR*)a - *(LONG_PTR*)b);
-			});
-		g_ScissorRect = (decltype(g_ScissorRect))ConvertDllInfoSpace((PVOID)ctx.candidate[0], DllInfo, RealDllInfo);
-	}
-
-	Sig_VarNotFound(pmainwindow);
-	Sig_VarNotFound(g_bScissor);
-	Sig_VarNotFound(g_ScissorRect);
+	pmainwindow = (decltype(pmainwindow))GamedataResolvePtr(RealDllInfo.ImageBase, "pmainwindow", MH_GAMESYMBOL_KIND_GLOBAL);
+	g_bScissor = (decltype(g_bScissor))GamedataResolvePtr(RealDllInfo.ImageBase, "g_bScissor", MH_GAMESYMBOL_KIND_GLOBAL);
+	g_ScissorRect = (decltype(g_ScissorRect))GamedataResolvePtr(RealDllInfo.ImageBase, "g_ScissorRect", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 inline float InterpTCoord(float val, float mins, float maxs, float tMin, float tMax)
@@ -1420,7 +1305,6 @@ void EngineSurface_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t
 			gPrivateFuncs.index_enginesurface_drawUpdateRegionTextureBGRA = 26;
 
 
-			gPrivateFuncs.enginesurface_pushMakeCurrent = (decltype(gPrivateFuncs.enginesurface_pushMakeCurrent))GetVFunctionFromVFTable(engineSurface_vftable, gPrivateFuncs.index_enginesurface_pushMakeCurrent, DllInfo, RealDllInfo, RealDllInfo);
 			gPrivateFuncs.enginesurface_popMakeCurrent = (decltype(gPrivateFuncs.enginesurface_popMakeCurrent))GetVFunctionFromVFTable(engineSurface_vftable, gPrivateFuncs.index_enginesurface_popMakeCurrent, DllInfo, RealDllInfo, RealDllInfo);
 			gPrivateFuncs.enginesurface_drawFilledRect = (decltype(gPrivateFuncs.enginesurface_drawFilledRect))GetVFunctionFromVFTable(engineSurface_vftable, gPrivateFuncs.index_enginesurface_drawFilledRect, DllInfo, RealDllInfo, RealDllInfo);
 			gPrivateFuncs.enginesurface_drawOutlinedRect = (decltype(gPrivateFuncs.enginesurface_drawOutlinedRect))GetVFunctionFromVFTable(engineSurface_vftable, gPrivateFuncs.index_enginesurface_drawOutlinedRect, DllInfo, RealDllInfo, RealDllInfo);
@@ -1465,7 +1349,6 @@ void EngineSurface_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t
 			gPrivateFuncs.index_enginesurface_drawSetTextureBGRA = 24;
 			gPrivateFuncs.index_enginesurface_drawUpdateRegionTextureBGRA = 25;
 
-			gPrivateFuncs.enginesurface_pushMakeCurrent = (decltype(gPrivateFuncs.enginesurface_pushMakeCurrent))GetVFunctionFromVFTable(engineSurface_vftable, gPrivateFuncs.index_enginesurface_pushMakeCurrent, DllInfo, RealDllInfo, RealDllInfo);
 			gPrivateFuncs.enginesurface_popMakeCurrent = (decltype(gPrivateFuncs.enginesurface_popMakeCurrent))GetVFunctionFromVFTable(engineSurface_vftable, gPrivateFuncs.index_enginesurface_popMakeCurrent, DllInfo, RealDllInfo, RealDllInfo);
 			gPrivateFuncs.enginesurface_drawFilledRect = (decltype(gPrivateFuncs.enginesurface_drawFilledRect))GetVFunctionFromVFTable(engineSurface_vftable, gPrivateFuncs.index_enginesurface_drawFilledRect, DllInfo, RealDllInfo, RealDllInfo);
 			gPrivateFuncs.enginesurface_drawOutlinedRect = (decltype(gPrivateFuncs.enginesurface_drawOutlinedRect))GetVFunctionFromVFTable(engineSurface_vftable, gPrivateFuncs.index_enginesurface_drawOutlinedRect, DllInfo, RealDllInfo, RealDllInfo);
@@ -1486,7 +1369,7 @@ void EngineSurface_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t
 
 		}
 
-		Engine_FillAddress_EngineSurface_pushMakeCurrent(DllInfo, RealDllInfo);
+		Engine_FillAddress_EngineSurface_pushMakeCurrent(RealDllInfo);
 		Engine_FillAddress_EngineSurface_drawFlushText(RealDllInfo);
 
 		if (g_iEngineType == ENGINE_SVENGINE)
