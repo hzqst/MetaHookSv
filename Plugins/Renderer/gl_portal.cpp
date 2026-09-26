@@ -409,12 +409,6 @@ void ClientPortalManager_AngleVectors(const float* a1, float *a2, float* a3, flo
 	AngleVectors(a1, a2, a3, a4);
 }
 
-void __fastcall ClientPortalManager_RenderPortals(void* pthis, int dummy)
-{
-	g_pClientPortalManager = pthis;
-	gPrivateFuncs.ClientPortalManager_RenderPortals(pthis, 0);
-}
-
 void __fastcall ClientPortalManager_EnableClipPlane(void * pthis, int dummy, int index, vec3_t viewangles, vec3_t view, vec4_t plane)
 {
 	g_PortalClipPlane[index][0] = plane[0];

@@ -70,6 +70,8 @@ static struct
 	{ "glBegin", (void*)CoreProfile_glBegin },
 	{ "glEnd", (void*)CoreProfile_glEnd },
 	{ "glNormal3f", (void*)CoreProfile_glNormal3f },
+	{ "glClear", (void*)SCClient_glClear },
+	{ "glCopyTexSubImage2D", (void*)SCClient_glCopyTexSubImage2D },
 };
 
 void Engine_FillAddress_HasOfficialGLTexAllocSupport(const mh_dll_info_t& RealDllInfo)
@@ -1404,62 +1406,6 @@ void R_RedirectEngineLegacyOpenGLCall(const mh_dll_info_t& DllInfo, const mh_dll
 	R_RedirectEngineLegacyOpenGLCallAPI(DllInfo, RealDllInfo);
 }
 
-void R_SCClientRedirectLegacyOpenGLCall_glCopyTexSubImage2D_RenderPortals(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	int matches = 0;
-	const char pattern[] = "\x50\x6A\x00\x6A\x00\x6A\x00\x6A\x00\x68\xE1\x0D\x00\x00\xFF\x15";
-
-	PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
-	PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
-	while (SearchBegin < SearchLimit)
-	{
-		PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
-		if (pFound)
-		{
-			PVOID pRealCall = ConvertDllInfoSpace(pFound + Sig_Length(pattern) - 2, DllInfo, RealDllInfo);
-
-			g_pMetaHookAPI->InlinePatchRedirectBranch(pRealCall, CoreProfile_glCopyTexSubImage2D_RenderPortals, nullptr);
-			++matches;
-
-			SearchBegin = pFound + Sig_Length(pattern);
-		}
-		else
-		{
-			break;
-		}
-	}
-	if (matches != 1)
-		Sys_Error("Sven portal copy patch: expected 1 match, found %d", matches);
-}
-
-void R_SCClientRedirectLegacyOpenGLCall_glClear_ClipPlane(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	int matches = 0;
-	const char pattern[] = "\xC7\x44\x24\x0C\x00\x00\x00\x00\xC7\x44\x24\x08\x00\x00\x80\x3F\xC7\x44\x24\x04\x00\x00\x00\x00\xC7\x04\x24\x00\x00\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\x00\x40\x00\x00\xFF\x15";
-
-	PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
-	PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
-	while (SearchBegin < SearchLimit)
-	{
-		PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
-		if (pFound)
-		{
-			PVOID pRealCall = ConvertDllInfoSpace(pFound + Sig_Length(pattern) - 2, DllInfo, RealDllInfo);
-
-			g_pMetaHookAPI->InlinePatchRedirectBranch(pRealCall, CoreProfile_glClear_RenderPortals, nullptr);
-			++matches;
-
-			SearchBegin = pFound + Sig_Length(pattern);
-		}
-		else
-		{
-			break;
-		}
-	}
-	if (matches != 1)
-		Sys_Error("Sven portal clear patch: expected 1 match, found %d", matches);
-}
-
 void R_SCClientRedirectRenderPortalAngleVectors(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	int matches = 0;
@@ -1504,9 +1450,6 @@ void R_SCClientRedirectLegacyOpenGLCall()
 					Sys_Error("Could not hook Sven client import: %s", entry.name);
 			}
 		}
-		// These calls manage the portal FBO, not generic legacy GL state.
-		R_SCClientRedirectLegacyOpenGLCall_glCopyTexSubImage2D_RenderPortals(DllInfo, RealDllInfo);
-		R_SCClientRedirectLegacyOpenGLCall_glClear_ClipPlane(DllInfo, RealDllInfo);
 		R_SCClientRedirectRenderPortalAngleVectors(DllInfo, RealDllInfo);
 	}
 }
@@ -1682,6 +1625,7 @@ void Client_UninstallHooks()
 	Uninstall_Hook(CParticleSystem_ParticleDraw);
 	Uninstall_Hook(ClientPortalManager_InitShader);
 	g_bIsSCClientParticleDrawing = false;
+	g_bIsRenderingPortalViews = false;
 	Uninstall_Hook(ClientPortalManager_DrawPortalSurface);
 	Uninstall_Hook(ClientPortalManager_EnableClipPlane);
 	Uninstall_Hook(ClientPortalManager_RenderPortals);

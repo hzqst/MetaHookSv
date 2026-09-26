@@ -5631,30 +5631,6 @@ void __stdcall CoreProfile_glDisable(GLenum cap)
 	glDisable(cap);
 }
 
-void __stdcall CoreProfile_glCopyTexSubImage2D_RenderPortals(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height)
-{
-	GL_EndDebugGroup();
-
-	g_pCurrentClientPortal = nullptr;
-
-	GL_SetCurrentSceneFBO(nullptr);
-}
-
-void __stdcall CoreProfile_glClear_RenderPortals(GLbitfield mask)
-{
-	auto portalGLTextureId = ClientPortal_GetTextureId(g_pCurrentClientPortal);
-	auto width = ClientPortal_GetTextureWidth(g_pCurrentClientPortal);
-	auto height = ClientPortal_GetTextureHeight(g_pCurrentClientPortal);
-
-	auto pTextureCache = R_GetTextureCacheForPortalTexture(g_pCurrentClientPortal, width, height);
-
-	GL_BeginDebugGroup("P_RenderPortals");
-
-	GL_BindFrameBufferWithTextures(&s_PortalFBO, portalGLTextureId, 0, pTextureCache->depth_stencil, pTextureCache->width, pTextureCache->height);
-
-	glClear(mask);
-}
-
 void __stdcall CoreProfile_glShadeModel(GLenum mode)
 {
 

@@ -518,8 +518,8 @@ void __stdcall CoreProfile_glNormal3f(float x, float y, float z);
 void __fastcall CParticleSystem_ParticleDraw(void* pthis, int dummy, void* particle);
 extern bool g_bIsSCClientParticleDrawing;
 void __stdcall CoreProfile_glGenTextures(GLsizei n, GLuint* textures);
-void __stdcall CoreProfile_glCopyTexSubImage2D_RenderPortals(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height);
-void __stdcall CoreProfile_glClear_RenderPortals(GLbitfield mask);
+void __stdcall SCClient_glCopyTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height);
+void __stdcall SCClient_glClear(GLbitfield mask);
 
 void* __cdecl CoreProfile_SDL_GL_GetProcAddress(const char* proc);
 void* __stdcall CoreProfile_GetProcAddress(HMODULE hModule, const char* proc);

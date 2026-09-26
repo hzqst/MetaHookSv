@@ -85,6 +85,7 @@ struct SCClientPortalLayout
 	uint32_t textureId{}, textureWidth{}, textureHeight{};
 };
 extern SCClientPortalLayout g_SCClientPortalLayout;
+extern bool g_bIsRenderingPortalViews;
 
 void __fastcall ClientPortalManager_EnableClipPlane(void* pthis, int dummy, int index, vec3_t viewangles, vec3_t view, vec4_t plane);
 void ClientPortalManager_AngleVectors(const float* a1, float* a2, float* a3, float* a4);
