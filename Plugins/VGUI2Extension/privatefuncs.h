@@ -25,10 +25,6 @@ typedef struct walk_context_s
 
 typedef struct
 {
-	int index_enginesurface_pushMakeCurrent;
-
-	void(__fastcall* enginesurface_pushMakeCurrent)(void* pthis, int, int* insets, int* absExtents, int* clipRect, bool translateToScreenSpace);
-
 	//Engine Screen
 	void(*SCR_BeginLoadingPlaque)(qboolean reconnect);
 

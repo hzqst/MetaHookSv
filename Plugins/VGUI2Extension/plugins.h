@@ -1,5 +1,12 @@
 #pragma once
 
+#include <metahook.h>
+
+//VGUI2Extension resolves its gamedata-covered game-private symbols (FUNCTION/
+//GLOBAL) exclusively through the gamedata catalog, which requires the
+//ResolveGameSymbol API slot introduced by MetaHook API 109.
+static_assert(METAHOOK_API_VERSION >= 109, "VGUI2Extension resolves gamedata-covered game-private symbols from gamedata and requires MetaHook API 109");
+
 extern IFileSystem *g_pFileSystem;
 extern IFileSystem_HL25 *g_pFileSystem_HL25;
 extern mh_interface_t *g_pInterface;
@@ -26,6 +33,22 @@ extern bool g_bIsCZDS;
 #define Sig_VarNotFound(name) if(!name) Sig_NotFound(name)
 #define Sig_AddrNotFound(name) if(!addr) Sig_NotFound(name)
 #define Sig_FuncNotFound(name) if(!gPrivateFuncs.name) Sig_NotFound(name)
+
+//Resolve a required gamedata symbol; a missing symbol is fatal, mirroring the
+//Sig_FuncNotFound/Sig_VarNotFound policy of the signature-scan locators.
+inline PVOID GamedataResolvePtr(PVOID moduleBase, const char* symbolName, mh_gamesymbol_kind_t kind)
+{
+	PVOID address = nullptr;
+	mh_gamesymbol_status_t status = g_pMetaHookAPI->ResolveGameSymbol(moduleBase, symbolName, kind, &address);
+
+	if (status != MH_GAMESYMBOL_OK)
+	{
+		Sys_Error("Could not resolve gamedata symbol: %s (%s)\nEngine buildnum: %d",
+			symbolName, g_pMetaHookAPI->GetGameSymbolStatusString(status), g_dwEngineBuildnum);
+	}
+
+	return address;
+}
 
 #define Sig_Length(a) (sizeof(a)-1)
 #define Search_Pattern(sig, dllinfo) g_pMetaHookAPI->SearchPattern(dllinfo.TextBase, dllinfo.TextSize, sig, Sig_Length(sig))
