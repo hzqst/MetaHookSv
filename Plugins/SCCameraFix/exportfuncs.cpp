@@ -1036,3 +1036,10 @@ void HUD_Init(void)
 
 	(*g_pClientDLLEventAPI) = &s_ProxyEventAPI;
 }
+
+void HUD_Shutdown(void)
+{
+	Client_UninstallHooks();
+
+	gExportfuncs.HUD_Shutdown();
+}

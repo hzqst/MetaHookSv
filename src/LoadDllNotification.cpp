@@ -34,29 +34,6 @@ static thread_local unsigned int g_LdrCriticalRegionDepth = 0;
 
 NTSTATUS (NTAPI *g_pfnLdrLoadDll)(PWSTR a1, PULONG a2, PUNICODE_STRING a3, PVOID* a4) = NULL;
 
-#if 0
-HMODULE (WINAPI* g_pfnLoadLibraryA)(LPCSTR lpLibFileName) = NULL;
-
-extern "C"
-{
-	extern char* g_pszSysErrorMessage;
-
-	void MH_SysErrorInternal(const char* msg);
-};
-
-static HMODULE WINAPI NewLoadLibraryA(LPCSTR lpLibFileName)
-{
-	auto result = g_pfnLoadLibraryA(lpLibFileName);
-
-	if (g_pszSysErrorMessage)
-	{
-		MH_SysErrorInternal(g_pszSysErrorMessage);
-	}
-
-	return result;
-}
-#endif
-
 void UnicodeToWString(_In_ PCUNICODE_STRING ustr, _Out_ std::wstring& out)
 {
 	size_t totallen = ustr->Length / sizeof(WCHAR);
@@ -279,28 +256,13 @@ VOID CALLBACK LdrDllNotificationCallback(
 
 void InitLoadDllNotification(void)
 {
-#if 0
-	auto kernel32 = GetModuleHandle("kernel32.dll");
-
-	if (!kernel32)
-		return;
-
-	g_pfnLoadLibraryA = (decltype(g_pfnLoadLibraryA))GetProcAddress(kernel32, "LoadLibraryA");
-
-	if (g_pfnLoadLibraryA)
-	{
-		DetourTransactionBegin();
-		DetourAttach(&(void*&)g_pfnLoadLibraryA, NewLoadLibraryA);
-		DetourTransactionCommit();
-	}
-#endif
-
 	auto ntdll = GetModuleHandle("ntdll.dll");
 
 	if (!ntdll)
 		return;
 
-	auto pfnLdrRegisterDllNotification = (decltype(LdrRegisterDllNotification)*)GetProcAddress(ntdll, "LdrRegisterDllNotification");
+	char szLdrRegisterDllNotification[] = { 'L', 'd', 'r', 'R', 'e', 'g', 'i', 's', 't', 'e', 'r', 'D', 'l', 'l', 'N', 'o', 't', 'i', 'f', 'i', 'c', 'a', 't', 'i', 'o', 'n', 0 };
+	auto pfnLdrRegisterDllNotification = (decltype(LdrRegisterDllNotification)*)GetProcAddress(ntdll, szLdrRegisterDllNotification);
 
 	if (pfnLdrRegisterDllNotification)
 	{
@@ -311,7 +273,8 @@ void InitLoadDllNotification(void)
 	}
 
 	//Legacy support for system that don't have LdrRegisterDllNotification
-	g_pfnLdrLoadDll = (decltype(g_pfnLdrLoadDll))GetProcAddress(ntdll, "LdrLoadDll");
+	char szLdrLoadDll[] = { 'L', 'd', 'r', 'L', 'o', 'a', 'd', 'D', 'l', 'l', 0 };
+	g_pfnLdrLoadDll = (decltype(g_pfnLdrLoadDll))GetProcAddress(ntdll, szLdrLoadDll);
 
 	if (g_pfnLdrLoadDll)
 	{
@@ -323,23 +286,13 @@ void InitLoadDllNotification(void)
 
 void ShutdownLoadDllNotification(void)
 {
-#if 0
-	if (g_pfnLoadLibraryA)
-	{
-		DetourTransactionBegin();
-		DetourDetach(&(void*&)g_pfnLoadLibraryA, NewLoadLibraryA);
-		DetourTransactionCommit();
-
-		g_pfnLoadLibraryA = NULL;
-	}
-#endif
-
 	if (g_LdrNotificationCookie)
 	{
 		auto ntdll = GetModuleHandle("ntdll.dll");
 		if (ntdll)
 		{
-			auto pfnLdrUnregisterDllNotification = (decltype(LdrUnregisterDllNotification)*)GetProcAddress(ntdll, "LdrUnregisterDllNotification");
+			char szLdrUnregisterDllNotification[] = { 'L', 'd', 'r', 'U', 'n', 'r', 'e', 'g', 'i', 's', 't', 'e', 'r', 'D', 'l', 'l', 'N', 'o', 't', 'i', 'f', 'i', 'c', 'a', 't', 'i', 'o', 'n', 0 };
+			auto pfnLdrUnregisterDllNotification = (decltype(LdrUnregisterDllNotification)*)GetProcAddress(ntdll, szLdrUnregisterDllNotification);
 			if (pfnLdrUnregisterDllNotification)
 			{
 				pfnLdrUnregisterDllNotification(g_LdrNotificationCookie);

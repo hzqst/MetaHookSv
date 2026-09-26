@@ -121,87 +121,6 @@ void R_InitPortal(void)
 	
 }
 
-int ClientPortal_GetIndex(void* pClientPortal)
-{
-	auto vectorBase = *(void***)((ULONG_PTR)g_pClientPortalManager + 140);
-	auto vectorEnd = *(void***)((ULONG_PTR)g_pClientPortalManager + 140);
-	
-	int index = 0;
-
-	for (auto vectorItor = vectorBase; vectorItor < vectorEnd; ++vectorItor, index++)
-	{
-		auto clientPortal = (*vectorItor);
-
-		if (clientPortal == pClientPortal)
-			return index;
-	}
-
-	return -1;
-}
-
-bool ClientPortal_GetPortalTransform(void* pClientPortal, float *outOrigin, float *outAngles)
-{
-	if (g_dwEngineBuildnum >= 10000)//5.26
-	{
-		const auto origin = (const float*)((ULONG_PTR)pClientPortal + 0);
-		const auto angles = (const float*)((ULONG_PTR)pClientPortal + 12);
-
-		VectorCopy(origin, outOrigin);
-		VectorCopy(angles, outAngles);
-		return true;
-	}
-	if (g_dwEngineBuildnum >= 8948)//5.25
-	{
-		auto ent = *(cl_entity_t**)((ULONG_PTR)pClientPortal + 0x70);
-		VectorCopy(ent->origin, outOrigin);
-		VectorCopy(ent->angles, outAngles);
-		return true;
-	}
-
-	return false;
-}
-
-int ClientPortal_GetPortalMode(void * pClientPortal)
-{
-	if (g_dwEngineBuildnum >= 10000 )//5.26
-	{
-		return *(int*)((ULONG_PTR)pClientPortal + 0x40);
-	}
-	if (g_dwEngineBuildnum >= 8948)//5.25
-	{
-		return *(int*)((ULONG_PTR)pClientPortal + 0x28);
-	}
-
-	return -1;
-}
-
-int ClientPortal_GetTextureId(void* pClientPortal)
-{
-	if (g_dwEngineBuildnum >= 10000)//5.26
-	{
-		return *(int*)((ULONG_PTR)pClientPortal + 204);
-	}
-	return -1;
-}
-
-int ClientPortal_GetTextureWidth(void* pClientPortal)
-{
-	if (g_dwEngineBuildnum >= 10000)//5.26
-	{
-		return *(int*)((ULONG_PTR)pClientPortal + 208);
-	}
-	return -1;
-}
-
-int ClientPortal_GetTextureHeight(void* pClientPortal)
-{
-	if (g_dwEngineBuildnum >= 10000)//5.26
-	{
-		return *(int*)((ULONG_PTR)pClientPortal + 212);
-	}
-	return -1;
-}
-
 void __fastcall ClientPortalManager_ResetAll(void * pthis, int)
 {
 #if 0
@@ -449,15 +368,9 @@ void R_DrawMonitor(void *ClientPortalManager, void * ClientPortal, msurface_t *s
 
 void ClientPortalManager_AngleVectors(const float* a1, float *a2, float* a3, float* a4)
 {
-	g_pCurrentClientPortal = (void*)((ULONG_PTR)a1 - 12);
+	g_pCurrentClientPortal = (void*)((ULONG_PTR)a1 - sizeof(vec3_t));
 
 	AngleVectors(a1, a2, a3, a4);
-}
-
-void __fastcall ClientPortalManager_RenderPortals(void* pthis, int dummy)
-{
-	g_pClientPortalManager = pthis;
-	gPrivateFuncs.ClientPortalManager_RenderPortals(pthis, 0);
 }
 
 void __fastcall ClientPortalManager_EnableClipPlane(void * pthis, int dummy, int index, vec3_t viewangles, vec3_t view, vec4_t plane)

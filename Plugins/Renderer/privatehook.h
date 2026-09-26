@@ -27,11 +27,9 @@ typedef struct
 	void (*ClientDLL_DrawNormalTriangles)(void);
 	void (*R_NewMap)(void);
 	void (*GL_BuildLightmaps)(void);
-	void (*R_DrawParticles)(void);
 	void (*R_TracerDraw)(void);
 	void (*R_BeamDrawList)(void);
 	void (*R_FreeDeadParticles)(particle_t**);
-	void (*R_DrawTEntitiesOnList)(int onlyClientDraw);
 	void (*ClientDLL_DrawTransparentTriangles)(void);
 	qboolean(*R_CullBox)(vec3_t mins, vec3_t maxs);
 	void (*GL_Bind)(int texnum);
@@ -42,14 +40,10 @@ typedef struct
 	qboolean (*GL_SetModeLegacy)(void* window, HDC* pmaindc, HGLRC* pbaseRC, int fD3D, const char* pszDriver, const char* pszCmdLine);
 	qboolean (*GL_SelectPixelFormat)(HDC hDC);
 	void* Sys_ShutdownGame_call_GL_Shutdown;
-	void (*GL_Shutdown)(void* window, HDC pmaindc, HGLRC pbaseRC);
 	void (*GL_Set2D)(void);
 	void (*GL_Finish2D)(void);
 	void (*GL_BeginRendering)(int* x, int* y, int* width, int* height);
 	void (*GL_EndRendering)(void);
-	void (*R_DrawSequentialPoly)(msurface_t* s, int face);
-	void (*R_DrawSequentialPoly_HL25)(msurface_t* s, int face, qboolean cleanUpShaderState);//HL25 added the third stack arg, callee gates shader/program cleanup on it
-	texture_t* (*R_TextureAnimation)(msurface_t* fa);
 	void (*GL_UnloadTextures)(void);
 	void (*GL_LoadFilterTexture)(void);
 	texture_t* (*Draw_DecalTexture)(int index);
@@ -76,18 +70,6 @@ typedef struct
 	void(*Mod_LoadStudioModel)(model_t* mod, void* buffer);
 	void(*Mod_LoadBrushModel)(model_t* mod, void* buffer);
 	model_t* (*Mod_LoadModel)(model_t* mod, qboolean crash, qboolean trackCRC);
-	void(*triapi_RenderMode)(int mode);
-	void(*triapi_Begin)(int primitiveCode);
-	void(*triapi_End)();
-	void(*triapi_Color4f)(float r, float g, float b, float a);
-	void(*triapi_Color4ub)(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
-	void(*triapi_TexCoord2f)(float s, float t);
-	void(*triapi_Vertex3fv)(float* v);
-	void(*triapi_Vertex3f)(float x, float y, float z);
-	void(*triapi_Brightness)(float brightness);
-	void(*triapi_Color4fRendermode)(float r, float g, float b, float a, int rendermode);
-	void(*triapi_GetMatrix) (const int pname, float* matrix);
-	int (*triapi_BoxInPVS)(float* mins, float* maxs);
 	void (*triapi_Fog)(float* flFogColor, float flStart, float flEnd, qboolean bOn);
 	void (*triapi_FogParams)(float flDensity, qboolean bFogAffectsSkybox);
 	qboolean(*triapi_SpriteTexture)(model_t* pSpriteModel, int frame);
@@ -105,7 +87,6 @@ typedef struct
 	void (*D_FillRect)(vrect_t* r, unsigned char* color);
 	bool(__fastcall* BaseUISurface_DeleteTextureByID)(void* pthis, int, int textureId);
 
-	void(__fastcall* enginesurface_pushMakeCurrent)(void* pthis, int, int* insets, int* absExtents, int* clipRect, bool translateToScreenSpace);
 	void(__fastcall* enginesurface_popMakeCurrent)(void* pthis, int);
 	void(__fastcall* enginesurface_drawFilledRect)(void* pthis, int, int x0, int y0, int x1, int y1);
 	void(__fastcall* enginesurface_drawOutlinedRect)(void* pthis, int, int x0, int y0, int x1, int y1);
@@ -122,7 +103,6 @@ typedef struct
 	void(__fastcall* enginesurface_drawGetTextureSize)(void* pthis, int, int textureId, int& wide, int& tall);
 	bool(__fastcall* enginesurface_isTextureIDValid)(void* pthis, int, int textureID);
 	void(__fastcall* enginesurface_drawSetSubTextureRGBA)(void* pthis, int, int textureID, int drawX, int drawY, const unsigned char* rgba, int subTextureWide, int subTextureTall);
-	void(__fastcall* enginesurface_drawFlushText)(void* pthis, int);
 	void(__fastcall* enginesurface_drawSetTextureBGRA)(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, bool forceUpload);
 	void(__fastcall* enginesurface_drawUpdateRegionTextureBGRA)(void* pthis, int, int textureID, int x, int y, const unsigned char* pchData, int wide, int tall);
 
@@ -171,7 +151,10 @@ typedef struct
 	mtexinfo_t* (__fastcall* ClientPortalManager_GetOriginalSurfaceTexture)(void* pthis, int dummy, msurface_t* surf);
 	void(__fastcall* ClientPortalManager_DrawPortalSurface)(void* pthis, int dummy, void* ClientPortal, msurface_t* surf, GLuint texture);
 	void(__fastcall* ClientPortalManager_EnableClipPlane)(void* pthis, int dummy, int index, vec3_t a1, vec3_t a2, vec3_t a3);
-	void(__fastcall* ClientPortalManager_RenderPortals)(void* pthis, int dummy);
+	void(__fastcall* ClientPortalManager_RenderPortals)(void* pthis, int dummy, ref_params_t* params);
+	void(__fastcall* ClientPortalManager_InitShader)(void* pthis, int dummy);
+	uint32_t offset_ClientPortalManager_m_bShadersAvailable;
+	void(__fastcall* CParticleSystem_ParticleDraw)(void* pthis, int dummy, void* particle);
 	void(__cdecl* UpdatePlayerPitch)(cl_entity_t* a1, float a2);
 
 	decltype(glewInit)* SCClientDLL_glewInit;
@@ -239,9 +222,9 @@ void EngineStudio_UninstallHooks();
 void EngineSurface_UninstallHooks();
 void VideoMode_UninstallHooks();
 
-void R_RedirectEngineLegacyOpenGLTextureAllocation(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void R_RedirectEngineLegacyOpenGLTextureAllocation(const mh_dll_info_t& RealDllInfo);
 void R_RedirectEngineLegacyOpenGLCall(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
-void R_RedirectClientLegacyOpenGLCall(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void R_RedirectSCClientLegacyOpenGLCall();
 void R_PatchResetLatched(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 
 void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);

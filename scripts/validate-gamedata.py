@@ -50,6 +50,8 @@ COMMON_REQUIRED = {
     "cl_players_model": "global",
     # ThreadGuard (plugin resolves the engine IEngine* slot via ResolveGameSymbol)
     "engine": "global",
+    # StudioEvents (plugin resolves the engine current-render-model slot via ResolveGameSymbol)
+    "r_model": "global",
 }
 
 # Numbered patch sets required for every declared engine family. Each set is
@@ -166,6 +168,9 @@ RENDERER_SDL_GAMES = ("hl-10210", "hl-6153", "hl-8684")
 RENDERER_SETMODE_GAMES = ("hl-10210", "hl-6153", "hl-8684", "svencoop-10257", "svencoop-8948")
 RENDERER_SETMODE_LEGACY_GAMES = ("cof-5936", "hl-3248", "hl-3266", "hl-3329",
                                  "hl-3647", "hl-4554")
+RENDERER_LEGACY_TEXALLOC_HL_GAMES = tuple(
+    game for game in RENDERER_SETMODE_LEGACY_GAMES if game != "cof-5936"
+)
 RENDERER_SVEN_10257_GAMES = ("svencoop-10257",)
 # Renderer neuters exactly one legacy multitexture / detail-texture init per engine.
 # HL/CoF/blob publish the probe as CheckMultiTextureExtensions; HL25 and SvEngine
@@ -188,18 +193,17 @@ RENDERER_ENGINE_ALL_FUNCTIONS = (
     "Draw_FillRGBA", "Draw_FillRGBABlend",
     "Draw_Frame", "Draw_Pic", "GL_BeginRendering",
     "GL_Bind", "GL_BuildLightmaps", "GL_EndRendering", "GL_Finish2D", "GL_Init",
-    "GL_LoadFilterTexture", "GL_LoadTexture2", "GL_SelectTexture", "GL_Set2D", "GL_Shutdown",
+    "GL_LoadFilterTexture", "GL_LoadTexture2", "GL_SelectTexture", "GL_Set2D",
     "GL_UnloadTextures",
     "Host_ClearMemory", "Host_IsSinglePlayerGame", "Hunk_AllocName", "Mod_LoadBrushModel",
     "Mod_LoadModel", "Mod_LoadSpriteModel", "Mod_LoadStudioModel",
     "Mod_PointInLeaf", "Mod_UnloadSpriteTextures",
     "PVSNode", "R_AnimateLight", "R_BeamDrawList", "R_CheckVariables",
-    "R_CullBox", "R_DrawParticles", "R_DrawSequentialPoly",
-    "R_DrawTEntitiesOnList", "R_ForceCVars", "R_FreeDeadParticles",
+    "R_CullBox", "R_ForceCVars", "R_FreeDeadParticles",
     "R_GLStudioDrawPoints", "R_GetSpriteFrame", "R_NewMap",
     "R_RenderView", "R_ResetLatched",
     "R_StudioDrawModel", "R_StudioDrawPlayer", "R_StudioMergeBones", "R_StudioRenderFinal",
-    "R_StudioRenderModel", "R_StudioSaveBones", "R_StudioSetupBones", "R_TextureAnimation",
+    "R_StudioRenderModel", "R_StudioSaveBones", "R_StudioSetupBones",
     "R_TracerDraw",
     "S_ExtraUpdate", "V_FadeAlpha", "V_RenderView",
 )
@@ -210,11 +214,11 @@ RENDERER_ENGINE_ALL_GLOBALS = (
     "cl_waterlevel", "cl_weaponsequence", "cl_weaponstarttime", "cl_worldmodel",
     "cshift_water", "currententity", "currenttexture", "d_lightstylevalue", "detTexSupported",
     "envmap", "filterBrightness", "filterColorBlue", "filterColorGreen", "filterColorRed",
-    "filterMode", "flFinalFogColor", "flFogDensity", "flFogEnd", "flFogStart", "frustum", "gDecalCache", "gDecalPool", "gDecalSurfCount", "gDevOverview", "gHostSpawnCount", "gProjectionMatrix", "gScreenToWorld", "gSpriteMipMap", "gTempEnts", "gWaterColor", "gWorldToScreen", "g_bUserFogOn", "giScissorTest",
+    "filterMode", "flFinalFogColor", "flFogDensity", "flFogEnd", "flFogStart", "frustum", "gDecalCache", "gDecalPool", "gDecalSurfCount", "gDevOverview", "gHostSpawnCount", "gProjectionMatrix", "gScreenToWorld", "gSpriteMipMap", "gTempEnts", "gWaterColor", "gWorldToScreen", "g_ForcedFaceFlags", "g_ScissorRect", "g_VertexBuffer", "g_bScissor", "g_bUserFogOn", "g_iVertexBufferEntriesUsed", "giScissorTest",
     "gl_extensions", "gl_filter_max", "gl_filter_min", "gltextures", "host_basepal",
     "lightgammatable", "lightmaps", "mod_known",
-    "maxTransObjs", "mod_numknown", "modelorg", "movevars", "numTransObjs", "particletexture", "pstudiohdr",
-    "r_ambientlight", "r_blend", "r_entorigin", "r_framecount", "r_oldviewleaf", "r_origin", "r_playerViewportAngles", "r_plightvec", "r_refdef", "r_shadelight", "r_viewleaf", "r_visframecount", "r_world_matrix",
+    "maxTransObjs", "mod_numknown", "modelorg", "movevars", "numTransObjs", "particletexture", "pmainwindow", "pstudiohdr", "psubmodel",
+    "r_ambientlight", "r_blend", "r_bottomcolor", "r_colormix", "r_entorigin", "r_framecount", "r_oldviewleaf", "r_origin", "r_playerViewportAngles", "r_plightvec", "r_refdef", "r_shadelight", "r_topcolor", "r_viewleaf", "r_visframecount", "r_world_matrix",
     "r_worldentity", "rtable", "transObjects", "vpn", "vright", "vup",
     "scr_drawloading", "scr_fov_value", "texgammatable", "window_rect",
 )
@@ -246,6 +250,17 @@ RENDERER_ENGINE_STRUCT_MEMBERS = (
     "CVideoMode_Common.m_iBaseResY",
 )
 RENDERER_LEGACY_TEXALLOC_GLOBALS = ("texture_extension_number",)
+RENDERER_LEGACY_TEXALLOC_COMMON_PATCHES = (
+    "texture_extension_number_mov_site_GL_LoadFilterTexture",
+    "texture_extension_number_mov_site_R_InitParticleTexture",
+)
+RENDERER_LEGACY_TEXALLOC_HL_PATCHES = (
+    "texture_extension_number_mov_site_GL_BuildLightmaps",
+    "texture_extension_number_mov_site_GL_LoadTexture2",
+    "texture_extension_number_mov_site_LoadTransPic_bind",
+    "texture_extension_number_mov_site_LoadTransPic_increment",
+    "texture_extension_number_mov_site_R_Init_playertextures",
+)
 RENDERER_MTEX_PROBE_FUNCTIONS = ("CheckMultiTextureExtensions",)
 RENDERER_INLINED_MTEX_PROBE_FUNCTIONS = ("DT_Initialize",)
 RENDERER_ENGINE_HL25_FUNCTIONS = ("CGame_DrawStartupVideo",)
@@ -255,9 +270,21 @@ RENDERER_SDL_FUNCTIONS = ("SDL_InitGL",)
 RENDERER_CLIENT_SVEN_FUNCTIONS = (
     "ClientPortalManager_RenderPortals", "ClientPortalManager_ResetAll", "UpdatePlayerPitch",
     "ClientPortalManager_GetOriginalSurfaceTexture", "ClientPortalManager_DrawPortalSurface",
+    "ClientPortalManager_EnableClipPlane", "ClientPortalManager_InitShader", "CParticleSystem_ParticleDraw",
 )
-RENDERER_CLIENT_SVEN_GLOBALS = ("g_bRenderingPortals_SCClient",)
-RENDERER_CLIENT_10257_FUNCTIONS = ("ClientPortalManager_EnableClipPlane",)
+RENDERER_CLIENT_SVEN_STRUCT_MEMBERS = ("ClientPortalManager.m_bShadersAvailable",)
+RENDERER_CLIENT_SVEN_SCALARS = (
+    "ClientPortalManager_vector_begin_offset", "ClientPortalManager_vector_end_offset",
+)
+RENDERER_CLIENT_10257_SCALARS = (
+    "ClientPortal_texture_id_offset", "ClientPortal_texture_width_offset", "ClientPortal_texture_height_offset",
+)
+RENDERER_CLIENT_8948_SCALARS = (
+    "PortalSource_texture_id_offset", "PortalSource_texture_width_offset", "PortalSource_texture_height_offset",
+)
+RENDERER_CLIENT_SVEN_GLOBALS = (
+    "g_bRenderingPortals_SCClient", "g_iFogColor", "g_iStartDist", "g_iEndDist",
+)
 RENDERER_CLIENT_10257_GLOBALS = ("g_ViewEntityIndex_SCClient",)
 RENDERER_CLIENT_STUDIO_VFUNCS = (
     "GameStudioRenderer_StudioDrawModel", "GameStudioRenderer_StudioDrawPlayer",
@@ -777,6 +804,9 @@ def validate_renderer(symbols, game_version, include_engine=True, include_client
         if game_version in RENDERER_SETMODE_LEGACY_GAMES:
             errors += _renderer_check(symbols, game_version, RENDERER_SETMODE_LEGACY_FUNCTIONS, "function", "engine")
             errors += _renderer_check(symbols, game_version, RENDERER_LEGACY_TEXALLOC_GLOBALS, "global", "engine")
+            errors += _renderer_check(symbols, game_version, RENDERER_LEGACY_TEXALLOC_COMMON_PATCHES, "patch", "engine")
+        if game_version in RENDERER_LEGACY_TEXALLOC_HL_GAMES:
+            errors += _renderer_check(symbols, game_version, RENDERER_LEGACY_TEXALLOC_HL_PATCHES, "patch", "engine")
         if game_version in RENDERER_SDL_GAMES:
             errors += _renderer_check(symbols, game_version, RENDERER_SDL_FUNCTIONS, "function", "engine")
 
@@ -786,8 +816,11 @@ def validate_renderer(symbols, game_version, include_engine=True, include_client
     if game_version in RENDERER_SVENGINE_GAMES:
         errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_SVEN_FUNCTIONS, "function", "client")
         errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_SVEN_GLOBALS, "global", "client")
+        errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_SVEN_STRUCT_MEMBERS, "structMember", "client")
+        errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_SVEN_SCALARS, "scalar", "client")
+        texture_scalars = RENDERER_CLIENT_10257_SCALARS if game_version in RENDERER_SVEN_10257_GAMES else RENDERER_CLIENT_8948_SCALARS
+        errors += _renderer_check(symbols, game_version, texture_scalars, "scalar", "client")
     if game_version in RENDERER_SVEN_10257_GAMES:
-        errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_10257_FUNCTIONS, "function", "client")
         errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_10257_GLOBALS, "global", "client")
     if game_version in RENDERER_CLIENT_GAMES:
         errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_STUDIO_GLOBALS, "global", "client")

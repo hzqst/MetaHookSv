@@ -101,6 +101,9 @@
     <ClCompile Include="gl_portal.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="gl_scclient.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
     <ClCompile Include="gl_model.cpp">
       <Filter>Source</Filter>
     </ClCompile>

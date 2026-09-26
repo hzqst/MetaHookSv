@@ -46,3 +46,8 @@ public:
 };
 
 IPMBRingBuffer* GL_CreatePMBRingBuffer(const char* name, size_t bufferSize, GLenum bufferTarget);
+
+// Renderer-owned buffers follow the Renderer frame, including lazy creation.
+IPMBRingBuffer* R_CreatePMBRingBuffer(const char* name, size_t bufferSize, GLenum bufferTarget);
+void R_BeginRingBufferFrame();
+void R_EndRingBufferFrame();

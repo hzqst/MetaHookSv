@@ -76,7 +76,18 @@ typedef struct portal_texture_s
 void __fastcall ClientPortalManager_ResetAll(void * pthis, int);
 mtexinfo_t * __fastcall ClientPortalManager_GetOriginalSurfaceTexture(void * pthis, int dummy, msurface_t *surf);
 void __fastcall ClientPortalManager_DrawPortalSurface(void * pthis, int dummy, void * ClientPortal, msurface_t *surf, GLuint texture);
-void __fastcall ClientPortalManager_RenderPortals(void* pthis, int dummy);
+void __fastcall ClientPortalManager_RenderPortals(void* pthis, int dummy, ref_params_t* params);
+void __fastcall ClientPortalManager_InitShader(void* pthis, int dummy);
+
+struct SCClientPortalLayout
+{
+	uint32_t vectorBegin{}, vectorEnd{};
+	uint32_t textureId{}, textureWidth{}, textureHeight{};
+	bool transformFromEntity{};
+	uint32_t origin{}, angles{}, entity{}, mode{};
+};
+extern SCClientPortalLayout g_SCClientPortalLayout;
+extern bool g_bIsRenderingPortalViews;
 
 void __fastcall ClientPortalManager_EnableClipPlane(void* pthis, int dummy, int index, vec3_t viewangles, vec3_t view, vec4_t plane);
 void ClientPortalManager_AngleVectors(const float* a1, float* a2, float* a3, float* a4);

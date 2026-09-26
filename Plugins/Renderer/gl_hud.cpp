@@ -409,17 +409,17 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 
 		if (!g_TexturedRectVertexBuffer)
 		{
-			g_TexturedRectVertexBuffer = GL_CreatePMBRingBuffer("TexturedRectVertexBuffer", 16 * 1024 * 1024, GL_ARRAY_BUFFER);
+			g_TexturedRectVertexBuffer = R_CreatePMBRingBuffer("TexturedRectVertexBuffer", 16 * 1024 * 1024, GL_ARRAY_BUFFER);
 		}
 
 		if (!g_RectInstanceBuffer)
 		{
-			g_RectInstanceBuffer = GL_CreatePMBRingBuffer("RectInstanceBuffer", 8 * 1024 * 1024, GL_ARRAY_BUFFER);
+			g_RectInstanceBuffer = R_CreatePMBRingBuffer("RectInstanceBuffer", 8 * 1024 * 1024, GL_ARRAY_BUFFER);
 		}
 
 		if (!g_RectIndexBuffer)
 		{
-			g_RectIndexBuffer = GL_CreatePMBRingBuffer("RectIndexBuffer", 1 * 1024 * 1024, GL_ELEMENT_ARRAY_BUFFER);
+			g_RectIndexBuffer = R_CreatePMBRingBuffer("RectIndexBuffer", 1 * 1024 * 1024, GL_ELEMENT_ARRAY_BUFFER);
 		}
 
 		GL_BindStatesForVAO(
@@ -563,17 +563,17 @@ void R_DrawTexturedRectMask(int gltexturenum, int maskTextureId, const texturedr
 
 		if (!g_TexturedRectVertexBuffer)
 		{
-			g_TexturedRectVertexBuffer = GL_CreatePMBRingBuffer("TexturedRectVertexBuffer", 16 * 1024 * 1024, GL_ARRAY_BUFFER);
+			g_TexturedRectVertexBuffer = R_CreatePMBRingBuffer("TexturedRectVertexBuffer", 16 * 1024 * 1024, GL_ARRAY_BUFFER);
 		}
 
 		if (!g_RectInstanceBuffer)
 		{
-			g_RectInstanceBuffer = GL_CreatePMBRingBuffer("RectInstanceBuffer", 8 * 1024 * 1024, GL_ARRAY_BUFFER);
+			g_RectInstanceBuffer = R_CreatePMBRingBuffer("RectInstanceBuffer", 8 * 1024 * 1024, GL_ARRAY_BUFFER);
 		}
 
 		if (!g_RectIndexBuffer)
 		{
-			g_RectIndexBuffer = GL_CreatePMBRingBuffer("RectIndexBuffer", 1 * 1024 * 1024, GL_ELEMENT_ARRAY_BUFFER);
+			g_RectIndexBuffer = R_CreatePMBRingBuffer("RectIndexBuffer", 1 * 1024 * 1024, GL_ELEMENT_ARRAY_BUFFER);
 		}
 
 		GL_BindStatesForVAO(
@@ -719,17 +719,17 @@ void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCou
 
 		if (!g_FilledRectVertexBuffer)
 		{
-			g_FilledRectVertexBuffer = GL_CreatePMBRingBuffer("FilledRectVertexBuffer", 16 * 1024 * 1024, GL_ARRAY_BUFFER);
+			g_FilledRectVertexBuffer = R_CreatePMBRingBuffer("FilledRectVertexBuffer", 16 * 1024 * 1024, GL_ARRAY_BUFFER);
 		}
 
 		if (!g_RectInstanceBuffer)
 		{
-			g_RectInstanceBuffer = GL_CreatePMBRingBuffer("RectInstanceBuffer", 8 * 1024 * 1024, GL_ARRAY_BUFFER);
+			g_RectInstanceBuffer = R_CreatePMBRingBuffer("RectInstanceBuffer", 8 * 1024 * 1024, GL_ARRAY_BUFFER);
 		}
 
 		if (!g_RectIndexBuffer)
 		{
-			g_RectIndexBuffer = GL_CreatePMBRingBuffer("RectIndexBuffer", 256 * 1024, GL_ELEMENT_ARRAY_BUFFER);
+			g_RectIndexBuffer = R_CreatePMBRingBuffer("RectIndexBuffer", 256 * 1024, GL_ELEMENT_ARRAY_BUFFER);
 		}
 
 		GL_BindStatesForVAO(

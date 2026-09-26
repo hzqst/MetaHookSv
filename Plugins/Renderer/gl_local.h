@@ -114,6 +114,8 @@ extern EngineSurfaceVertexBuffer_t(*g_VertexBuffer)[MAXVERTEXBUFFERS];;
 extern int(*g_iVertexBufferEntriesUsed);
 
 extern IPMBRingBuffer* g_TexturedRectVertexBuffer;
+extern IPMBRingBuffer* g_TriAPIVertexBuffer;
+extern IPMBRingBuffer* g_TriAPIIndexBuffer;
 extern IPMBRingBuffer* g_FilledRectVertexBuffer;
 extern IPMBRingBuffer* g_RectInstanceBuffer;
 extern IPMBRingBuffer* g_RectIndexBuffer;
@@ -238,8 +240,6 @@ extern texture_t** r_notexture_mip;
 extern texture_t** r_missingtexture;
 
 extern int* allow_cheats;
-
-extern int* allocated_textures;
 
 
 extern int glx;
@@ -513,9 +513,13 @@ void __stdcall CoreProfile_glTexEnvf(GLenum target, GLenum pname, GLfloat param)
 void __stdcall CoreProfile_glTexParameterf(GLenum target, GLenum pname, GLfloat param);
 GLboolean __stdcall CoreProfile_glIsEnabled(GLenum cap);
 void __stdcall CoreProfile_glBegin(int GLPrimitiveCode);
+void __stdcall CoreProfile_glEnd();
+void __stdcall CoreProfile_glNormal3f(float x, float y, float z);
+void __fastcall CParticleSystem_ParticleDraw(void* pthis, int dummy, void* particle);
+extern bool g_bIsSCClientParticleDrawing;
 void __stdcall CoreProfile_glGenTextures(GLsizei n, GLuint* textures);
-void __stdcall CoreProfile_glCopyTexSubImage2D_RenderPortals(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height);
-void __stdcall CoreProfile_glClear_RenderPortals(GLbitfield mask);
+void __stdcall SCClient_glCopyTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height);
+void __stdcall SCClient_glClear(GLbitfield mask);
 
 void* __cdecl CoreProfile_SDL_GL_GetProcAddress(const char* proc);
 void* __stdcall CoreProfile_GetProcAddress(HMODULE hModule, const char* proc);

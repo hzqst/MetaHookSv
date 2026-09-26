@@ -511,6 +511,9 @@ class RendererGateTests(unittest.TestCase):
         if game_version in validate.RENDERER_SETMODE_LEGACY_GAMES:
             add(validate.RENDERER_SETMODE_LEGACY_FUNCTIONS, "function")
             add(validate.RENDERER_LEGACY_TEXALLOC_GLOBALS, "global")
+            add(validate.RENDERER_LEGACY_TEXALLOC_COMMON_PATCHES, "patch")
+        if game_version in validate.RENDERER_LEGACY_TEXALLOC_HL_GAMES:
+            add(validate.RENDERER_LEGACY_TEXALLOC_HL_PATCHES, "patch")
         if game_version in validate.RENDERER_SDL_GAMES:
             add(validate.RENDERER_SDL_FUNCTIONS, "function")
         symbols.update(self.complete_client_symbols(game_version))
@@ -526,8 +529,11 @@ class RendererGateTests(unittest.TestCase):
         if game_version in validate.RENDERER_SVENGINE_GAMES:
             add(validate.RENDERER_CLIENT_SVEN_FUNCTIONS, "function")
             add(validate.RENDERER_CLIENT_SVEN_GLOBALS, "global")
+            add(validate.RENDERER_CLIENT_SVEN_STRUCT_MEMBERS, "structMember")
+            add(validate.RENDERER_CLIENT_SVEN_SCALARS, "scalar")
+            add(validate.RENDERER_CLIENT_10257_SCALARS if game_version in validate.RENDERER_SVEN_10257_GAMES
+                else validate.RENDERER_CLIENT_8948_SCALARS, "scalar")
         if game_version in validate.RENDERER_SVEN_10257_GAMES:
-            add(validate.RENDERER_CLIENT_10257_FUNCTIONS, "function")
             add(validate.RENDERER_CLIENT_10257_GLOBALS, "global")
         if game_version in validate.RENDERER_CLIENT_GAMES:
             add(validate.RENDERER_CLIENT_STUDIO_GLOBALS, "global")
@@ -548,6 +554,22 @@ class RendererGateTests(unittest.TestCase):
                 continue
             symbols = self.complete_client_symbols(gv)
             self.assertEqual([], validate.validate_renderer(symbols, gv, include_engine=False), gv)
+
+    def test_sven_core_hooks_are_required_on_both_clients(self):
+        for gv in validate.RENDERER_SVENGINE_GAMES:
+            for name in ("ClientPortalManager_EnableClipPlane", "ClientPortalManager_InitShader",
+                         "CParticleSystem_ParticleDraw", "ClientPortalManager.m_bShadersAvailable"):
+                symbols = self.complete_client_symbols(gv)
+                del symbols[name]
+                errors = validate.validate_renderer(symbols, gv, include_engine=False)
+                self.assertTrue(any(name in e for e in errors), (gv, name, errors))
+
+    def test_sven_shader_flag_requires_struct_member_kind(self):
+        for gv in validate.RENDERER_SVENGINE_GAMES:
+            symbols = self.complete_client_symbols(gv)
+            symbols["ClientPortalManager.m_bShadersAvailable"]["kind"] = "global"
+            errors = validate.validate_renderer(symbols, gv, include_engine=False)
+            self.assertTrue(any("must be a structMember record" in e for e in errors), errors)
 
     def test_gate_flags_missing_engine_function(self):
         symbols = self.complete_engine_symbols("hl-8684")
@@ -600,6 +622,14 @@ class RendererGateTests(unittest.TestCase):
         errors = validate.validate_renderer(symbols, "svencoop-10257")
         self.assertTrue(any("Draw_SpriteFrameHoles_SvEngine" in e for e in errors), errors)
 
+    def test_gate_requires_sven_client_fog_globals(self):
+        for gv in validate.RENDERER_SVENGINE_GAMES:
+            for name in ("g_iFogColor", "g_iStartDist", "g_iEndDist"):
+                symbols = self.complete_engine_symbols(gv)
+                del symbols[name]
+                errors = validate.validate_renderer(symbols, gv)
+                self.assertTrue(any(name in e for e in errors), (gv, name, errors))
+
     def test_gate_does_not_require_base_symbol_for_svengine(self):
         symbols = self.complete_engine_symbols("svencoop-10257")
         self.assertNotIn("Draw_SpriteFrameHoles", symbols)
@@ -619,6 +649,22 @@ class RendererGateTests(unittest.TestCase):
         del symbols["GL_SetModeLegacy"]
         errors = validate.validate_renderer(symbols, "cof-5936")
         self.assertTrue(any("GL_SetModeLegacy" in e for e in errors), errors)
+
+    def test_gate_requires_legacy_texture_allocation_patch_sites(self):
+        for gv in validate.RENDERER_SETMODE_LEGACY_GAMES:
+            names = validate.RENDERER_LEGACY_TEXALLOC_COMMON_PATCHES
+            if gv in validate.RENDERER_LEGACY_TEXALLOC_HL_GAMES:
+                names += validate.RENDERER_LEGACY_TEXALLOC_HL_PATCHES
+            for name in names:
+                symbols = self.complete_engine_symbols(gv)
+                del symbols[name]
+                errors = validate.validate_renderer(symbols, gv)
+                self.assertTrue(any(name in e for e in errors), (gv, name, errors))
+
+        symbols = self.complete_engine_symbols("cof-5936")
+        for name in validate.RENDERER_LEGACY_TEXALLOC_HL_PATCHES:
+            self.assertNotIn(name, symbols)
+        self.assertEqual([], validate.validate_renderer(symbols, "cof-5936"))
 
     def test_gate_does_not_require_sdl_initgl_without_sdl(self):
         symbols = self.complete_engine_symbols("hl-4554")
@@ -754,6 +800,28 @@ class RendererGateTests(unittest.TestCase):
             errors = validate.validate_renderer(symbols, gv)
             self.assertTrue(any("particletexture" in e for e in errors), (gv, errors))
 
+    def test_gate_requires_enginesurface_vertexbuffer_globals_on_every_identity(self):
+        for name in ("g_VertexBuffer", "g_iVertexBufferEntriesUsed"):
+            self.assertIn(name, validate.RENDERER_ENGINE_ALL_GLOBALS)
+            for gv in validate.RENDERER_ALL_GAMES:
+                symbols = self.complete_engine_symbols(gv)
+                del symbols[name]
+                errors = validate.validate_renderer(symbols, gv)
+                self.assertTrue(any(name in e for e in errors), (gv, errors))
+
+    def test_gate_requires_the_engine_surface_scissor_and_window_globals(self):
+        #Renderer and VGUI2Extension each located these three by disassembling the
+        #mirror engine's EngineSurface::pushMakeCurrent body. Both now resolve them
+        #from gamedata and both key the lookup on the loaded engine module's CRC64,
+        #so pinning them on the Renderer identities pins their shared dependency.
+        for name in ("pmainwindow", "g_bScissor", "g_ScissorRect"):
+            self.assertIn(name, validate.RENDERER_ENGINE_ALL_GLOBALS)
+            for gv in validate.RENDERER_ALL_GAMES:
+                symbols = self.complete_engine_symbols(gv)
+                del symbols[name]
+                errors = validate.validate_renderer(symbols, gv)
+                self.assertTrue(any(name in e for e in errors), (gv, errors))
+
     def test_gate_requires_direct_resolved_palette_scissor_and_studio_globals(self):
         names = (
             "giScissorTest", "host_basepal", "lightgammatable",
@@ -768,6 +836,22 @@ class RendererGateTests(unittest.TestCase):
                 self.assertTrue(any(name in e for e in errors), (name, gv, errors))
         self.assertIn("Draw_Frame", validate.RENDERER_ENGINE_ALL_FUNCTIONS)
         self.assertNotIn("R_StudioLighting", validate.RENDERER_ENGINE_ALL_FUNCTIONS)
+
+    def test_gate_requires_direct_resolved_studio_globals_on_every_identity(self):
+        names = (
+            "g_ForcedFaceFlags", "psubmodel", "r_bottomcolor",
+            "r_colormix", "r_topcolor",
+        )
+        for name in names:
+            self.assertIn(name, validate.RENDERER_ENGINE_ALL_GLOBALS)
+            for gv in validate.RENDERER_ALL_GAMES:
+                symbols = self.complete_engine_symbols(gv)
+                del symbols[name]
+                errors = validate.validate_renderer(symbols, gv)
+                self.assertTrue(any(name in e for e in errors), (name, gv, errors))
+        #pbodypart was written by the studio setup locator but never read; it must
+        #not become a release dependency.
+        self.assertNotIn("pbodypart", validate.RENDERER_ENGINE_ALL_GLOBALS)
 
     def test_gate_requires_the_consumed_fallback_texture_for_each_engine_family(self):
         for gv in validate.RENDERER_SVENGINE_GAMES:
@@ -794,7 +878,6 @@ class RendererGateTests(unittest.TestCase):
 
     def test_gate_requires_lightmap_and_decal_symbols_on_every_identity(self):
         names = (
-            "R_TextureAnimation",
             "d_lightstylevalue", "frustum", "gDecalCache", "gDecalPool", "gDecalSurfCount",
             "lightmaps", "rtable",
         )
@@ -829,6 +912,29 @@ class RendererGateTests(unittest.TestCase):
             self.assertNotIn(name, validate.RENDERER_ENGINE_NON_SVENGINE_FUNCTIONS)
             self.assertNotIn(name, validate.RENDERER_ENGINE_NON_SVENGINE_GLOBALS)
             self.assertNotIn(name, validate.RENDERER_ENGINE_SVENGINE_FUNCTIONS)
+            self.assertNotIn(name, validate.RENDERER_SVENGINE_GLOBALS)
+        for gv in validate.RENDERER_ALL_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            for name in retired:
+                self.assertNotIn(name, symbols, (gv, name))
+            self.assertEqual([], validate.validate_renderer(symbols, gv), gv)
+
+    def test_gate_ignores_function_resolutions_the_renderer_never_read(self):
+        #These five were captured into gPrivateFuncs but had no reader: the plugin
+        #draws particles, T-entities and the engine surface through its own bodies
+        #instead of chaining to the engine originals, and it obtains
+        #R_DrawSequentialPoly by leaving the engine body alone. The plugin no longer
+        #resolves any of them, so the gate must not keep the release dependent on
+        #records nobody consumes.
+        retired = ("GL_Shutdown", "R_DrawParticles", "R_DrawSequentialPoly",
+                   "R_DrawTEntitiesOnList", "R_TextureAnimation")
+        for name in retired:
+            self.assertNotIn(name, validate.RENDERER_ENGINE_ALL_FUNCTIONS)
+            self.assertNotIn(name, validate.RENDERER_ENGINE_ALL_GLOBALS)
+            self.assertNotIn(name, validate.RENDERER_ENGINE_NON_SVENGINE_FUNCTIONS)
+            self.assertNotIn(name, validate.RENDERER_ENGINE_NON_SVENGINE_GLOBALS)
+            self.assertNotIn(name, validate.RENDERER_ENGINE_SVENGINE_FUNCTIONS)
+            self.assertNotIn(name, validate.RENDERER_ENGINE_HL25_FUNCTIONS)
             self.assertNotIn(name, validate.RENDERER_SVENGINE_GLOBALS)
         for gv in validate.RENDERER_ALL_GAMES:
             symbols = self.complete_engine_symbols(gv)

@@ -29,6 +29,5 @@ void __fastcall CClient_SoundEngine_FlushCache(int pthis, int dummy, qboolean in
 
 void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void Client_InstallHooks(void);
-void Client_UninstallHooks(void);
 
 PVOID ConvertDllInfoSpace(PVOID addr, const mh_dll_info_t& SrcDllInfo, const mh_dll_info_t& TargetDllInfo);
