@@ -82,6 +82,7 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 	pExportFunc->CAM_Think = CAM_Think;
 	pExportFunc->HUD_Init = HUD_Init;
+	pExportFunc->HUD_Shutdown = HUD_Shutdown;
 
 	Client_FillAddress(g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
 	Client_InstallHooks();

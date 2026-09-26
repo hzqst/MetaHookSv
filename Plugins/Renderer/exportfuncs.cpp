@@ -331,6 +331,7 @@ void HUD_Shutdown(void)
 	R_SaveProgramStates_f();
 
 	ClientStudio_UninstallHooks();
+	Client_UninstallHooks();
 	EngineStudio_UninstallHooks();
 
 	R_Shutdown();
