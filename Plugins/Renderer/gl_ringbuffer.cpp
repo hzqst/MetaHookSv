@@ -508,3 +508,39 @@ IPMBRingBuffer* GL_CreatePMBRingBuffer(const char* name, size_t bufferSize, GLen
 {
 	return new CPMBRingBuffer(name, bufferSize, bufferTarget);
 }
+
+static IPMBRingBuffer** const s_RendererRingBuffers[] = {
+	&g_TriAPIVertexBuffer, &g_TriAPIIndexBuffer,
+	&g_TexturedRectVertexBuffer, &g_FilledRectVertexBuffer,
+	&g_RectInstanceBuffer, &g_RectIndexBuffer
+};
+static bool s_RendererRingBufferFrameActive{};
+
+IPMBRingBuffer* R_CreatePMBRingBuffer(const char* name, size_t bufferSize, GLenum bufferTarget)
+{
+	auto buffer = GL_CreatePMBRingBuffer(name, bufferSize, bufferTarget);
+	// A lazy allocation may create this buffer after the frame has started.
+	if (s_RendererRingBufferFrameActive)
+		buffer->BeginFrame();
+	return buffer;
+}
+
+void R_BeginRingBufferFrame()
+{
+	for (auto buffer : s_RendererRingBuffers)
+	{
+		if (*buffer)
+			(*buffer)->BeginFrame();
+	}
+	s_RendererRingBufferFrameActive = true;
+}
+
+void R_EndRingBufferFrame()
+{
+	s_RendererRingBufferFrameActive = false;
+	for (auto buffer : s_RendererRingBuffers)
+	{
+		if (*buffer)
+			(*buffer)->EndFrame();
+	}
+}

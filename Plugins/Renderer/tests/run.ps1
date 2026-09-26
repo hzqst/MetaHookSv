@@ -14,7 +14,7 @@ foreach ($include in $settings.AdditionalIncludeDirectories.Split(';')) {
 foreach ($define in $settings.PreprocessorDefinitions.Split(';')) {
     if ($define -and $define -ne 'NDEBUG' -and !$define.Contains('%(')) { $flags += '/D' + $define }
 }
-foreach ($test in @('studio_model_validation_tests', 'studio_model_load_tests')) {
+foreach ($test in @('studio_model_validation_tests', 'studio_model_load_tests', 'ringbuffer_tests')) {
     $exe = Join-Path $testDir "$test.exe"
     $rsp = Join-Path $testDir "$test.rsp"
     $argsForCompiler = $flags + @('"' + "$PSScriptRoot/$test.cpp" + '"', '/Fo"' + "$testDir/$test.obj" + '"', '/Fe"' + $exe + '"', '/link', '/OPT:REF')

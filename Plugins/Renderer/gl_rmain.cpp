@@ -1451,12 +1451,12 @@ void triapi_End()
 
 		if (!g_TriAPIVertexBuffer)
 		{
-			g_TriAPIVertexBuffer = GL_CreatePMBRingBuffer("TriAPIVertexBuffer", 32 * 1024 * 1024, GL_ARRAY_BUFFER);
+			g_TriAPIVertexBuffer = R_CreatePMBRingBuffer("TriAPIVertexBuffer", 32 * 1024 * 1024, GL_ARRAY_BUFFER);
 		}
 
 		if (!g_TriAPIIndexBuffer)
 		{
-			g_TriAPIIndexBuffer = GL_CreatePMBRingBuffer("TriAPIIndexBuffer", 8 * 1024 * 1024, GL_ELEMENT_ARRAY_BUFFER);
+			g_TriAPIIndexBuffer = R_CreatePMBRingBuffer("TriAPIIndexBuffer", 8 * 1024 * 1024, GL_ELEMENT_ARRAY_BUFFER);
 		}
 
 		if (g_TriAPIVertexBuffer && g_TriAPIIndexBuffer)
@@ -2970,30 +2970,7 @@ void R_RenderFrameStart()
 	//Make sure r_framecount be advanced once per frame
 	++(*r_framecount);
 
-	if (g_TriAPIVertexBuffer)
-	{
-		g_TriAPIVertexBuffer->BeginFrame();
-	}
-	if (g_TriAPIIndexBuffer)
-	{
-		g_TriAPIIndexBuffer->BeginFrame();
-	}
-	if (g_TexturedRectVertexBuffer)
-	{
-		g_TexturedRectVertexBuffer->BeginFrame();
-	}
-	if (g_FilledRectVertexBuffer)
-	{
-		g_FilledRectVertexBuffer->BeginFrame();
-	}
-	if (g_RectInstanceBuffer)
-	{
-		g_RectInstanceBuffer->BeginFrame();
-	}
-	if (g_RectIndexBuffer)
-	{
-		g_RectIndexBuffer->BeginFrame();
-	}
+	R_BeginRingBufferFrame();
 
 	g_PostProcessGlowStencilEntities.clear();
 	g_PostProcessGlowEnableDepthTestStencilEntities.clear();
@@ -3045,30 +3022,7 @@ void R_RenderEndFrame()
 		cb->OnRenderEndFrame();
 	}
 
-	if (g_TriAPIVertexBuffer)
-	{
-		g_TriAPIVertexBuffer->EndFrame();
-	}
-	if (g_TriAPIIndexBuffer)
-	{
-		g_TriAPIIndexBuffer->EndFrame();
-	}
-	if (g_TexturedRectVertexBuffer)
-	{
-		g_TexturedRectVertexBuffer->EndFrame();
-	}
-	if (g_FilledRectVertexBuffer)
-	{
-		g_FilledRectVertexBuffer->EndFrame();
-	}
-	if (g_RectInstanceBuffer)
-	{
-		g_RectInstanceBuffer->EndFrame();
-	}
-	if (g_RectIndexBuffer)
-	{
-		g_RectIndexBuffer->EndFrame();
-	}
+	R_EndRingBufferFrame();
 }
 
 void GL_Set2DEx(int x, int y, int width, int height)

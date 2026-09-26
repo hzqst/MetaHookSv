@@ -114,6 +114,8 @@ extern EngineSurfaceVertexBuffer_t(*g_VertexBuffer)[MAXVERTEXBUFFERS];;
 extern int(*g_iVertexBufferEntriesUsed);
 
 extern IPMBRingBuffer* g_TexturedRectVertexBuffer;
+extern IPMBRingBuffer* g_TriAPIVertexBuffer;
+extern IPMBRingBuffer* g_TriAPIIndexBuffer;
 extern IPMBRingBuffer* g_FilledRectVertexBuffer;
 extern IPMBRingBuffer* g_RectInstanceBuffer;
 extern IPMBRingBuffer* g_RectIndexBuffer;
