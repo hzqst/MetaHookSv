@@ -1503,7 +1503,7 @@ void R_RedirectEngineLegacyOpenGLCall(const mh_dll_info_t& DllInfo, const mh_dll
 	R_RedirectEngineLegacyOpenGLCallAPI(DllInfo, RealDllInfo);
 }
 
-void R_RedirectSCClientLegacyOpenGLCall_glTexEnvf(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void R_SCClientRedirectLegacyOpenGLCall_glTexEnvf(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	const char pattern[] = "\x68\x01\x85\x00\x00\x68\x00\x85\x00\x00\xFF\x15";
 
@@ -1527,7 +1527,7 @@ void R_RedirectSCClientLegacyOpenGLCall_glTexEnvf(const mh_dll_info_t& DllInfo, 
 	}
 }
 
-void R_RedirectSCClientLegacyOpenGLCall_glBegin(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void R_SCClientRedirectLegacyOpenGLCall_glBegin(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	const char pattern[] = "\x6A\x06\xFF\x15\x2A\x2A\x2A\x2A\xF6\x87\x88\x00\x00\x00\x80";
 
@@ -1551,7 +1551,7 @@ void R_RedirectSCClientLegacyOpenGLCall_glBegin(const mh_dll_info_t& DllInfo, co
 	}
 }
 
-void R_RedirectSCClientLegacyOpenGLCall_glEnd(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void R_SCClientRedirectLegacyOpenGLCall_glEnd(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	const char pattern[] = "\xFF\x15\x2A\x2A\x2A\x2A\xF7\x87\x88\x00\x00\x00\x00\x01\x00\x00";
 
@@ -1575,7 +1575,7 @@ void R_RedirectSCClientLegacyOpenGLCall_glEnd(const mh_dll_info_t& DllInfo, cons
 	}
 }
 
-void R_RedirectSCClientLegacyOpenGLCall_glColor4f_DrawParticle(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void R_SCClientRedirectLegacyOpenGLCall_glColor4f_DrawParticle(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	const char pattern[] = "\xF3\x0F\x11\x0C\x24\xFF\x15\x2A\x2A\x2A\x2A\x8D\x45\x98";
 
@@ -1599,7 +1599,7 @@ void R_RedirectSCClientLegacyOpenGLCall_glColor4f_DrawParticle(const mh_dll_info
 	}
 }
 
-void R_RedirectSCClientLegacyOpenGLCall_glColor4f_DrawPortal(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void R_SCClientRedirectLegacyOpenGLCall_glColor4f_DrawPortal(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	const char pattern[] = "\xC7\x44\x24\x08\x00\x00\x80\x3F\xC7\x44\x24\x04\x00\x00\x80\x3F\xC7\x04\x24\x00\x00\x80\x3F\xFF\x15\x2A\x2A\x2A\x2A\x68";
 
@@ -1625,7 +1625,7 @@ void R_RedirectSCClientLegacyOpenGLCall_glColor4f_DrawPortal(const mh_dll_info_t
 	}
 }
 
-void R_RedirectSCClientLegacyOpenGLCall_glEnable_GenerateInvisibleTexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void R_SCClientRedirectLegacyOpenGLCall_glEnable_GenerateInvisibleTexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	const char pattern[] = "\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xFF\x75\x00\x68\xE1\x0D\x00\x00\xFF\x15";
 
@@ -1649,7 +1649,7 @@ void R_RedirectSCClientLegacyOpenGLCall_glEnable_GenerateInvisibleTexture(const 
 	}
 }
 
-void R_RedirectSCClientLegacyOpenGLCall_glEnable_GeneratePortalTexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void R_SCClientRedirectLegacyOpenGLCall_glEnable_GeneratePortalTexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	const char pattern[] = "\x6A\x01\xFF\x15\x2A\x2A\x2A\x2A\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xFF\x36\x68";
 
@@ -1673,7 +1673,7 @@ void R_RedirectSCClientLegacyOpenGLCall_glEnable_GeneratePortalTexture(const mh_
 	}
 }
 
-void R_RedirectSCClientLegacyOpenGLCall_glDisable_FOG(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void R_SCClientRedirectLegacyOpenGLCall_glDisable_FOG(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	// glDisable(GL_FOG);
 	const char pattern[] = "\x68\x60\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xA1";
@@ -1700,7 +1700,7 @@ void R_RedirectSCClientLegacyOpenGLCall_glDisable_FOG(const mh_dll_info_t& DllIn
 
 static void* g_glDisable_ClipPlane = nullptr;
 
-void R_RedirectSCClientLegacyOpenGLCall_glDisable_ClipPlane(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void R_SCClientRedirectLegacyOpenGLCall_glDisable_ClipPlane(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	g_glDisable_ClipPlane = CoreProfile_glDisable;
 
@@ -1727,7 +1727,7 @@ void R_RedirectSCClientLegacyOpenGLCall_glDisable_ClipPlane(const mh_dll_info_t&
 	}
 }
 
-void R_RedirectSCClientLegacyOpenGLCall_glCopyTexSubImage2D_RenderPortals(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void R_SCClientRedirectLegacyOpenGLCall_glCopyTexSubImage2D_RenderPortals(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	// glDisable(GL_FOG);
 	const char pattern[] = "\x50\x6A\x00\x6A\x00\x6A\x00\x6A\x00\x68\xE1\x0D\x00\x00\xFF\x15";
@@ -1752,7 +1752,7 @@ void R_RedirectSCClientLegacyOpenGLCall_glCopyTexSubImage2D_RenderPortals(const 
 	}
 }
 
-void R_RedirectSCClientLegacyOpenGLCall_glClear_ClipPlane(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void R_SCClientRedirectLegacyOpenGLCall_glClear_ClipPlane(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	const char pattern[] = "\xC7\x44\x24\x0C\x00\x00\x00\x00\xC7\x44\x24\x08\x00\x00\x80\x3F\xC7\x44\x24\x04\x00\x00\x00\x00\xC7\x04\x24\x00\x00\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\x00\x40\x00\x00\xFF\x15";
 
@@ -1776,7 +1776,7 @@ void R_RedirectSCClientLegacyOpenGLCall_glClear_ClipPlane(const mh_dll_info_t& D
 	}
 }
 
-void R_RedirectSCClientRenderPortalAngleVectors(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void R_SCClientRedirectRenderPortalAngleVectors(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	const char pattern[] = "\xC7\x82\xE8\x00\x00\x00\x01\x00\x00\x00\x50\x8D\x42\x18\x50\x51\xE8";
 
@@ -1800,23 +1800,26 @@ void R_RedirectSCClientRenderPortalAngleVectors(const mh_dll_info_t& DllInfo, co
 	}
 }
 
-void R_RedirectClientLegacyOpenGLCall(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void R_SCClientRedirectLegacyOpenGLCall()
 {
 	if (g_bIsSvenCoop)
 	{
-		//Sniber NMSL
-		R_RedirectSCClientLegacyOpenGLCall_glTexEnvf(DllInfo, RealDllInfo);
-		R_RedirectSCClientLegacyOpenGLCall_glBegin(DllInfo, RealDllInfo);
-		R_RedirectSCClientLegacyOpenGLCall_glEnd(DllInfo, RealDllInfo);
-		R_RedirectSCClientLegacyOpenGLCall_glColor4f_DrawParticle(DllInfo, RealDllInfo);
-		R_RedirectSCClientLegacyOpenGLCall_glColor4f_DrawPortal(DllInfo, RealDllInfo);
-		R_RedirectSCClientLegacyOpenGLCall_glEnable_GenerateInvisibleTexture(DllInfo, RealDllInfo);
-		R_RedirectSCClientLegacyOpenGLCall_glEnable_GeneratePortalTexture(DllInfo, RealDllInfo);
-		R_RedirectSCClientLegacyOpenGLCall_glDisable_FOG(DllInfo, RealDllInfo);
-		R_RedirectSCClientLegacyOpenGLCall_glDisable_ClipPlane(DllInfo, RealDllInfo);
-		R_RedirectSCClientLegacyOpenGLCall_glCopyTexSubImage2D_RenderPortals(DllInfo, RealDllInfo);
-		R_RedirectSCClientLegacyOpenGLCall_glClear_ClipPlane(DllInfo, RealDllInfo);
-		R_RedirectSCClientRenderPortalAngleVectors(DllInfo, RealDllInfo);
+		const auto& DllInfo = g_MirrorClientDLLInfo;
+		const auto& RealDllInfo = g_ClientDLLInfo;
+
+		//TODO: need IATHook instead of instruction patch?
+		R_SCClientRedirectLegacyOpenGLCall_glTexEnvf(DllInfo, RealDllInfo);
+		R_SCClientRedirectLegacyOpenGLCall_glBegin(DllInfo, RealDllInfo);
+		R_SCClientRedirectLegacyOpenGLCall_glEnd(DllInfo, RealDllInfo);
+		R_SCClientRedirectLegacyOpenGLCall_glColor4f_DrawParticle(DllInfo, RealDllInfo);
+		R_SCClientRedirectLegacyOpenGLCall_glColor4f_DrawPortal(DllInfo, RealDllInfo);
+		R_SCClientRedirectLegacyOpenGLCall_glEnable_GenerateInvisibleTexture(DllInfo, RealDllInfo);
+		R_SCClientRedirectLegacyOpenGLCall_glEnable_GeneratePortalTexture(DllInfo, RealDllInfo);
+		R_SCClientRedirectLegacyOpenGLCall_glDisable_FOG(DllInfo, RealDllInfo);
+		R_SCClientRedirectLegacyOpenGLCall_glDisable_ClipPlane(DllInfo, RealDllInfo);
+		R_SCClientRedirectLegacyOpenGLCall_glCopyTexSubImage2D_RenderPortals(DllInfo, RealDllInfo);
+		R_SCClientRedirectLegacyOpenGLCall_glClear_ClipPlane(DllInfo, RealDllInfo);
+		R_SCClientRedirectRenderPortalAngleVectors(DllInfo, RealDllInfo);
 	}
 }
 
@@ -1847,11 +1850,7 @@ void R_PatchResetLatched(const mh_dll_info_t& DllInfo, const mh_dll_info_t& Real
 
 void Client_FillAddress_ClientPortalManager_ResetAll(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.ClientPortalManager_ResetAll)
-		return;
-
 	gPrivateFuncs.ClientPortalManager_ResetAll = (decltype(gPrivateFuncs.ClientPortalManager_ResetAll))GamedataResolvePtr(RealDllInfo.ImageBase, "ClientPortalManager_ResetAll", MH_GAMESYMBOL_KIND_FUNCTION);
-
 }
 
 void Client_FillAddress_ClientPortalManager_GetOriginalSurfaceTexture_DrawPortalSurface(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -1865,27 +1864,16 @@ void Client_FillAddress_ClientPortalManager_GetOriginalSurfaceTexture_DrawPortal
 
 void Client_FillAddress_ClientPortalManager_EnableClipPlane(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.ClientPortalManager_EnableClipPlane)
-		return;
-
 	gPrivateFuncs.ClientPortalManager_EnableClipPlane = (decltype(gPrivateFuncs.ClientPortalManager_EnableClipPlane))GamedataResolvePtrIfAvailable(RealDllInfo.ImageBase, "ClientPortalManager_EnableClipPlane", MH_GAMESYMBOL_KIND_FUNCTION);
-
 }
 
 void Client_FillAddress_ClientPortalManager_RenderPoratals(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.ClientPortalManager_RenderPortals)
-		return;
-
 	gPrivateFuncs.ClientPortalManager_RenderPortals = (decltype(gPrivateFuncs.ClientPortalManager_RenderPortals))GamedataResolvePtr(RealDllInfo.ImageBase, "ClientPortalManager_RenderPortals", MH_GAMESYMBOL_KIND_FUNCTION);
-
 }
 
 void Client_FillAddress_UpdatePlayerPitch(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.UpdatePlayerPitch)
-		return;
-
 	gPrivateFuncs.UpdatePlayerPitch = (decltype(gPrivateFuncs.UpdatePlayerPitch))GamedataResolvePtr(RealDllInfo.ImageBase, "UpdatePlayerPitch", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
@@ -1943,25 +1931,24 @@ void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealD
 	{
 		g_bIsAoMDC = true;
 	}
-
 }
 
 void Client_InstallHooks()
 {
-	//Install_InlineHook(ClientPortalManager_ResetAll);
 	Install_InlineHook(ClientPortalManager_DrawPortalSurface);
 	Install_InlineHook(ClientPortalManager_EnableClipPlane);
 	Install_InlineHook(ClientPortalManager_RenderPortals);
 	Install_InlineHook(UpdatePlayerPitch);
 
-	//Fuck Sniber
+	//Deferred glewInit
 	if (gPrivateFuncs.SCClientDLL_glewInit)
 		gPrivateFuncs.SCClientDLL_glewInit();
+
+	R_SCClientRedirectLegacyOpenGLCall();
 }
 
 void Client_UninstallHooks()
 {
-	//Uninstall_Hook(ClientPortalManager_ResetAll);
 	Uninstall_Hook(ClientPortalManager_DrawPortalSurface);
 	Uninstall_Hook(ClientPortalManager_EnableClipPlane);
 	Uninstall_Hook(ClientPortalManager_RenderPortals);

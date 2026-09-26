@@ -146,8 +146,6 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	Client_FillAddress(g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
 	Client_InstallHooks();
 	UtilThreadTask_Init();
-
-	R_RedirectClientLegacyOpenGLCall(g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
 }
 
 void IPluginsV4::ExitGame(int iResult)
