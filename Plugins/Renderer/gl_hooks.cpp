@@ -1250,6 +1250,7 @@ void Engine_UninstallHooks(void)
 	Uninstall_Hook(BuildGammaTable);
 	Uninstall_Hook(R_CullBox);
 	Uninstall_Hook(PVSNode);
+	Uninstall_Hook(Host_ClearMemory);
 	Uninstall_Hook(CVideoMode_Common_DrawStartupGraphic);
 	Uninstall_Hook(CGame_DrawStartupVideo);
 	Uninstall_Hook(Draw_Frame);
