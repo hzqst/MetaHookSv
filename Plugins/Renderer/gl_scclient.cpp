@@ -6,8 +6,10 @@ bool g_bIsRenderingPortalViews = false;
 
 namespace
 {
-// Keep the GL bindings and Renderer's bookkeeping in sync, including when the
-// engine's PushView/PopView bypass GL_BindFrameBuffer.
+// Keep the Renderer's bookkeeping in sync while the engine's PushView/PopView
+// bypass GL_BindFrameBuffer. The restore re-binds through GL_BindFrameBuffer,
+// which targets GL_FRAMEBUFFER, so it collapses read and draw onto the Rendering
+// FBO instead of restoring a distinct engine read/draw pair.
 class SCClientFramebufferScope
 {
 public:

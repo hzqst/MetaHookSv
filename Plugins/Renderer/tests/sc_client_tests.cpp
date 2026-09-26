@@ -28,7 +28,6 @@ static FBO_Container_t* sceneFBO = &parentFBO;
 static FBO_Container_t* renderingFBO = &parentFBO;
 static GLint readFBO = 17, drawFBO = 19, boundTexture{};
 static GLint viewport[4] = { 3, 5, 800, 600 };
-static std::vector<std::pair<GLint, GLint>> framebufferStack;
 static int groups{}, portalGroups{}, clears{}, copies{};
 static GLbitfield lastClear{};
 static int renderMode{};
@@ -42,14 +41,6 @@ void GL_BindFrameBuffer(FBO_Container_t* fbo)
 {
     renderingFBO = fbo;
     readFBO = drawFBO = fbo ? fbo->s_hBackBufferFBO : 0;
-}
-void GL_PushFrameBuffer() { framebufferStack.emplace_back(readFBO, drawFBO); }
-void GL_PopFrameBuffer()
-{
-    assert(!framebufferStack.empty());
-    readFBO = framebufferStack.back().first;
-    drawFBO = framebufferStack.back().second;
-    framebufferStack.pop_back();
 }
 void GL_BindFrameBufferWithTextures(FBO_Container_t* fbo, GLuint color, GLuint, GLuint, GLsizei width, GLsizei height)
 {
@@ -132,6 +123,9 @@ static void TestPortalScopes(void* manager, void* source)
     sources[1] = secondSource;
     gPrivateFuncs.ClientPortalManager_RenderPortals = RenderPortals;
     s_PortalFBO.s_hBackBufferFBO = 23;
+    // Restoring goes through GL_BindFrameBuffer, so the scope collapses the read
+    // and draw bindings onto the Rendering FBO's backbuffer.
+    parentFBO.s_hBackBufferFBO = 41;
     g_pCurrentClientPortal = source; // The boolean gate also protects a stale pointer.
     boundTexture = ClientPortal_GetTextureId(source);
     SCClient_glClear(GL_DEPTH_BUFFER_BIT);
@@ -158,9 +152,9 @@ static void TestPortalScopes(void* manager, void* source)
         assert(!g_bIsRenderingPortalViews && nullptr == g_pCurrentClientPortal);
         assert(&outerManager == g_pClientPortalManager);
         assert(&parentFBO == sceneFBO && &parentFBO == renderingFBO);
-        assert(17 == readFBO && 19 == drawFBO);
+        assert(41 == readFBO && 41 == drawFBO);
         assert(3 == viewport[0] && 5 == viewport[1] && 800 == viewport[2] && 600 == viewport[3]);
-        assert(0 == groups && framebufferStack.empty());
+        assert(0 == groups);
     }
     assert(4 == portalGroups && 5 == clears && 4 == copies);
 }
