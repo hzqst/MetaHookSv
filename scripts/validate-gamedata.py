@@ -742,16 +742,64 @@ def validate_bulletphysics_client(symbols, game_version):
 
 def _renderer_check(symbols, game_version, names, kind, module):
     """Return Renderer failures for one (symbol, kind, module) group."""
+    return _consumer_check(symbols, game_version, names, kind, module, "Renderer")
+
+
+def _consumer_check(symbols, game_version, names, kind, module, consumer):
+    """Return consumer failures for one (symbol, kind, module) group."""
     errors = []
     for sym in names:
         rec = symbols.get(sym)
         if not isinstance(rec, dict):
-            errors.append(f"'{game_version}': missing Renderer {module} {kind} '{sym}'")
+            errors.append(f"'{game_version}': missing {consumer} {module} {kind} '{sym}'")
             continue
         if rec.get("kind") != kind:
             errors.append(f"'{game_version}': '{sym}' must be a {kind} record")
         elif rec.get("module") != module:
             errors.append(f"'{game_version}': '{sym}' must belong to module '{module}'")
+    return errors
+
+
+# CaptionMod engine-side consumer gate. CaptionMod ships for both the Sven
+# Co-op and plain GoldSrc plugin lists, so every engine identity MetaHook can
+# hash must publish these. `VOX_LookupString` is deliberately absent: it is only
+# consumed by the legacy fallback in Engine_FillAddress_VOX_LookupString, which
+# is reached solely on the one identity with no record.
+CAPTIONMOD_ENGINE_FUNCTIONS = (
+    "S_FindName",
+    "S_StartDynamicSound",
+    "S_StartStaticSound",
+    "S_LoadSound",
+    "TextMessageParse",
+    "COM_ExplainDisconnection",
+    "COM_ExtendedExplainDisconnection",
+    "SequenceGetSentenceByIndex",
+)
+CAPTIONMOD_ENGINE_GLOBALS = (
+    "cl_time",
+    "cl_oldtime",
+    "cl_viewentity",
+    "listener_origin",
+    "cszrawsentences",
+    "rgpszrawsentence",
+    "scr_drawloading",
+)
+# CaptionMod's Sven Co-op client branch resolves the client sound engine through
+# gamedata too. Only the two SvEngine snapshots publish these records; CaptionMod
+# keeps its legacy locators on every other client module.
+CAPTIONMOD_CLIENT_GAMES = ("svencoop-10257", "svencoop-8948")
+CAPTIONMOD_CLIENT_FUNCTIONS = ("CClient_SoundEngine_LoadSoundList",)
+CAPTIONMOD_CLIENT_STRUCT_MEMBERS = ("CClient_SoundEngine.m_iSentenceCount",)
+
+
+def validate_captionmod(symbols, game_version):
+    """Return CaptionMod engine consumer failures for a declared game version."""
+    errors = []
+    errors += _consumer_check(symbols, game_version, CAPTIONMOD_ENGINE_FUNCTIONS, "function", "engine", "CaptionMod")
+    errors += _consumer_check(symbols, game_version, CAPTIONMOD_ENGINE_GLOBALS, "global", "engine", "CaptionMod")
+    if game_version in CAPTIONMOD_CLIENT_GAMES:
+        errors += _consumer_check(symbols, game_version, CAPTIONMOD_CLIENT_FUNCTIONS, "function", "client", "CaptionMod")
+        errors += _consumer_check(symbols, game_version, CAPTIONMOD_CLIENT_STRUCT_MEMBERS, "structMember", "client", "CaptionMod")
     return errors
 
 
@@ -911,6 +959,14 @@ def main():
             continue
         symbols = game_symbols[gv][1]
         all_errors.extend(validate_renderer(symbols, gv, include_engine=gv in RENDERER_ALL_GAMES))
+
+    # CaptionMod consumer gate: every snapshot that publishes engine records.
+    for gv in RENDERER_ALL_GAMES:
+        if gv not in game_symbols:
+            all_errors.append(f"'{gv}': snapshot not loaded (CaptionMod gate)")
+            continue
+        symbols = game_symbols[gv][1]
+        all_errors.extend(validate_captionmod(symbols, gv))
 
     if all_errors:
         for e in all_errors:

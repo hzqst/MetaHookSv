@@ -25,11 +25,7 @@ typedef struct walk_context_s
 
 typedef struct
 {
-	//Engine Screen
-	void(*SCR_BeginLoadingPlaque)(qboolean reconnect);
-
 	//Engine Sound
-	void (*S_Init)(void);
 	sfx_t *(*S_FindName)(const char *name, int *pfInCache);//hooked
 	void (*S_StartDynamicSound)(int entnum, int entchannel, sfx_t *sfx, float *origin, float fvol, float attenuation, int flags, int pitch);//hooked
 	void (*S_StartStaticSound)(int entnum, int entchannel, sfx_t *sfx, float *origin, float fvol, float attenuation, int flags, int pitch);//hooked
@@ -42,7 +38,7 @@ typedef struct
 	void* (__fastcall* SCClient_SoundEngine_LookupSoundBySample)(void* pSoundEngine, int, const char *sampleName);
 	bool (__fastcall* SCClient_SoundEngine_LoadSoundList)(void* pSoundEngine, int);
 	void* (*SCClient_soundengine)();
-	int SCClient_soundengine_maxsentences;
+	uint32_t SCClient_soundengine_maxsentences;
 
 	//FMOD
 
@@ -90,9 +86,6 @@ extern vec3_t *listener_origin;
 
 extern char *(*rgpszrawsentence)[CVOXFILESENTENCEMAX];
 extern int *cszrawsentences;
-
-//extern char(*s_pBaseDir)[512];
-extern char*(*hostparam_basedir);
 
 extern private_funcs_t gPrivateFuncs;
 
