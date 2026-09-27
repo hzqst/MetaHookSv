@@ -52,7 +52,7 @@ namespace
 
     struct GLState
     {
-        GLint readFBO, drawFBO, pbo, alignment, rowLength, skipRows, skipPixels;
+        GLint readFBO, drawFBO, readBuffer, defaultReadBuffer, pbo, alignment, rowLength, skipRows, skipPixels;
         bool operator==(const GLState&) const = default;
 
         static GLState Read()
@@ -60,6 +60,10 @@ namespace
             GLState state{};
             glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &state.readFBO);
             glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &state.drawFBO);
+            glGetIntegerv(GL_READ_BUFFER, &state.readBuffer);
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+            glGetIntegerv(GL_READ_BUFFER, &state.defaultReadBuffer);
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, state.readFBO);
             glGetIntegerv(GL_PIXEL_PACK_BUFFER_BINDING, &state.pbo);
             glGetIntegerv(GL_PACK_ALIGNMENT, &state.alignment);
             glGetIntegerv(GL_PACK_ROW_LENGTH, &state.rowLength);
@@ -121,7 +125,10 @@ namespace
             constexpr GLsizeiptr CallerBufferSize = 64;
             glBufferData(GL_PIXEL_PACK_BUFFER, CallerBufferSize, nullptr, GL_STREAM_READ);
             glGenFramebuffers(static_cast<GLsizei>(callerFBOs.size()), callerFBOs.data());
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+            glReadBuffer(GL_FRONT);
             glBindFramebuffer(GL_READ_FRAMEBUFFER, callerFBOs[0]);
+            glReadBuffer(GL_COLOR_ATTACHMENT1);
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, callerFBOs[1]);
             if (dirtyPacking)
             {
@@ -132,7 +139,7 @@ namespace
             }
         }
 
-        void Paint()
+        void Paint(bool invert = false)
         {
             int framebufferWidth = 0, framebufferHeight = 0;
             glfwGetFramebufferSize(window, &framebufferWidth, &framebufferHeight);
@@ -146,7 +153,8 @@ namespace
             for (int y = 0; y < captureHeight; ++y)
             {
                 glScissor(0, y, captureWidth, 1);
-                glClearColor(y % 2 == 0 ? 1.0f : 0.0f, y % 2 == 0 ? 0.0f : 1.0f, 0, 1);
+                const bool red = (y % 2 == 0) != invert;
+                glClearColor(red ? 1.0f : 0.0f, red ? 0.0f : 1.0f, 0, 1);
                 glClear(GL_COLOR_BUFFER_BIT);
             }
             // A vertical blue edge catches horizontal offsets and row-stride errors.
@@ -170,7 +178,7 @@ namespace
         Require(callbackCount == expectedCount, "Screenshot callback count or completion timeout");
     }
 
-    void CheckPixels()
+    void CheckPixels(bool invert = false)
     {
         Require(receivedWidth == captureWidth && receivedHeight == captureHeight, "Incorrect screenshot dimensions");
         Require(receivedPixels.size() == size_t(captureWidth * captureHeight * RGBChannels), "Incorrect RGB byte count");
@@ -181,8 +189,8 @@ namespace
             {
                 const bool edge = x == captureWidth - 1;
                 const std::array<byte, RGBChannels> expected{
-                    byte(!edge && sourceY % 2 == 0 ? 255 : 0),
-                    byte(!edge && sourceY % 2 != 0 ? 255 : 0),
+                    byte(!edge && ((sourceY % 2 == 0) != invert) ? 255 : 0),
+                    byte(!edge && ((sourceY % 2 != 0) != invert) ? 255 : 0),
                     byte(edge ? 255 : 0)
                 };
                 for (int channel = 0; channel < RGBChannels; ++channel)
@@ -243,7 +251,9 @@ namespace
         Require(GL_InitCapture(), "Capture initialization failed");
         const auto original = GLState::Read();
         context.Paint();
-        GL_BeginCapture(ReceiveCapture);
+        GL_RequestCapture();
+        Require(GL_CapturePendingBeforeSwap(ReceiveCapture), "First request did not start");
+        GL_RequestCapture();
         const auto realWait = glClientWaitSync;
         // Inject only the wait status; pixels, PBOs, mappings and fences remain real GL.
         glClientWaitSync = TimedOutWait;
@@ -257,11 +267,61 @@ namespace
         // A different size distinguishes a new capture from the failed request.
         captureWidth = 1367;
         context.Paint();
-        GL_BeginCapture(ReceiveCapture);
+        Require(GL_CapturePendingBeforeSwap(ReceiveCapture), "Pending request was lost after wait failure");
         AwaitCapture(1);
         Require(original == GLState::Read(), "Failure/recovery changed caller GL state");
         CheckGLError();
         CheckPixels();
+    }
+
+    void TestAsyncFrameAndPending(Context& context)
+    {
+        context.SetCallerState(true);
+        const auto original = GLState::Read();
+        Require(GL_InitCapture(), "Capture initialization failed");
+        Require(!GL_CapturePendingBeforeSwap(ReceiveCapture), "Idle swap started a readback");
+
+        GL_RequestCapture();
+        captureWidth = 0;
+        Require(!GL_CapturePendingBeforeSwap(ReceiveCapture), "Invalid capture size started a readback");
+        captureWidth = 1366;
+        context.Paint();
+        GL_RequestCapture();
+        Require(GL_CapturePendingBeforeSwap(ReceiveCapture), "Pending request did not start before swap");
+
+        context.Paint(true);
+        GL_RequestCapture();
+        Require(!GL_CapturePendingBeforeSwap(ReceiveCapture), "Busy PBO replaced the first frame");
+        AwaitCapture(1);
+        CheckPixels();
+
+        Require(GL_CapturePendingBeforeSwap(ReceiveCapture), "Busy request was lost");
+        AwaitCapture(2);
+        CheckPixels(true);
+        Require(!GL_CapturePendingBeforeSwap(ReceiveCapture), "Completed request was captured twice");
+        Require(original == GLState::Read(), "Pending capture changed caller GL state");
+
+        GL_RequestCapture();
+        GL_ShutdownCapture();
+        Require(GL_InitCapture(), "Capture reinitialization failed");
+        Require(!GL_CapturePendingBeforeSwap(ReceiveCapture), "Shutdown retained a pending request");
+        CheckGLError();
+    }
+
+    void TestSyncPending(Context& context)
+    {
+        context.SetCallerState(true);
+        const auto original = GLState::Read();
+        Require(GL_InitCapture(), "Capture initialization failed");
+        context.Paint();
+        GL_RequestCapture();
+        GL_RequestCapture();
+        Require(GL_CapturePendingBeforeSwap(ReceiveCapture), "Synchronous request did not start before swap");
+        Require(callbackCount == 1, "Coalesced requests produced multiple captures");
+        CheckPixels();
+        Require(!GL_CapturePendingBeforeSwap(ReceiveCapture), "Completed synchronous request was captured twice");
+        Require(original == GLState::Read(), "Synchronous pending capture changed caller GL state");
+        CheckGLError();
     }
 }
 
@@ -316,6 +376,13 @@ int main(int argc, char** argv)
             TestFailedWait(context);
         else if (testCase == "wait-timeout")
             TestTimeout(context);
+        else if (testCase == "async-frame-pending")
+            TestAsyncFrameAndPending(context);
+        else if (testCase == "sync-pending")
+        {
+            __GLEW_VERSION_3_2 = GL_FALSE;
+            TestSyncPending(context);
+        }
         else
         {
             Require(testCase == "sync-default" || testCase == "sync-dirty" || testCase == "async-default"

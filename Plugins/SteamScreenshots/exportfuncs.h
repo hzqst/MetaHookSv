@@ -8,3 +8,7 @@ void HUD_Init(void);
 void HUD_StudioEvent(const struct mstudioevent_s *ev, const struct cl_entity_s *ent);
 void HUD_Frame(double time);
 void HUD_Shutdown(void);
+void InstallSDL2Hook();
+void InstallFlipScreenHook();
+void UninstallPresentHook();
+bool IsPresentHookInstalled();

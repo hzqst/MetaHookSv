@@ -7,7 +7,8 @@ GLsync g_CaptureSyncObject = 0;
 int g_CaptureImageWidth = 0;
 int g_CaptureImageHeight = 0;
 void* g_CaptureImageBuffer = NULL;
-void (*g_pfnBeginCapture)(fnGLQueryCaptureCallback callback) = NULL;
+bool (*g_pfnBeginCapture)(fnGLQueryCaptureCallback callback) = NULL;
+bool g_CapturePending = false;
 
 void GL_InitCaptureImageBuffer(int width, int height)
 {
@@ -55,6 +56,7 @@ void GL_ShutdownCaptureSyncObject()
 static void GL_ReadCapturePixels(GLuint pbo, void* pixels)
 {
 	int originalFBO = 0;
+	int originalDefaultReadBuffer = 0;
 	int originalPBO = 0;
 	int originalAlignment = 0;
 	int originalRowLength = 0;
@@ -73,6 +75,8 @@ static void GL_ReadCapturePixels(GLuint pbo, void* pixels)
 		glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
 	}
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+	glGetIntegerv(GL_READ_BUFFER, &originalDefaultReadBuffer);
+	glReadBuffer(GL_BACK);
 
 	// Both the allocation and the image flip use tightly packed RGB rows.
 	glPixelStorei(GL_PACK_ALIGNMENT, 1);
@@ -80,6 +84,7 @@ static void GL_ReadCapturePixels(GLuint pbo, void* pixels)
 	glPixelStorei(GL_PACK_SKIP_ROWS, 0);
 	glPixelStorei(GL_PACK_SKIP_PIXELS, 0);
 	glReadPixels(0, 0, g_CaptureImageWidth, g_CaptureImageHeight, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+	glReadBuffer(originalDefaultReadBuffer);
 
 	glPixelStorei(GL_PACK_ALIGNMENT, originalAlignment);
 	glPixelStorei(GL_PACK_ROW_LENGTH, originalRowLength);
@@ -90,19 +95,23 @@ static void GL_ReadCapturePixels(GLuint pbo, void* pixels)
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, originalFBO);
 }
 
-void GL_BeginSyncCapture(fnGLQueryCaptureCallback callback)
+bool GL_BeginSyncCapture(fnGLQueryCaptureCallback callback)
 {
 	int glwidth, glheight;
 	g_pMetaHookAPI->GetVideoMode(&glwidth, &glheight, NULL, NULL);
+	if (glwidth <= 0 || glheight <= 0)
+		return false;
 
 	if (glwidth != g_CaptureImageWidth || glheight != g_CaptureImageHeight)
 	{
 		GL_ShutdownCaptureImageBuffer();
-		GL_InitCaptureImageBuffer(glwidth, glheight);
-
 		g_CaptureImageWidth = glwidth;
 		g_CaptureImageHeight = glheight;
 	}
+	if (!g_CaptureImageBuffer)
+		GL_InitCaptureImageBuffer(glwidth, glheight);
+	if (!g_CaptureImageBuffer)
+		return false;
 	
 	GL_ReadCapturePixels(0, g_CaptureImageBuffer);
 
@@ -119,35 +128,61 @@ void GL_BeginSyncCapture(fnGLQueryCaptureCallback callback)
 	}
 
 	callback(g_CaptureImageBuffer, g_CaptureImageWidth * g_CaptureImageHeight * 3, g_CaptureImageWidth, g_CaptureImageHeight);
+	return true;
 }
 
-void GL_BeginAsyncCapture(fnGLQueryCaptureCallback callback)
+bool GL_BeginAsyncCapture(fnGLQueryCaptureCallback callback)
 {
 	if (g_CaptureSyncObject)
-		return;
+		return false;
 
 	int glwidth, glheight;
 	g_pMetaHookAPI->GetVideoMode(&glwidth, &glheight, NULL, NULL);
+	if (glwidth <= 0 || glheight <= 0)
+		return false;
 
 	if (glwidth != g_CaptureImageWidth || glheight != g_CaptureImageHeight)
 	{
 		GL_ShutdownCaptureImageBuffer();
 		GL_ShutdownCapturePBO();
-		GL_InitCapturePBO(glwidth, glheight);
-		GL_InitCaptureImageBuffer(glwidth, glheight);
-
 		g_CaptureImageWidth = glwidth;
 		g_CaptureImageHeight = glheight;
 	}
+	if (!g_CapturePBO)
+		GL_InitCapturePBO(glwidth, glheight);
+	if (!g_CaptureImageBuffer)
+		GL_InitCaptureImageBuffer(glwidth, glheight);
+	if (!g_CapturePBO || !g_CaptureImageBuffer)
+		return false;
 
 	GL_ReadCapturePixels(g_CapturePBO, nullptr);
 
 	g_CaptureSyncObject = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+	return g_CaptureSyncObject != 0;
 }
 
-void GL_BeginCapture(fnGLQueryCaptureCallback callback)
+bool GL_BeginCapture(fnGLQueryCaptureCallback callback)
 {
-	return g_pfnBeginCapture(callback);
+	return g_pfnBeginCapture && g_pfnBeginCapture(callback);
+}
+
+void GL_RequestCapture()
+{
+	g_CapturePending = true;
+}
+
+void GL_DiscardPendingCapture()
+{
+	g_CapturePending = false;
+}
+
+bool GL_CapturePendingBeforeSwap(fnGLQueryCaptureCallback callback)
+{
+	if (!g_CapturePending || !GL_BeginCapture(callback))
+		return false;
+
+	GL_DiscardPendingCapture();
+	return true;
 }
 
 void GL_QueryAsyncCapture(fnGLQueryCaptureCallback callback)
@@ -201,6 +236,8 @@ void GL_QueryAsyncCapture(fnGLQueryCaptureCallback callback)
 
 void GL_ShutdownCapture()
 {
+	GL_DiscardPendingCapture();
+	g_pfnBeginCapture = NULL;
 	GL_ShutdownCaptureImageBuffer();
 	GL_ShutdownCapturePBO();
 	GL_ShutdownCaptureSyncObject();
@@ -228,5 +265,5 @@ bool GL_InitCapture()
 	}
 
 	GL_InitCaptureImageBuffer(g_CaptureImageWidth, g_CaptureImageHeight);
-	return true;
+	return g_CaptureImageBuffer && (g_pfnBeginCapture != GL_BeginAsyncCapture || g_CapturePBO);
 }

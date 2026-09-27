@@ -25,7 +25,8 @@ target_link_libraries(capture_tests PRIVATE glfw libglew_static)
 
 enable_testing()
 foreach(test_case IN ITEMS sync-default async-default sync-dirty async-dirty
-        wait-timeout wait-failure framebuffer-unavailable framebuffer-entrypoint-unavailable arb-framebuffer)
+        sync-pending async-frame-pending wait-timeout wait-failure
+        framebuffer-unavailable framebuffer-entrypoint-unavailable arb-framebuffer)
     add_test(NAME "capture.${test_case}" COMMAND capture_tests "${test_case}")
     set_tests_properties("capture.${test_case}" PROPERTIES TIMEOUT 20)
 endforeach()
