@@ -37,7 +37,11 @@ typedef struct
 	const char *(__fastcall* SCClient_SoundEngine_LookupSoundBySentenceIndex)(void* pSoundEngine, int, int sentenceIndex);
 	void* (__fastcall* SCClient_SoundEngine_LookupSoundBySample)(void* pSoundEngine, int, const char *sampleName);
 	bool (__fastcall* SCClient_SoundEngine_LoadSoundList)(void* pSoundEngine, int);
-	void* (*SCClient_soundengine)();
+	//Address of the `CClient_SoundEngine` singleton pointer
+	//(`CClient_SoundEngine_m_pSoundEngine`). The catalog publishes only this
+	//backing global, not the engine's lazy-construction accessor, so the pointer
+	//itself can be null until the engine has been constructed.
+	void** SCClient_soundengine;
 	uint32_t SCClient_soundengine_maxsentences;
 
 	//FMOD
@@ -73,12 +77,11 @@ typedef struct
 
 }private_funcs_t;
 
-extern void *GameViewport;
+extern void * gViewport;
 extern void *gHud;
 
 extern double *cl_time;
 extern double *cl_oldtime;
-extern double* realtime;
 
 extern int *cl_viewentity;
 

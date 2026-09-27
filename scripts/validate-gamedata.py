@@ -762,9 +762,8 @@ def _consumer_check(symbols, game_version, names, kind, module, consumer):
 
 # CaptionMod engine-side consumer gate. CaptionMod ships for both the Sven
 # Co-op and plain GoldSrc plugin lists, so every engine identity MetaHook can
-# hash must publish these. `VOX_LookupString` is deliberately absent: it is only
-# consumed by the legacy fallback in Engine_FillAddress_VOX_LookupString, which
-# is reached solely on the one identity with no record.
+# hash must publish these. `VOX_LookupString` is deliberately absent: CaptionMod
+# never resolves the function itself, only the two sentence counters below.
 CAPTIONMOD_ENGINE_FUNCTIONS = (
     "S_FindName",
     "S_StartDynamicSound",
@@ -784,22 +783,72 @@ CAPTIONMOD_ENGINE_GLOBALS = (
     "rgpszrawsentence",
     "scr_drawloading",
 )
-# CaptionMod's Sven Co-op client branch resolves the client sound engine through
-# gamedata too. Only the two SvEngine snapshots publish these records; CaptionMod
-# keeps its legacy locators on every other client module.
+# CaptionMod's Sven Co-op client branch resolves the sound engine, viewport, HUD
+# and weapon-slot symbols through gamedata too. Only the two SvEngine snapshots
+# publish these records; CaptionMod keeps its other legacy client locators on
+# every other client module.
 CAPTIONMOD_CLIENT_GAMES = ("svencoop-10257", "svencoop-8948")
-CAPTIONMOD_CLIENT_FUNCTIONS = ("CClient_SoundEngine_LoadSoundList",)
+CAPTIONMOD_CLIENT_FUNCTIONS = (
+    "CHud_GetBorderSize",
+    "CClient_SoundEngine_LoadSoundList",
+    "CClient_SoundEngine_LookupSoundBySample",
+    "CClient_SoundEngine_LookupSoundBySentenceIndex",
+    "CClient_SoundEngine_PlayFMODSound",
+    "GetClientColor",
+    "TeamFortressViewport_AllowedToPrintText",
+    "TeamFortressViewport_IsScoreBoardVisible",
+    "WeaponsResource_SelectSlot",
+)
+CAPTIONMOD_CLIENT_GLOBALS = ("CClient_SoundEngine_m_pSoundEngine", "gHUD", "gViewPort")
 CAPTIONMOD_CLIENT_STRUCT_MEMBERS = ("CClient_SoundEngine.m_iSentenceCount",)
+# Counter-Strike branch: `GetClientColor` is published for every cstrike / czero /
+# czeror client, while `GetTextColor` is missing on cstrike-10210, czero-10210 and
+# both czeror builds, where CaptionMod falls back to the (catalog-uncovered)
+# BaseTextColor. That missing set is exactly the set on which the plugin's own
+# signature locator fails to find GetTextColor, so the gate is not narrower than
+# the behaviour it replaced.
+CAPTIONMOD_CS_CLIENT_GAMES = (
+    "cstrike-10210",
+    "cstrike-3248",
+    "cstrike-3647",
+    "cstrike-4554",
+    "cstrike-6153",
+    "cstrike-8684",
+    "czero-10210",
+    "czero-8684",
+    "czeror-10210",
+    "czeror-8684",
+)
+CAPTIONMOD_CS_CLIENT_FUNCTIONS = ("GetClientColor",)
+CAPTIONMOD_CS_TEXT_COLOR_GAMES = (
+    "cstrike-3248",
+    "cstrike-3647",
+    "cstrike-4554",
+    "cstrike-6153",
+    "cstrike-8684",
+    "czero-8684",
+)
 
 
-def validate_captionmod(symbols, game_version):
-    """Return CaptionMod engine consumer failures for a declared game version."""
+def validate_captionmod(symbols, game_version, include_engine=True):
+    """Return CaptionMod consumer failures for a declared game version.
+
+    include_engine is False for the client-only snapshots (cstrike / czero /
+    czeror), which publish no engine module; their engine symbols resolve against
+    the hl-* or svencoop-* records by module CRC64 at runtime.
+    """
     errors = []
-    errors += _consumer_check(symbols, game_version, CAPTIONMOD_ENGINE_FUNCTIONS, "function", "engine", "CaptionMod")
-    errors += _consumer_check(symbols, game_version, CAPTIONMOD_ENGINE_GLOBALS, "global", "engine", "CaptionMod")
+    if include_engine:
+        errors += _consumer_check(symbols, game_version, CAPTIONMOD_ENGINE_FUNCTIONS, "function", "engine", "CaptionMod")
+        errors += _consumer_check(symbols, game_version, CAPTIONMOD_ENGINE_GLOBALS, "global", "engine", "CaptionMod")
     if game_version in CAPTIONMOD_CLIENT_GAMES:
         errors += _consumer_check(symbols, game_version, CAPTIONMOD_CLIENT_FUNCTIONS, "function", "client", "CaptionMod")
+        errors += _consumer_check(symbols, game_version, CAPTIONMOD_CLIENT_GLOBALS, "global", "client", "CaptionMod")
         errors += _consumer_check(symbols, game_version, CAPTIONMOD_CLIENT_STRUCT_MEMBERS, "structMember", "client", "CaptionMod")
+    if game_version in CAPTIONMOD_CS_CLIENT_GAMES:
+        errors += _consumer_check(symbols, game_version, CAPTIONMOD_CS_CLIENT_FUNCTIONS, "function", "client", "CaptionMod")
+    if game_version in CAPTIONMOD_CS_TEXT_COLOR_GAMES:
+        errors += _consumer_check(symbols, game_version, ("GetTextColor",), "function", "client", "CaptionMod")
     return errors
 
 
@@ -960,13 +1009,14 @@ def main():
         symbols = game_symbols[gv][1]
         all_errors.extend(validate_renderer(symbols, gv, include_engine=gv in RENDERER_ALL_GAMES))
 
-    # CaptionMod consumer gate: every snapshot that publishes engine records.
-    for gv in RENDERER_ALL_GAMES:
+    # CaptionMod consumer gate: every snapshot that publishes engine records, plus
+    # the Counter-Strike clients that publish no engine module of their own.
+    for gv in RENDERER_ALL_GAMES + tuple(g for g in CAPTIONMOD_CS_CLIENT_GAMES if g not in RENDERER_ALL_GAMES):
         if gv not in game_symbols:
             all_errors.append(f"'{gv}': snapshot not loaded (CaptionMod gate)")
             continue
         symbols = game_symbols[gv][1]
-        all_errors.extend(validate_captionmod(symbols, gv))
+        all_errors.extend(validate_captionmod(symbols, gv, include_engine=gv in RENDERER_ALL_GAMES))
 
     if all_errors:
         for e in all_errors:

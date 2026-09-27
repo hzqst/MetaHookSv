@@ -970,65 +970,124 @@ class CaptionModGateTests(unittest.TestCase):
             for n in names:
                 symbols[n] = {"kind": kind, "module": module}
 
-        add(validate.CAPTIONMOD_ENGINE_FUNCTIONS, "function", "engine")
-        add(validate.CAPTIONMOD_ENGINE_GLOBALS, "global", "engine")
+        if game_version in validate.RENDERER_ALL_GAMES:
+            add(validate.CAPTIONMOD_ENGINE_FUNCTIONS, "function", "engine")
+            add(validate.CAPTIONMOD_ENGINE_GLOBALS, "global", "engine")
         if game_version in validate.CAPTIONMOD_CLIENT_GAMES:
             add(validate.CAPTIONMOD_CLIENT_FUNCTIONS, "function", "client")
+            add(validate.CAPTIONMOD_CLIENT_GLOBALS, "global", "client")
             add(validate.CAPTIONMOD_CLIENT_STRUCT_MEMBERS, "structMember", "client")
+        if game_version in validate.CAPTIONMOD_CS_CLIENT_GAMES:
+            add(validate.CAPTIONMOD_CS_CLIENT_FUNCTIONS, "function", "client")
+        if game_version in validate.CAPTIONMOD_CS_TEXT_COLOR_GAMES:
+            add(("GetTextColor",), "function", "client")
         return symbols
+
+    def gate(self, symbols, game_version):
+        return validate.validate_captionmod(
+            symbols, game_version, include_engine=game_version in validate.RENDERER_ALL_GAMES
+        )
 
     def test_gate_passes_on_every_engine_identity(self):
         for gv in validate.RENDERER_ALL_GAMES:
-            self.assertEqual([], validate.validate_captionmod(self.complete_symbols(gv), gv), gv)
+            self.assertEqual([], self.gate(self.complete_symbols(gv), gv), gv)
+
+    def test_gate_passes_on_every_counter_strike_client(self):
+        for gv in validate.CAPTIONMOD_CS_CLIENT_GAMES:
+            self.assertEqual([], self.gate(self.complete_symbols(gv), gv), gv)
 
     def test_gate_reports_missing_engine_symbols(self):
         for name in ("S_LoadSound", "cl_time"):
             with self.subTest(name=name):
                 symbols = self.complete_symbols("hl-8684")
                 del symbols[name]
-                errors = validate.validate_captionmod(symbols, "hl-8684")
+                errors = self.gate(symbols, "hl-8684")
                 self.assertTrue(any(name in e for e in errors), errors)
 
     def test_gate_reports_wrong_kind(self):
         symbols = self.complete_symbols("hl-8684")
         symbols["cl_time"] = {"kind": "function", "module": "engine"}
-        errors = validate.validate_captionmod(symbols, "hl-8684")
+        errors = self.gate(symbols, "hl-8684")
         self.assertTrue(any("cl_time" in e and "global" in e for e in errors), errors)
 
     def test_gate_ignores_vox_lookup_string(self):
-        # VOX_LookupString is only consumed by the legacy fallback, which runs on
-        # the single identity that publishes no record, so it must not be gated.
+        # CaptionMod never resolves VOX_LookupString itself, only the sentence
+        # counters, so the function record must not be gated.
         self.assertNotIn("VOX_LookupString", validate.CAPTIONMOD_ENGINE_FUNCTIONS)
-        self.assertEqual([], validate.validate_captionmod(self.complete_symbols("svencoop-10257"), "svencoop-10257"))
+        self.assertEqual([], self.gate(self.complete_symbols("svencoop-10257"), "svencoop-10257"))
 
     def test_gate_requires_client_sound_engine_on_svengine(self):
         for gv in validate.CAPTIONMOD_CLIENT_GAMES:
             with self.subTest(gv=gv):
                 symbols = self.complete_symbols(gv)
-                self.assertEqual([], validate.validate_captionmod(symbols, gv))
+                self.assertEqual([], self.gate(symbols, gv))
                 del symbols["CClient_SoundEngine_LoadSoundList"]
-                errors = validate.validate_captionmod(symbols, gv)
+                errors = self.gate(symbols, gv)
                 self.assertTrue(any("LoadSoundList" in e for e in errors), errors)
+
+    def test_gate_requires_every_sven_coop_client_global(self):
+        for name in validate.CAPTIONMOD_CLIENT_GLOBALS:
+            for gv in validate.CAPTIONMOD_CLIENT_GAMES:
+                with self.subTest(name=name, gv=gv):
+                    symbols = self.complete_symbols(gv)
+                    del symbols[name]
+                    errors = self.gate(symbols, gv)
+                    self.assertTrue(any(name in e for e in errors), errors)
+
+    def test_gate_requires_every_sven_coop_client_function(self):
+        for name in validate.CAPTIONMOD_CLIENT_FUNCTIONS:
+            for gv in validate.CAPTIONMOD_CLIENT_GAMES:
+                with self.subTest(name=name, gv=gv):
+                    symbols = self.complete_symbols(gv)
+                    del symbols[name]
+                    errors = self.gate(symbols, gv)
+                    self.assertTrue(any(name in e for e in errors), errors)
 
     def test_gate_does_not_require_client_sound_engine_elsewhere(self):
         for gv in ("hl-8684", "hl-10210", "cof-5936", "hl-4554"):
             with self.subTest(gv=gv):
                 # Engine symbols only: no client records, still no failure.
-                self.assertEqual([], validate.validate_captionmod(self.complete_symbols(gv), gv))
+                self.assertEqual([], self.gate(self.complete_symbols(gv), gv))
 
     def test_gate_reports_missing_sentence_count_member(self):
         for gv in validate.CAPTIONMOD_CLIENT_GAMES:
             with self.subTest(gv=gv):
                 symbols = self.complete_symbols(gv)
                 del symbols["CClient_SoundEngine.m_iSentenceCount"]
-                errors = validate.validate_captionmod(symbols, gv)
+                errors = self.gate(symbols, gv)
                 self.assertTrue(any("m_iSentenceCount" in e for e in errors), errors)
 
     def test_gate_reports_sentence_count_as_function(self):
         symbols = self.complete_symbols("svencoop-8948")
         symbols["CClient_SoundEngine.m_iSentenceCount"] = {"kind": "function", "module": "client"}
-        errors = validate.validate_captionmod(symbols, "svencoop-8948")
+        errors = self.gate(symbols, "svencoop-8948")
         self.assertTrue(any("m_iSentenceCount" in e and "structMember" in e for e in errors), errors)
+
+    def test_gate_requires_get_client_color_on_every_counter_strike_client(self):
+        for gv in validate.CAPTIONMOD_CS_CLIENT_GAMES:
+            with self.subTest(gv=gv):
+                symbols = self.complete_symbols(gv)
+                del symbols["GetClientColor"]
+                errors = self.gate(symbols, gv)
+                self.assertTrue(any("GetClientColor" in e for e in errors), errors)
+
+    def test_gate_requires_get_text_color_only_where_published(self):
+        for gv in validate.CAPTIONMOD_CS_TEXT_COLOR_GAMES:
+            with self.subTest(gv=gv):
+                symbols = self.complete_symbols(gv)
+                del symbols["GetTextColor"]
+                errors = self.gate(symbols, gv)
+                self.assertTrue(any("GetTextColor" in e for e in errors), errors)
+
+    def test_gate_does_not_require_get_text_color_where_unpublished(self):
+        # cstrike-10210, czero-10210 and the czeror builds publish no Windows
+        # GetTextColor record; CaptionMod falls back to BaseTextColor, which has
+        # no record on any identity. These are exactly the builds on which the
+        # plugin's own signature locator fails too.
+        for gv in ("cstrike-10210", "czero-10210", "czeror-10210", "czeror-8684"):
+            with self.subTest(gv=gv):
+                self.assertNotIn(gv, validate.CAPTIONMOD_CS_TEXT_COLOR_GAMES)
+                self.assertEqual([], self.gate(self.complete_symbols(gv), gv))
 
 
 if __name__ == "__main__":

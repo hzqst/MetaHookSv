@@ -192,11 +192,14 @@ void CDictionary::LoadFromRow(
 
 	if (g_bIsSvenCoop)
 	{
-		auto sentenceObject = SCClient_SoundEngine_GetSentenceByName(gPrivateFuncs.SCClient_soundengine(), m_szTitle[0] == '#' ? &m_szTitle[1] : &m_szTitle[0]);
-
-		if (sentenceObject)
+		if (auto pSoundEngine = SCClient_SoundEngine_GetInstance())
 		{
-			m_Type = DICT_SENTENCE;
+			auto sentenceObject = SCClient_SoundEngine_GetSentenceByName(pSoundEngine, m_szTitle[0] == '#' ? &m_szTitle[1] : &m_szTitle[0]);
+
+			if (sentenceObject)
+			{
+				m_Type = DICT_SENTENCE;
+			}
 		}
 	}
 
@@ -825,7 +828,7 @@ void CViewport::Paint(void)
 bool CViewport::AllowedToPrintText(void)
 {
 	if (gPrivateFuncs.GameViewport_AllowedToPrintText)
-		return gPrivateFuncs.GameViewport_AllowedToPrintText(GameViewport, 0);
+		return gPrivateFuncs.GameViewport_AllowedToPrintText(gViewport, 0);
 
 	return true;
 }
@@ -844,7 +847,7 @@ bool CViewport::IsChatBlocked(int clientIndex)
 bool CViewport::IsScoreBoardVisible(void)
 {
 	if (gPrivateFuncs.GameViewport_IsScoreBoardVisible)
-		return gPrivateFuncs.GameViewport_IsScoreBoardVisible(GameViewport, 0);
+		return gPrivateFuncs.GameViewport_IsScoreBoardVisible(gViewport, 0);
 
 	return true;
 }

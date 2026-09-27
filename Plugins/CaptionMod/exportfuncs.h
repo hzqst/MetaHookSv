@@ -50,6 +50,9 @@ int pfnServerCmdUnreliable(const char* szCmdString);
 
 unsigned long GetVoiceBanMask();
 
+//Resolve the `CClient_SoundEngine` lazy singleton through the published backing
+//pointer; returns nullptr while the engine has not been constructed yet.
+void* SCClient_SoundEngine_GetInstance(void);
 bool __fastcall SCClient_SoundEngine_LoadSoundList(void* pSoundEngine, int);
 void __fastcall SCClient_SoundEngine_PlayFMODSound(void* pSoundEngine, int, int flags, int entindex, float* origin, int channel, const char* name, float fvol, float attenuation, int extraflags, int pitch, int sentenceIndex, float soundLength);
 int __stdcall FMOD_System_playSound(void* FMOD_System, int channelid, void* FMOD_Sound, bool paused, void** FMOD_Channel);
