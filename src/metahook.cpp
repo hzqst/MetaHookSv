@@ -1259,7 +1259,8 @@ bool MH_GetModuleFilePathA(HMODULE hModule, std::string& filePath)
 	return true;
 }
 
-// Format the engine module identity (path / CRC64) for loader diagnostics.
+// Format the engine module identity (path / CRC64) as the trailing lines of a
+// loader diagnostic, so the failing module is easy to identify when triaging.
 static std::string MH_LoadEngine_FormatModuleIdentity(uint64_t crc64, bool hasCRC64)
 {
 	std::string text;
@@ -1270,32 +1271,35 @@ static std::string MH_LoadEngine_FormatModuleIdentity(uint64_t crc64, bool hasCR
 
 	if (!modulePath.empty())
 	{
-		text += "Module: ";
+		text += "\nModule: ";
 		text += modulePath;
-		text += "\n";
 	}
 
 	if (hasCRC64)
 	{
 		char buffer[32];
 		snprintf(buffer, sizeof(buffer), "%016llx", (unsigned long long)crc64);
-		text += "CRC64: ";
+		text += "\nCRC64: ";
 		text += buffer;
-		text += "\n";
 	}
 
 	return text;
 }
 
-static void MH_LoadEngine_ReportSymbolFailure(const char* symbolName, mh_gamesymbol_status_t status)
+// Format the identity of the engine module currently being loaded.
+static std::string MH_LoadEngine_FormatEngineModuleIdentity(void)
 {
 	uint64_t crc64 = 0;
-	mh_gamesymbol_status_t crcSt = MH_GetModuleCRC64(g_dwEngineBase, &crc64);
+	mh_gamesymbol_status_t st = MH_GetModuleCRC64(g_dwEngineBase, &crc64);
+	return MH_LoadEngine_FormatModuleIdentity(crc64, st == MH_GAMESYMBOL_OK);
+}
 
-	MH_SysError("MH_LoadEngine: Failed to resolve \"%s\"\n%sReason: %s",
+static void MH_LoadEngine_ReportSymbolFailure(const char* symbolName, mh_gamesymbol_status_t status)
+{
+	MH_SysError("MH_LoadEngine: Failed to resolve \"%s\"\nReason: %s%s",
 		symbolName,
-		MH_LoadEngine_FormatModuleIdentity(crc64, crcSt == MH_GAMESYMBOL_OK).c_str(),
-		MH_GetGameSymbolStatusString(status));
+		MH_GetGameSymbolStatusString(status),
+		MH_LoadEngine_FormatEngineModuleIdentity().c_str());
 }
 
 static bool MH_LoadEngine_ResolveSymbol(const char* symbolName, mh_gamesymbol_kind_t expectedKind, PVOID* outAddress)
@@ -1355,16 +1359,16 @@ static bool MH_LoadEngine_DetermineEngineType(void)
 
 	if (crcSt != MH_GAMESYMBOL_OK)
 	{
-		MH_SysError("MH_LoadEngine: Unable to determine engine version\n%sReason: failed to compute the engine module CRC64 (%s)",
-			MH_LoadEngine_FormatModuleIdentity(0, false).c_str(),
-			MH_GetGameSymbolStatusString(crcSt));
+		MH_SysError("MH_LoadEngine: Unable to determine engine version\nReason: failed to compute the engine module CRC64 (%s)%s",
+			MH_GetGameSymbolStatusString(crcSt),
+			MH_LoadEngine_FormatEngineModuleIdentity().c_str());
 		return false;
 	}
 
 	const char* gameVersion = nullptr;
 	if (!GameData::GetGameVersion(crc64, &gameVersion) || !gameVersion)
 	{
-		MH_SysError("MH_LoadEngine: Unable to determine engine version\n%sReason: the engine module CRC64 is not present in the gamedata catalog",
+		MH_SysError("MH_LoadEngine: Unable to determine engine version\nReason: the engine module CRC64 is not present in the gamedata catalog%s",
 			MH_LoadEngine_FormatModuleIdentity(crc64, true).c_str());
 		return false;
 	}
@@ -1373,8 +1377,8 @@ static bool MH_LoadEngine_DetermineEngineType(void)
 
 	if (engineType == ENGINE_UNKNOWN)
 	{
-		MH_SysError("MH_LoadEngine: Unable to determine engine version\n%sGameVersion: %s\nReason: unsupported gameVersion prefix or malformed build number",
-			MH_LoadEngine_FormatModuleIdentity(crc64, true).c_str(), gameVersion);
+		MH_SysError("MH_LoadEngine: Unable to determine engine version\nGameVersion: %s\nReason: unsupported gameVersion prefix or malformed build number%s",
+			gameVersion, MH_LoadEngine_FormatModuleIdentity(crc64, true).c_str());
 		return false;
 	}
 
@@ -1443,7 +1447,8 @@ static bool MH_LoadEngine_PatchCvarCallbacks(void)
 
 		if (!MH_InlinePatchRedirectBranch(callSiteAddress, MH_Cvar_DirectSet, NULL))
 		{
-			MH_SysError("MH_LoadEngine: Failed to redirect the cvar branch at \"%s\"", symbolName);
+			MH_SysError("MH_LoadEngine: Failed to redirect the cvar branch at \"%s\"%s",
+				symbolName, MH_LoadEngine_FormatEngineModuleIdentity().c_str());
 			return false;
 		}
 	}
@@ -1528,8 +1533,9 @@ static bool MH_LoadEngine_ResolveGlobalOperand(const char* symbolName, PVOID glo
 
 	if (st != MH_GAMESYMBOL_OK)
 	{
-		MH_SysError("MH_LoadEngine: Failed to query operand metadata for \"%s\"\nReason: %s",
-			symbolName, MH_GetGameSymbolStatusString(st));
+		MH_SysError("MH_LoadEngine: Failed to query operand metadata for \"%s\"\nReason: %s%s",
+			symbolName, MH_GetGameSymbolStatusString(st),
+			MH_LoadEngine_FormatEngineModuleIdentity().c_str());
 		return false;
 	}
 
