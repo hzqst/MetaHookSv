@@ -1,5 +1,6 @@
 #include <metahook.h>
 #include <glew.h>
+#include "plugins.h"
 #include "exportfuncs.h"
 #include "gl_capture.h"
 
@@ -12,6 +13,8 @@ IFileSystem_HL25* g_pFileSystem_HL25 = NULL;
 
 int g_iEngineType = 0;
 DWORD g_dwEngineBuildnum = 0;
+
+private_funcs_t gPrivateFuncs = { 0 };
 
 void IPluginsV4::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_enginesave_t *pSave)
 {
@@ -50,6 +53,8 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 void IPluginsV4::ExitGame(int iResult)
 {
+	GL_DiscardPendingCapture();
+	UninstallPresentHook();
 }
 
 const char completeVersion[] =

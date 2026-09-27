@@ -13,6 +13,16 @@ extern mh_dll_info_t g_MirrorEngineDLLInfo;
 extern mh_dll_info_t g_ClientDLLInfo;
 extern mh_dll_info_t g_MirrorClientDLLInfo;
 
+typedef struct
+{
+	void(__cdecl* SDL_GL_SwapWindow)(void* window);
+	// The engine's VID_FlipScreen pointer slot and the function it held before we swapped it.
+	void(__cdecl** VID_FlipScreen)(void);
+	void(__cdecl* Sys_VID_FlipScreen)(void);
+}private_funcs_t;
+
+extern private_funcs_t gPrivateFuncs;
+
 #define MHPluginName "SteamScreenshots"
 #define Sys_Error(msg, ...) g_pMetaHookAPI->SysError("["  MHPluginName   "] " msg, __VA_ARGS__);
 #define Sig_NotFound(name) Sys_Error("Could not found: %s\nEngine buildnum: %d", #name, g_dwEngineBuildnum);

@@ -1,6 +1,7 @@
 #include <metahook.h>
 #include <glew.h>
 #include "cvardef.h"
+#include "plugins.h"
 #include "exportfuncs.h"
 #include "entity_types.h"
 #include "parsemsg.h"
@@ -28,6 +29,9 @@ namespace
 		gEngfuncs.Con_Printf(pszMessage);
 	}
 }
+
+static hook_t* g_pPresentHook = NULL;
+
 class CSnapshotManager
 {
 public:
@@ -120,9 +124,100 @@ void ScreenshotCallback(void* pBuf, size_t cbBufSize, int width, int height)
 	pSteamScreenshots->WriteScreenshot(pBuf, cbBufSize, width, height);
 }
 
+void __cdecl SDL_GL_SwapWindow(void* window)
+{
+	GL_CapturePendingBeforeSwap(ScreenshotCallback);
+
+	// With Renderer enabled, its final blit runs before this engine flip.
+	gPrivateFuncs.SDL_GL_SwapWindow(window);
+}
+
+void __cdecl Sys_VID_FlipScreen(void)
+{
+	// With Renderer enabled, its final blit runs before this engine flip.
+	GL_CapturePendingBeforeSwap(ScreenshotCallback);
+
+	gPrivateFuncs.Sys_VID_FlipScreen();
+}
+
+void InstallSDL2Hook()
+{
+	if (g_pPresentHook)
+		return;
+
+	auto engine = g_pMetaHookAPI->GetEngineModule();
+	if (engine && g_pMetaHookAPI->ModuleHasImportEx(engine, "SDL2.dll", "SDL_GL_SwapWindow"))
+	{
+		g_pPresentHook = g_pMetaHookAPI->IATHook(engine, "SDL2.dll", "SDL_GL_SwapWindow", SDL_GL_SwapWindow, (void**)&gPrivateFuncs.SDL_GL_SwapWindow);
+	}
+
+	if (!g_pPresentHook)
+		gEngfuncs.Con_Printf("[SteamScreenshots] SDL hook unavailable; keeping the engine snapshot command.\n");
+}
+
+void InstallFlipScreenHook()
+{
+	if (g_pPresentHook)
+		return;
+
+	if (gPrivateFuncs.VID_FlipScreen)
+		return;
+
+	if (g_pInterface->MetaHookAPIVersion < 109)
+	{
+		gEngfuncs.Con_Printf("[SteamScreenshots] Gamedata API unavailable; keeping the engine snapshot command.\n");
+		return;
+	}
+
+	PVOID flipScreenSlot = NULL;
+	auto status = g_pMetaHookAPI->ResolveGameSymbol(g_pMetaHookAPI->GetEngineBase(),
+		"VID_FlipScreen", MH_GAMESYMBOL_KIND_GLOBAL, &flipScreenSlot);
+	if (status != MH_GAMESYMBOL_OK)
+	{
+		gEngfuncs.Con_Printf("[SteamScreenshots] VID_FlipScreen unavailable (%s); keeping the engine snapshot command.\n",
+			g_pMetaHookAPI->GetGameSymbolStatusString(status));
+		return;
+	}
+
+	// The gamedata GLOBAL is the engine's own flip function-pointer slot: GL_EndRendering
+	// calls through it and Sys_InitGame writes it once at startup, so swapping the pointer
+	// redirects every flip without patching code.
+	if (flipScreenSlot)
+	{
+		gPrivateFuncs.VID_FlipScreen = (void(__cdecl**)(void))flipScreenSlot;
+		gPrivateFuncs.Sys_VID_FlipScreen = *gPrivateFuncs.VID_FlipScreen;
+		(*gPrivateFuncs.VID_FlipScreen) = Sys_VID_FlipScreen;
+	}
+
+	if (!gPrivateFuncs.VID_FlipScreen)
+		gEngfuncs.Con_Printf("[SteamScreenshots] VID_FlipScreen hook unavailable; keeping the engine snapshot command.\n");
+}
+
+void UninstallPresentHook()
+{
+	if (g_pPresentHook)
+	{
+		g_pMetaHookAPI->UnHook(g_pPresentHook);
+		g_pPresentHook = NULL;
+		gPrivateFuncs.SDL_GL_SwapWindow = NULL;
+	}
+
+	if (gPrivateFuncs.VID_FlipScreen)
+	{
+		(*gPrivateFuncs.VID_FlipScreen) = gPrivateFuncs.Sys_VID_FlipScreen;
+		gPrivateFuncs.VID_FlipScreen = NULL;
+		gPrivateFuncs.Sys_VID_FlipScreen = NULL;
+	}
+}
+
+bool IsPresentHookInstalled()
+{
+	return g_pPresentHook != NULL || gPrivateFuncs.VID_FlipScreen != NULL;
+}
+
 void VID_Snapshot_f(void)
 {
-	GL_BeginCapture(ScreenshotCallback);
+	GL_RequestCapture();
 }
 
 void HUD_Frame(double time)
@@ -166,7 +261,10 @@ void IN_ActivateMouse(void)
 
 	if (!init)
 	{
-		if (GL_InitCapture())
+		InstallSDL2Hook();
+		InstallFlipScreenHook();
+
+		if (IsPresentHookInstalled() && GL_InitCapture())
 		{
 			//cmd "snapshot" is registered after HUD_Init
 			g_pMetaHookAPI->HookCmd("snapshot", VID_Snapshot_f);
@@ -179,6 +277,3 @@ void IN_ActivateMouse(void)
 		init = true;
 	}
 }
-
-
-

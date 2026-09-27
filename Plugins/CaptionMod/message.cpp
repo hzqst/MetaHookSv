@@ -15,20 +15,6 @@ using namespace vgui;
 extern cvar_t *hud_saytext_time;
 extern cvar_t *cap_newchat;
 
-//static char *m_pSenderName = NULL;
-
-//static client_textmessage_t *g_pCurrentTextMessage = NULL;
-
-/*const char* GetSenderName()
-{
-	return m_pSenderName;
-}
-
-client_textmessage_t* GetCurrentTextMessage()
-{
-	return g_pCurrentTextMessage;
-}*/
-
 CHudMessage m_HudMessage;
 CHudMenu m_HudMenu;
 
@@ -1198,11 +1184,14 @@ void SayTextLine::Colorize(void)
 					break;
 				}
 
-				/*case TEXTCOLOR_LOCATION:
+				case TEXTCOLOR_LOCATION:
 				{
-					range.color = g_LocationColor;
+					//`LocationColor` holds the client's `g_LocationColor` array; it is
+					//null on the clients that publish no such global (czeror), which
+					//fall through to the default colour.
+					range.color = gPrivateFuncs.LocationColor ? (float *)gPrivateFuncs.LocationColor : NULL;
 					break;
-				}*/
+				}
 
 				default:
 				{

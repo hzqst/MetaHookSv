@@ -33,7 +33,6 @@ cvar_t* cap_lang = NULL;
 int m_iIntermission = 0;
 
 //client.dll
-void *GameViewport = NULL;
 void *gHud = NULL;
 
 cvar_t* cap_subtitle_prefix = NULL;
@@ -334,11 +333,11 @@ void VOX_ParseString(char *psz, char *(*rgpparseword)[CVOXWORDMAX])
 	}
 }
 
-char *VOX_GetDirectory(char *szpath, char *psz)
+const char *VOX_GetDirectory(char *szpath, const char *psz)
 {
 	char c;
 	int cb = 0;
-	char *pszscan = psz + Q_strlen(psz) - 1;
+	const char *pszscan = psz + Q_strlen(psz) - 1;
 
 	c = *pszscan;
 
@@ -442,10 +441,14 @@ int VOX_ParseWordParams(char *psz, voxword_t *pvoxword, int fFirst)
 		return 1;
 }
 
-char *VOX_LookupString(const char *pszin, int *psentencenum)
+//Returns a pointer into the engine's own sentence data (the gamedata-resolved
+//`rgpszrawsentence` table, or `sentenceEntry_s::data`); it is never written
+//through, so the result is const. VOX_ParseString is the one function that
+//edits in place, and it is always handed the caller's local copy.
+const char *VOX_LookupString(const char *pszin, int *psentencenum)
 {
 	int i;
-	char *cptr;
+	const char *cptr;
 	sentenceEntry_s *sentenceEntry;
 
 	if (pszin[0] == '#')
@@ -485,7 +488,7 @@ void S_LoadSentence(const char *pszin, const std::function<void(sfx_t *)> &callb
 	char pathbuffer[64];
 	char szpath[32];
 	sfxcache_t *sc;
-	char *psz;
+	const char *psz;
 	voxword_t rgvoxword[CVOXWORDMAX];
 	char *rgpparseword[CVOXWORDMAX];
 
@@ -513,9 +516,10 @@ void S_LoadSentence(const char *pszin, const std::function<void(sfx_t *)> &callb
 
 	Q_strncpy(buffer, psz, sizeof(buffer) - 1);
 	buffer[sizeof(buffer) - 1] = 0;
-	psz = buffer;
 
-	VOX_ParseString(psz, &rgpparseword);
+	//VOX_ParseString splits the sentence in place, so it must run on the local
+	//copy rather than on the engine-owned string VOX_LookupString returned.
+	VOX_ParseString(buffer, &rgpparseword);
 
 	i = 0;
 	cword = 0;
@@ -689,6 +693,11 @@ static bool g_bPlayedFMODSound = false;
 //static int g_iCurrentPlayingFMODSoundLengthMs = 0;
 //static void* g_pFMODSystem = NULL;
 
+void* SCClient_SoundEngine_GetInstance(void)
+{
+	return gPrivateFuncs.SCClient_soundengine ? *gPrivateFuncs.SCClient_soundengine : nullptr;
+}
+
 SCClient_Sentence_t* SCClient_SoundEngine_GetSentenceObjectByIndex(void* pSoundEngine, int sentenceIndex)
 {
 	if (sentenceIndex < 0 || sentenceIndex > 0xFFF)
@@ -761,7 +770,12 @@ void SCClient_LoadSentence(SCClient_Sentence_t*sentenceObject, const std::functi
 
 float SCClient_GetSoundDuration(const char *sample)
 {
-	auto FMOD_Sound = gPrivateFuncs.SCClient_SoundEngine_LookupSoundBySample(gPrivateFuncs.SCClient_soundengine(), 0, sample);
+	auto pSoundEngine = SCClient_SoundEngine_GetInstance();
+
+	if (!pSoundEngine)
+		return 0;
+
+	auto FMOD_Sound = gPrivateFuncs.SCClient_SoundEngine_LookupSoundBySample(pSoundEngine, 0, sample);
 
 	if (FMOD_Sound)
 	{

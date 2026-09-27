@@ -17,9 +17,13 @@ cmake --build intermediate/SteamScreenshotsTests --config Release
 ctest --test-dir intermediate/SteamScreenshotsTests -C Release --output-on-failure
 ```
 
-Coverage includes synchronous/asynchronous RGB readback, default and non-default
-pixel packing, a pre-bound caller PBO, independent read/draw FBO bindings,
-capture width/height changes, vertical flipping, and framebuffer capability gates.
+Coverage includes synchronous/asynchronous RGB readback from `GL_BACK` even when
+the default read buffer is `GL_FRONT`, restoration of the default and caller FBO
+read buffers, default and non-default pixel packing, a pre-bound caller PBO,
+independent read/draw FBO bindings, pending request coalescing and busy PBO
+retry, async frame ownership, capture width/height changes, vertical flipping,
+and framebuffer capability gates.
+
 The capture region changes inside a fixed-size hidden framebuffer to avoid
 platform-specific hidden-window resize behavior.
 

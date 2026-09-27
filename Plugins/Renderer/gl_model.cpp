@@ -117,7 +117,7 @@ void Mod_LoadStudioModel(model_t* mod, void* buffer)
 			{
 				// Replace the body before any client/engine Studio code computes bones.
 				// Reload through the engine to give this model its own header and cache slot.
-				gEngfuncs.Con_Printf("Renderer: replacing %s with %s because its texture model is missing.\n", mod->name, textureModel->name);
+				gEngfuncs.Con_Printf("Renderer: replacing %s with %s because its texture model is missing.\n", mod->name, textureModel ? textureModel->name : "<unknown>");
 				strncpy(mod->name, textureModel->name, sizeof(mod->name) - 1);
 				mod->name[sizeof(mod->name) - 1] = 0;
 				mod->texinfo = nullptr;
