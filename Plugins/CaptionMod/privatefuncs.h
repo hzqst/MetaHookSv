@@ -54,7 +54,9 @@ typedef struct
 
 	//ClientDLL Counter-Strike
 	float *(*GetTextColor)(int colorNum, int clientIndex);
-	void* BaseTextColor;
+	//Address of the `g_LocationColor[3]` array, the `TEXTCOLOR_LOCATION` fallback
+	//for the clients that publish no `GetTextColor`.
+	void* LocationColor;
 
 	//ClientDLL
 	bool (__fastcall *GameViewport_AllowedToPrintText)(void *pthis, int);

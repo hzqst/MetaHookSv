@@ -828,6 +828,18 @@ CAPTIONMOD_CS_TEXT_COLOR_GAMES = (
     "cstrike-8684",
     "czero-8684",
 )
+# CaptionMod's TEXTCOLOR_LOCATION fallback is the `g_LocationColor[3]` array, which
+# it used to reach through the `33 C0 EB ?? B8 <imm32> EB ??` pattern under its own
+# name `BaseTextColor`. That branch is only reachable where `GetTextColor` is
+# absent, i.e. CAPTIONMOD_CS_CLIENT_GAMES minus CAPTIONMOD_CS_TEXT_COLOR_GAMES:
+# cstrike-10210, czero-10210 and the two czeror builds. czeror is skipped by the
+# plugin's own `strcmp(gameDirectory, "czeror")` guard and publishes no
+# `g_LocationColor` record on either mirror, so the required set is the remaining
+# pair - both of which do publish it.
+CAPTIONMOD_CS_LOCATION_COLOR_GAMES = (
+    "cstrike-10210",
+    "czero-10210",
+)
 
 
 def validate_captionmod(symbols, game_version, include_engine=True):
@@ -849,7 +861,42 @@ def validate_captionmod(symbols, game_version, include_engine=True):
         errors += _consumer_check(symbols, game_version, CAPTIONMOD_CS_CLIENT_FUNCTIONS, "function", "client", "CaptionMod")
     if game_version in CAPTIONMOD_CS_TEXT_COLOR_GAMES:
         errors += _consumer_check(symbols, game_version, ("GetTextColor",), "function", "client", "CaptionMod")
+    if game_version in CAPTIONMOD_CS_LOCATION_COLOR_GAMES:
+        errors += _consumer_check(symbols, game_version, ("g_LocationColor",), "global", "client", "CaptionMod")
     return errors
+
+
+# SCCameraFix refuses to load outside Sven Co-op (Sys_Error unless the client
+# factory answers SCClientDLL001), so its client globals only need to be
+# published by the two SvEngine snapshots.
+#
+# `g_iUser1` / `g_iUser2` were also the reason Renderer's retired
+# RENDERER_CLIENT_STUDIO_GLOBALS entry existed; SCCameraFix does read them, so
+# they are gated here instead of there.
+#
+# `g_iFogColor` / `g_iStartDist` / `g_iEndDist` are already gated for Renderer
+# via RENDERER_CLIENT_SVEN_GLOBALS; SCCameraFix reading them is an independent
+# dependency on the same records, pinned below so a catalog change that drops
+# them fails the gate for every consumer that would break.
+SCCAMERAFIX_CLIENT_GAMES = ("svencoop-10257", "svencoop-8948")
+SCCAMERAFIX_CLIENT_GLOBALS = (
+    "g_iFogColor",
+    "g_iStartDist",
+    "g_iEndDist",
+    "g_iUser1",
+    "g_iUser2",
+)
+
+
+def validate_sccamerafix(symbols, game_version):
+    """Return SCCameraFix consumer failures for a declared game version.
+
+    Every identity outside SCCAMERAFIX_CLIENT_GAMES is out of scope: SCCameraFix
+    aborts during load unless the client factory answers SCClientDLL001.
+    """
+    if game_version not in SCCAMERAFIX_CLIENT_GAMES:
+        return []
+    return _consumer_check(symbols, game_version, SCCAMERAFIX_CLIENT_GLOBALS, "global", "client", "SCCameraFix")
 
 
 def validate_renderer(symbols, game_version, include_engine=True, include_client=True):
@@ -1017,6 +1064,14 @@ def main():
             continue
         symbols = game_symbols[gv][1]
         all_errors.extend(validate_captionmod(symbols, gv, include_engine=gv in RENDERER_ALL_GAMES))
+
+    # SCCameraFix consumer gate: Sven Co-op only.
+    for gv in SCCAMERAFIX_CLIENT_GAMES:
+        if gv not in game_symbols:
+            all_errors.append(f"'{gv}': snapshot not loaded (SCCameraFix gate)")
+            continue
+        symbols = game_symbols[gv][1]
+        all_errors.extend(validate_sccamerafix(symbols, gv))
 
     if all_errors:
         for e in all_errors:

@@ -259,19 +259,14 @@ void Client_FillAddress_CounterStrike_GetTextColor(const mh_dll_info_t& DllInfo,
 	{
 		if (!gPrivateFuncs.GetTextColor)
 		{
-			//`BaseTextColor` has no catalog record on any identity, so it is the
-			//one Counter-Strike symbol that keeps its signature locator.
-			char pattern[] = "\x33\xC0\xEB\x2A\xB8\x2A\x2A\x2A\x2A\xEB\x2A";
-			auto addr = Search_Pattern(pattern, DllInfo);
-
-			Sig_AddrNotFound(BaseTextColor);
-
-			/*
-				void* BaseTextColor = NULL;
-			*/
-
-			PVOID BaseTextColor_VA = *(PVOID*)((PUCHAR)addr + 5);
-			gPrivateFuncs.BaseTextColor = (decltype(gPrivateFuncs.BaseTextColor))ConvertDllInfoSpace(BaseTextColor_VA, DllInfo, RealDllInfo);
+			//The location colour fallback is catalog-covered under its real name
+			//`g_LocationColor`, which is what `mov eax, offset g_LocationColor` in the
+			//old pattern `33 C0 EB ?? B8 <imm32> EB ??` was loading. Only
+			//cstrike-10210 and czero-10210 reach this branch - the two non-czeror
+			//clients that publish no `GetTextColor` - and both publish it, so the
+			//resolve stays required. `czeror` publishes neither symbol, which is why
+			//the game-directory guard above is still needed.
+			gPrivateFuncs.LocationColor = (decltype(gPrivateFuncs.LocationColor))GamedataResolvePtr(RealDllInfo.ImageBase, "g_LocationColor", MH_GAMESYMBOL_KIND_GLOBAL);
 		}
 	}
 }

@@ -642,9 +642,9 @@ float *ClientDLL_GetTextColor(int colorNum, int clientIndex)
 	}
 	case TEXTCOLOR_LOCATION:
 	{
-		if (gPrivateFuncs.BaseTextColor)
+		if (gPrivateFuncs.LocationColor)
 		{
-			return (float *)gPrivateFuncs.BaseTextColor;
+			return (float *)gPrivateFuncs.LocationColor;
 		}
 		break;
 	}

@@ -1,5 +1,4 @@
 #include <metahook.h>
-#include <capstone.h>
 #include "plugins.h"
 #include "privatehook.h"
 
@@ -27,152 +26,21 @@ static hook_t* g_phook_V_CalcNormalRefdef = NULL;
 
 void Client_FillAddress_CL_IsThirdPerson(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	PVOID CL_IsThirdPerson = ConvertDllInfoSpace((void*)g_pMetaSave->pExportFuncs->CL_IsThirdPerson, RealDllInfo, DllInfo);
-
-	if (!CL_IsThirdPerson)
-	{
-		if (g_pMetaHookAPI->GetClientModule())
-		{
-			CL_IsThirdPerson = ConvertDllInfoSpace(GetProcAddress(g_pMetaHookAPI->GetClientModule(), "CL_IsThirdPerson"), RealDllInfo, DllInfo);
-		}
-	}
-
-	if (CL_IsThirdPerson)
-	{
-		typedef struct CL_IsThirdPerson_SearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-			ULONG_PTR CandidateVA[16]{};
-			int iNumCandidates{};
-		}CL_IsThirdPerson_SearchContext;
-
-		CL_IsThirdPerson_SearchContext ctx = { DllInfo, RealDllInfo };
-
-		g_pMetaHookAPI->DisasmRanges(CL_IsThirdPerson, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-			auto ctx = (CL_IsThirdPerson_SearchContext*)context;
-			auto pinst = (cs_insn*)inst;
-
-			if (ctx->iNumCandidates < 16)
-			{
-				if (pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					(
-						pinst->detail->x86.operands[0].reg == X86_REG_EAX ||
-						pinst->detail->x86.operands[0].reg == X86_REG_EBX ||
-						pinst->detail->x86.operands[0].reg == X86_REG_ECX ||
-						pinst->detail->x86.operands[0].reg == X86_REG_EDX ||
-						pinst->detail->x86.operands[0].reg == X86_REG_ESI ||
-						pinst->detail->x86.operands[0].reg == X86_REG_EDI
-						) &&
-					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[1].mem.base == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-				{
-					ctx->CandidateVA[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
-					ctx->iNumCandidates++;
-				}
-			}
-
-			if (ctx->iNumCandidates < 16)
-			{
-				if (pinst->id == X86_INS_CMP &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-					pinst->detail->x86.operands[1].imm == 0 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[0].mem.base == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-				{
-					ctx->CandidateVA[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
-					ctx->iNumCandidates++;
-				}
-			}
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-
-			}, 0, &ctx);
-
-		if (ctx.iNumCandidates >= 3 && ctx.CandidateVA[ctx.iNumCandidates - 1] == ctx.CandidateVA[ctx.iNumCandidates - 2] + sizeof(int))
-		{
-			g_iUser1 = (decltype(g_iUser1))ConvertDllInfoSpace((PVOID)ctx.CandidateVA[ctx.iNumCandidates - 2], DllInfo, RealDllInfo);
-			g_iUser2 = (decltype(g_iUser2))ConvertDllInfoSpace((PVOID)ctx.CandidateVA[ctx.iNumCandidates - 1], DllInfo, RealDllInfo);
-		}
-	}
+	//The old locator disassembled the client's exported CL_IsThirdPerson and
+	//picked the last two adjacent .data references out of it; the catalog
+	//publishes those two globals directly for both SvEngine clients.
+	g_iUser1 = (decltype(g_iUser1))GamedataResolvePtr(RealDllInfo.ImageBase, "g_iUser1", MH_GAMESYMBOL_KIND_GLOBAL);
+	g_iUser2 = (decltype(g_iUser2))GamedataResolvePtr(RealDllInfo.ImageBase, "g_iUser2", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Client_FillAddress_FogParams(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	const char pattern[] = "\x68\x01\x26\x00\x00\x68\x65\x0B\x00\x00";
-
-	PVOID addr = Search_Pattern(pattern, DllInfo);
-
-	Sig_AddrNotFound(g_iFogColor);
-
-	typedef struct V_CalcNormalRefdef_SearchContext_s
-	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-		ULONG_PTR Candidates[16]{};
-		int iNumCandidates{};
-	}V_CalcNormalRefdef_SearchContext;
-
-	V_CalcNormalRefdef_SearchContext ctx = { DllInfo, RealDllInfo };
-
-	g_pMetaHookAPI->DisasmRanges(addr, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto ctx = (V_CalcNormalRefdef_SearchContext*)context;
-		auto pinst = (cs_insn*)inst;
-
-		if (ctx->iNumCandidates < 16)
-		{
-			if (pinst->id == X86_INS_MOVSS &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				pinst->detail->x86.operands[0].reg == X86_REG_XMM0 &&
-				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[1].mem.base == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.ImageBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.ImageBase + ctx->DllInfo.ImageSize)
-			{
-				ctx->Candidates[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
-				ctx->iNumCandidates++;
-			}
-		}
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-		}, 0, &ctx);
-
-	if (ctx.iNumCandidates >= 5 &&
-		ctx.Candidates[ctx.iNumCandidates - 1] == ctx.Candidates[ctx.iNumCandidates - 2] + sizeof(int) &&
-		ctx.Candidates[ctx.iNumCandidates - 2] == ctx.Candidates[ctx.iNumCandidates - 3] + sizeof(int) &&
-		ctx.Candidates[ctx.iNumCandidates - 3] == ctx.Candidates[ctx.iNumCandidates - 4] + sizeof(int))
-	{
-		g_iFogColor_SCClient = (decltype(g_iFogColor_SCClient))ConvertDllInfoSpace((PVOID)ctx.Candidates[0], DllInfo, RealDllInfo);
-		g_iStartDist_SCClient = (decltype(g_iStartDist_SCClient))ConvertDllInfoSpace((PVOID)ctx.Candidates[3], DllInfo, RealDllInfo);
-		g_iEndDist_SCClient = (decltype(g_iEndDist_SCClient))ConvertDllInfoSpace((PVOID)ctx.Candidates[4], DllInfo, RealDllInfo);
-	}
-
-	Sig_VarNotFound(g_iFogColor_SCClient);
-	Sig_VarNotFound(g_iStartDist_SCClient);
-	Sig_VarNotFound(g_iEndDist_SCClient);
+	//The old locator walked the `push 0x2601 / push 0xB65` texture-state block
+	//for five adjacent `movss xmm0, [imm]` reads and took the first, fourth and
+	//fifth (.data dword 0/3/4); the catalog publishes the same three globals.
+	g_iFogColor_SCClient = (decltype(g_iFogColor_SCClient))GamedataResolvePtr(RealDllInfo.ImageBase, "g_iFogColor", MH_GAMESYMBOL_KIND_GLOBAL);
+	g_iStartDist_SCClient = (decltype(g_iStartDist_SCClient))GamedataResolvePtr(RealDllInfo.ImageBase, "g_iStartDist", MH_GAMESYMBOL_KIND_GLOBAL);
+	g_iEndDist_SCClient = (decltype(g_iEndDist_SCClient))GamedataResolvePtr(RealDllInfo.ImageBase, "g_iEndDist", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -246,7 +114,7 @@ void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealD
 	{
 		const char pattern[] = "\x68\x01\x26\x00\x00\x68\x65\x0B\x00\x00";
 		auto addr = (PUCHAR)Search_Pattern(pattern, DllInfo);
-		Sig_AddrNotFound(g_iFogColor);
+		Sig_AddrNotFound(g_vVecViewangles);
 
 		const char pattern2[] = "\xF3\x0F\x11\x05\x2A\x2A\x2A\x2A\xF3\x0F\x2A\x2A\x10\xF3\x0F\x11\x05\x2A\x2A\x2A\x2A\xF3\x0F\x2A\x2A\x14\xF3\x0F\x11\x05";
 		auto addr2 = (PUCHAR)Search_Pattern_From_Size(addr - 0x100, 0x100, pattern2);

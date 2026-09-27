@@ -1184,11 +1184,14 @@ void SayTextLine::Colorize(void)
 					break;
 				}
 
-				/*case TEXTCOLOR_LOCATION:
+				case TEXTCOLOR_LOCATION:
 				{
-					range.color = g_LocationColor;
+					//`LocationColor` holds the client's `g_LocationColor` array; it is
+					//null on the clients that publish no such global (czeror), which
+					//fall through to the default colour.
+					range.color = gPrivateFuncs.LocationColor ? (float *)gPrivateFuncs.LocationColor : NULL;
 					break;
-				}*/
+				}
 
 				default:
 				{
