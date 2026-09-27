@@ -1959,6 +1959,16 @@ void MH_ExitGame(int iResult)
 
 	MH_FreeAllHook();
 
+	// The cl_funcs call operand is rewritten with a raw DWORD write rather than a
+	// registered hook, so MH_FreeAllHook does not undo it. Restore it while the
+	// engine image is still mapped: an in-process engine restart (ChangeGame) can
+	// otherwise reuse the still-redirected image, which then fails
+	// MH_LoadEngine_ResolveGlobalOperand's check on the next engine session.
+	if (g_pClientDLLInitializeOperand && g_pExportFuncs)
+	{
+		MH_WriteDWORD(g_pClientDLLInitializeOperand, (DWORD)g_pExportFuncs);
+	}
+
 	//Clear all built-in cvar callbacks
 	if (cvar_hooks)
 	{
