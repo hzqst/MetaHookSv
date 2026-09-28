@@ -51,13 +51,15 @@ typedef struct
 	bool(__fastcall* ClientVGUI_KeyValues_LoadFromFile)(void* pthis, int dummy, IFileSystem* pFileSystem, const char* resourceName, const char* pathId);
 
 	void(__fastcall* ClientVGUI_RichText_SetTextW)(void* pthis, int dummy, const wchar_t* text);
-	void(__fastcall* ClientVGUI_RichText_SetTextA)(void* pthis, int dummy, const char* text);
+
+	//Valve populate SetTextW with invalid chars, and CTeamMenu::LoadMapPage is the
+	//only caller that hands it the corrupted map description text.
+	void(__fastcall* TeamMenu_LoadMapPage)(void* pthis, int dummy, const char* mapname);
 
 	//void** ClientVGUI_BuildGroup_vftable;
 	//void(__fastcall* ClientVGUI_BuildGroup_ApplySettings)(void* pthis, int dummy, void* resourceData);
 	//void(__fastcall* ClientVGUI_BuildGroup_LoadControlSettings)(void* pthis, int dummy, const char* controlResourceName, const char* pathID);
 
-	int ClientVGUI_Frame_Activate_vftable_index;
 	//void* (__fastcall* CCSBackGroundPanel_ctor)(void* pthis, int, void* parent);
 	void (__fastcall* CCSBackGroundPanel_Activate)(void* pthis, int dummy);
 	void** CCSBackGroundPanel_vftable;

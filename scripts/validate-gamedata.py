@@ -925,14 +925,28 @@ def validate_sccamerafix(symbols, game_version):
 
 # Pin the published native UI entries on CS clients. Panel::Init and
 # KeyValues::LoadFromFile remain optional at runtime on other client identities;
-# LoadControlSettings is only resolved in the Counter-Strike branch.
+# the Counter-Strike branch resolves LoadControlSettings, LoadMapPage and
+# RichText::SetText there, plus Frame::Activate (the shared vtable slot the
+# background panel and buy menu hook) and the background panel's member offset.
+# Condition Zero Deleted Scenes publishes no background panel, so the plugin
+# skips that block for czeror and it is not gated there.
 VGUI2EXTENSION_CLIENT_GAMES = CAPTIONMOD_CS_CLIENT_GAMES
+VGUI2EXTENSION_BACKGROUND_PANEL_GAMES = tuple(
+    gv for gv in VGUI2EXTENSION_CLIENT_GAMES if not gv.startswith("czeror-"))
 VGUI2EXTENSION_CLIENT_OPTIONAL_ENTRIES = {
     "vgui2::Panel::Init(int, int, int, int)": "function",
     "KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)": "virtualFunction",
 }
 VGUI2EXTENSION_CS_CLIENT_FUNCTIONS = (
     "vgui2::Frame::LoadControlSettings(char const*, char const*)",
+    "CTeamMenu::LoadMapPage(char const*)",
+    "vgui2::RichText::SetText(wchar_t const*)",
+)
+VGUI2EXTENSION_CS_CLIENT_VIRTUAL_FUNCTIONS = (
+    "vgui2::Frame::Activate()",
+)
+VGUI2EXTENSION_BACKGROUND_PANEL_STRUCT_MEMBERS = (
+    "CounterStrikeViewport.m_pCSBackGround",
 )
 
 
@@ -946,6 +960,11 @@ def validate_vgui2extension(symbols, game_version):
     if is_cs:
         errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_CS_CLIENT_FUNCTIONS,
                                   "function", "client", "VGUI2Extension")
+        errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_CS_CLIENT_VIRTUAL_FUNCTIONS,
+                                  "virtualFunction", "client", "VGUI2Extension")
+    if game_version in VGUI2EXTENSION_BACKGROUND_PANEL_GAMES:
+        errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_BACKGROUND_PANEL_STRUCT_MEMBERS,
+                                  "structMember", "client", "VGUI2Extension")
     return errors
 
 

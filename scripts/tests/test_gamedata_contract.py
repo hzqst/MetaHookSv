@@ -1311,16 +1311,27 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
         "vgui2::Panel::Init(int, int, int, int)": "function",
         "KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)": "virtualFunction",
         "vgui2::Frame::LoadControlSettings(char const*, char const*)": "function",
+        "CTeamMenu::LoadMapPage(char const*)": "function",
+        "vgui2::RichText::SetText(wchar_t const*)": "function",
+        "vgui2::Frame::Activate()": "virtualFunction",
+        "CounterStrikeViewport.m_pCSBackGround": "structMember",
     }
+    # The first two are only type-checked when present on non-CS clients.
+    optional = ("vgui2::Panel::Init(int, int, int, int)",
+                "KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)")
     games = ("cstrike-3248", "cstrike-3647", "cstrike-4554", "cstrike-6153",
              "cstrike-8684", "cstrike-10210", "czero-8684", "czero-10210",
              "czeror-8684", "czeror-10210")
+    # Condition Zero Deleted Scenes publishes no background panel: the plugin
+    # skips that block for czeror, so its member offset is not gated there.
+    zds_games = ("czeror-8684", "czeror-10210")
+    background_panel_member = "CounterStrikeViewport.m_pCSBackGround"
 
     def complete_symbols(self):
         return {name: {"kind": kind, "module": "client"}
                 for name, kind in self.records.items()}
 
-    def test_published_cs_clients_keep_all_three_entries(self):
+    def test_published_cs_clients_keep_all_required_entries(self):
         for gv in self.games:
             with self.subTest(gv=gv):
                 self.assertEqual([], validate.validate_vgui2extension(self.complete_symbols(), gv))
@@ -1328,6 +1339,8 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
     def test_missing_or_mistyped_client_entry_is_rejected(self):
         for gv in self.games:
             for name, kind in self.records.items():
+                if gv in self.zds_games and name == self.background_panel_member:
+                    continue
                 for record in (None, {"kind": "global", "module": "client"},
                                {"kind": kind, "module": "engine"}):
                     with self.subTest(gv=gv, name=name, record=record):
@@ -1338,13 +1351,20 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
                         errors = validate.validate_vgui2extension(symbols, gv)
                         self.assertTrue(any(name in e for e in errors), errors)
 
+    def test_zds_does_not_require_the_background_panel_member(self):
+        for gv in self.zds_games:
+            with self.subTest(gv=gv):
+                symbols = self.complete_symbols()
+                del symbols[self.background_panel_member]
+                self.assertEqual([], validate.validate_vgui2extension(symbols, gv))
+
     def test_other_clients_allow_absent_native_entries(self):
         for gv in ("svencoop-8948", "svencoop-10257", "hl-8684", "hl-10210", "cof-5936"):
             with self.subTest(gv=gv):
                 self.assertEqual([], validate.validate_vgui2extension({}, gv))
 
     def test_optional_entries_are_type_checked_when_present(self):
-        for name in tuple(self.records)[:2]:
+        for name in self.optional:
             with self.subTest(name=name):
                 symbols = {name: {"kind": "global", "module": "client"}}
                 errors = validate.validate_vgui2extension(symbols, "svencoop-10257")
