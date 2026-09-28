@@ -483,24 +483,54 @@ namespace
 		return true;
 	}
 
-	// A virtual function record is an address-bearing function entry recovered
-	// from its owning vtable slot. The rva is consumed as a normal function
-	// address; vfunc_index/vtable_name are validated but not stored.
-	bool NormalizeVirtualFunction(const rapidjson::Value& payload, GameSymbolRecord& rec, std::string& error)
+	// A virtual function record is either an address-bearing function entry
+	// recovered from its owning vtable slot, or a slot-only declaration that
+	// carries no address. The rva is consumed as a normal function address;
+	// vfunc_index/vtable_name are validated but not stored. A slot-only
+	// declaration is reported through outDeclarationOnly so the caller can skip
+	// storing it: it has no address to resolve, and reporting it as available
+	// would let a resolver dereference a null rva. The signature is optional and
+	// upstream publishes it under either vfunc_sig or func_sig.
+	bool NormalizeVirtualFunction(const rapidjson::Value& payload, GameSymbolRecord& rec,
+		bool& outDeclarationOnly, std::string& error)
 	{
-		const rapidjson::Value* funcRva = FindMember(payload, "func_rva");
-		const rapidjson::Value* funcSize = FindMember(payload, "func_size");
-		const rapidjson::Value* vfuncSig = FindMember(payload, "vfunc_sig");
+		outDeclarationOnly = false;
+
 		const rapidjson::Value* vfuncIndex = FindMember(payload, "vfunc_index");
 		const rapidjson::Value* vtableName = FindMember(payload, "vtable_name");
-		if (!funcRva || !funcRva->IsString() || !funcSize || !funcSize->IsString() ||
-			!vfuncSig || !vfuncSig->IsString() ||
-			!vfuncIndex || !vfuncIndex->IsInt() ||
-			!vtableName || !vtableName->IsString())
+		if (!vfuncIndex || !vfuncIndex->IsInt() ||
+			!vtableName || !vtableName->IsString() || vtableName->GetStringLength() == 0)
 		{
-			error = "virtualFunction payload is missing func_rva/func_size/vfunc_sig/vfunc_index/vtable_name";
+			error = "virtualFunction payload is missing vfunc_index/vtable_name";
 			return false;
 		}
+
+		const rapidjson::Value* funcRva = FindMember(payload, "func_rva");
+		const rapidjson::Value* funcSize = FindMember(payload, "func_size");
+		if (!funcRva && !funcSize)
+		{
+			outDeclarationOnly = true;
+			return true;
+		}
+		if (!funcRva || !funcRva->IsString() || !funcSize || !funcSize->IsString())
+		{
+			error = "virtualFunction payload is missing/invalid func_rva/func_size";
+			return false;
+		}
+
+		const rapidjson::Value* vfuncSig = FindMember(payload, "vfunc_sig");
+		if (vfuncSig && !vfuncSig->IsString())
+		{
+			error = "virtualFunction payload has a non-string vfunc_sig";
+			return false;
+		}
+		const rapidjson::Value* funcSig = FindMember(payload, "func_sig");
+		if (funcSig && !funcSig->IsString())
+		{
+			error = "virtualFunction payload has a non-string func_sig";
+			return false;
+		}
+		const rapidjson::Value* signature = vfuncSig ? vfuncSig : funcSig;
 
 		if (!ParseHexU32(funcRva->GetString(), rec.rva))
 		{
@@ -512,18 +542,21 @@ namespace
 			error = "invalid func_size";
 			return false;
 		}
-		if (!ParseSignature(vfuncSig->GetString(), rec.signatureBytes, rec.signatureMask, rec.legacyPattern, error))
+		if (signature &&
+			!ParseSignature(signature->GetString(), rec.signatureBytes, rec.signatureMask, rec.legacyPattern, error))
 			return false;
 
 		rec.kind = MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION;
-		rec.signatureText = vfuncSig->GetString();
-		rec.signatureRva = rec.rva;
+		rec.signatureText = signature ? signature->GetString() : "";
+		rec.signatureRva = signature ? rec.rva : 0;
 		rec.instructionOffset = 0;
 		rec.operandOffset = 0;
 		rec.instructionLength = 0;
 		rec.flags = 0;
 
 		const rapidjson::Value* allowAcross = FindMember(payload, "vfunc_sig_allow_across_function_boundary");
+		if (!allowAcross || !allowAcross->IsBool())
+			allowAcross = FindMember(payload, "func_sig_allow_across_function_boundary");
 		if (allowAcross && allowAcross->IsBool() && allowAcross->GetBool())
 			rec.flags |= MH_GAMESYMBOL_FLAG_SIGNATURE_ALLOW_ACROSS_FUNCTION_BOUNDARY;
 
@@ -852,13 +885,20 @@ namespace
 			}
 			else if (std::strcmp(kindStr, "virtualFunction") == 0)
 			{
-				if (!payload || !payload->IsObject() || !NormalizeVirtualFunction(*payload, record, error))
+				bool declarationOnly = false;
+				if (!payload || !payload->IsObject() ||
+					!NormalizeVirtualFunction(*payload, record, declarationOnly, error))
 				{
 					if (error.empty())
 						error = "virtualFunction payload must be an object";
 					AddDiagnostic("snapshot '%s': symbol '%s': %s", gameVersion, symbolName->GetString(), error.c_str());
 					continue;
 				}
+				// A slot-only declaration has no address to resolve, so it is
+				// accepted but not stored: queries must keep reporting it as not
+				// found rather than handing out a null rva.
+				if (declarationOnly)
+					continue;
 			}
 			else if (std::strcmp(kindStr, "vtable") == 0)
 			{

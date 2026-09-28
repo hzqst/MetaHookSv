@@ -200,8 +200,8 @@ class SnapshotContractTests(unittest.TestCase):
             symbols["GameStudioRenderer_StudioDrawModel"],
         )
 
-    def test_rejects_virtual_function_missing_fields(self):
-        for missing in ("func_rva", "func_size", "vfunc_sig", "vfunc_index", "vtable_name"):
+    def test_rejects_virtual_function_missing_slot_identity(self):
+        for missing in ("vfunc_index", "vtable_name"):
             payload = {
                 "func_rva": "0x1000",
                 "func_size": "0x20",
@@ -213,9 +213,82 @@ class SnapshotContractTests(unittest.TestCase):
             doc = make_snapshot([virtual_function_record(payload=payload)])
             errors, _, _ = validate.validate_snapshot(doc, "hl-8684")
             self.assertTrue(
-                any("missing/invalid func_rva/func_size/vfunc_sig/vfunc_index/vtable_name" in e
-                    for e in errors),
+                any("missing/invalid vfunc_index/vtable_name" in e for e in errors),
                 (missing, errors),
+            )
+
+    def test_rejects_virtual_function_partial_address(self):
+        for partial in ({"func_rva": "0x1000"}, {"func_size": "0x20"}):
+            payload = {
+                "vfunc_sig": "55 8B EC",
+                "vfunc_index": 2,
+                "vtable_name": "GameStudioRenderer",
+            }
+            payload.update(partial)
+            doc = make_snapshot([virtual_function_record(payload=payload)])
+            errors, _, _ = validate.validate_snapshot(doc, "hl-8684")
+            self.assertTrue(
+                any("missing/invalid func_rva/func_size" in e for e in errors),
+                (partial, errors),
+            )
+
+    def test_accepts_slot_only_virtual_function_declaration(self):
+        # Upstream publishes these for interface methods whose address it does
+        # not record. MetaHook cannot resolve them, so they are accepted without
+        # being recorded - a consumer gate that pins the name still fails.
+        payload = {
+            "func_name": "GameStudioRenderer_StudioDrawModel",
+            "vfunc_index": 11,
+            "vfunc_offset": "0x2c",
+            "vtable_name": "IEngineClient",
+        }
+        doc = make_snapshot([virtual_function_record(payload=payload)])
+        errors, _, symbols = validate.validate_snapshot(doc, "hl-8684")
+        self.assertEqual([], errors, errors)
+        self.assertNotIn("GameStudioRenderer_StudioDrawModel", symbols)
+
+    def test_accepts_virtual_function_signature_under_func_sig(self):
+        payload = {
+            "func_rva": "0x1000",
+            "func_size": "0x20",
+            "func_sig": "55 8B EC",
+            "vfunc_index": 2,
+            "vtable_name": "GameStudioRenderer",
+        }
+        doc = make_snapshot([virtual_function_record(payload=payload)])
+        errors, _, symbols = validate.validate_snapshot(doc, "hl-8684")
+        self.assertEqual([], errors, errors)
+        self.assertEqual(
+            {"kind": "virtualFunction", "rva": 0x1000, "size": 0x20, "module": "engine"},
+            symbols["GameStudioRenderer_StudioDrawModel"],
+        )
+
+    def test_accepts_virtual_function_without_signature(self):
+        payload = {
+            "func_rva": "0x1000",
+            "func_size": "0x20",
+            "vfunc_index": 39,
+            "vtable_name": "vgui2::VPanel",
+        }
+        doc = make_snapshot([virtual_function_record(payload=payload)])
+        errors, _, symbols = validate.validate_snapshot(doc, "hl-8684")
+        self.assertEqual([], errors, errors)
+        self.assertIn("GameStudioRenderer_StudioDrawModel", symbols)
+
+    def test_rejects_virtual_function_malformed_or_non_string_signature(self):
+        for bad in ("zz", 1234):
+            payload = {
+                "func_rva": "0x1000",
+                "func_size": "0x20",
+                "vfunc_sig": bad,
+                "vfunc_index": 2,
+                "vtable_name": "GameStudioRenderer",
+            }
+            doc = make_snapshot([virtual_function_record(payload=payload)])
+            errors, _, _ = validate.validate_snapshot(doc, "hl-8684")
+            self.assertTrue(
+                any("signature" in e for e in errors),
+                (bad, errors),
             )
 
     def test_accepts_vtable_record(self):

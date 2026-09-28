@@ -578,17 +578,32 @@ def validate_snapshot(doc, game_version):
             symbols[name] = rec
         elif kind == "virtualFunction":
             p = payload if isinstance(payload, dict) else {}
-            func_rva = parse_hex_u32(p.get("func_rva"))
-            func_size = parse_hex_u32(p.get("func_size"))
-            vfunc_sig = p.get("vfunc_sig")
             vfunc_index = p.get("vfunc_index")
             vtable_name = p.get("vtable_name")
-            if (func_rva is None or func_size is None or not isinstance(vfunc_sig, str) or
-                    not isinstance(vfunc_index, int) or isinstance(vfunc_index, bool) or
+            if (not isinstance(vfunc_index, int) or isinstance(vfunc_index, bool) or
                     not isinstance(vtable_name, str) or not vtable_name):
-                errors.append(f"'{game_version}': virtualFunction '{name}' missing/invalid func_rva/func_size/vfunc_sig/vfunc_index/vtable_name")
+                errors.append(f"'{game_version}': virtualFunction '{name}' missing/invalid vfunc_index/vtable_name")
                 continue
-            if not validate_signature(vfunc_sig):
+            # Upstream also publishes slot-only declarations (vtable_name +
+            # vfunc_index + vfunc_offset) that carry no address and no signature.
+            # The runtime cannot resolve them and no consumer queries them, so
+            # they are accepted without being recorded.
+            if "func_rva" not in p and "func_size" not in p:
+                continue
+            func_rva = parse_hex_u32(p.get("func_rva"))
+            func_size = parse_hex_u32(p.get("func_size"))
+            if func_rva is None or func_size is None:
+                errors.append(f"'{game_version}': virtualFunction '{name}' missing/invalid func_rva/func_size")
+                continue
+            # The signature is optional and upstream publishes it under either
+            # vfunc_sig or func_sig.
+            signature = p.get("vfunc_sig")
+            if signature is None:
+                signature = p.get("func_sig")
+            if signature is not None and not isinstance(signature, str):
+                errors.append(f"'{game_version}': virtualFunction '{name}' has a non-string signature")
+                continue
+            if isinstance(signature, str) and not validate_signature(signature):
                 errors.append(f"'{game_version}': virtualFunction '{name}' has a malformed signature")
                 continue
             rec = {"kind": "virtualFunction", "rva": func_rva, "size": func_size, "module": mod}
