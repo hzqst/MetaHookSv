@@ -236,7 +236,9 @@ API version 113 appends `MH_GAMESYMBOL_KIND_VTABLE`; it uses the existing `Resol
 
 API version 114 appends `MH_GAMESYMBOL_KIND_STRUCT_MEMBER` and `QueryGameSymbolStructMember` after all existing function slots. Existing slot offsets remain unchanged.
 
-Plugins must check `g_pInterface->MetaHookAPIVersion` against the version that introduced each function or kind (114 for `QueryGameSymbolStructMember`). All returned string/pattern pointers are owned by MetaHook and remain valid until process exit; do not free or modify them.
+API version 115 appends `DWORD vfuncIndex` to `mh_gamesymbol_t`, reporting a `VIRTUAL_FUNCTION` record's owning vtable slot. It adds no function slot. `mh_gamesymbol_t` is a versioned struct: a module built against an earlier header passes its own smaller `cbSize` and simply does not receive the new field, so this addition stays source- and binary-compatible in both directions.
+
+Plugins must check `g_pInterface->MetaHookAPIVersion` against the version that introduced each function, kind or struct field (114 for `QueryGameSymbolStructMember`, 115 for `mh_gamesymbol_t::vfuncIndex`). All returned string/pattern pointers are owned by MetaHook and remain valid until process exit; do not free or modify them.
 
 ## Types
 
@@ -260,7 +262,7 @@ typedef enum mh_gamesymbol_kind_e
 
 `SCALAR` (API 111) denotes a plain `uint32` value tied to the matched binary identity, not an address. It is never resolved by `ResolveGameSymbol` and its value must not have an image base added or be dereferenced; query it with `QueryGameSymbolScalar`.
 
-`VIRTUAL_FUNCTION` (API 112) denotes a function entry recovered from its owning vtable slot (`func_rva`). It is address-bearing and resolved by `ResolveGameSymbol` exactly like `FUNCTION` (`moduleBase + rva`).
+`VIRTUAL_FUNCTION` (API 112) denotes a function entry recovered from its owning vtable slot (`func_rva`). It is address-bearing and resolved by `ResolveGameSymbol` exactly like `FUNCTION` (`moduleBase + rva`). Its owning slot index is reported through `vfuncIndex` (API 115).
 
 `VTABLE` (API 113) denotes the address of a virtual function table array.
 
@@ -313,6 +315,8 @@ typedef struct mh_gamesymbol_s
 	DWORD instructionOffset;   // global only
 	DWORD operandOffset;       // global only
 	DWORD instructionLength;   // global only
+
+	DWORD vfuncIndex;          // virtualFunction only (API 115)
 } mh_gamesymbol_t;
 ```
 
@@ -330,7 +334,7 @@ typedef struct mh_gamesymbol_s
 | `QueryGameSymbolScalar(moduleBase, name, &value)` (API 111) | Return the `uint32` value of a scalar record. Returns `MH_GAMESYMBOL_KIND_MISMATCH` when the symbol exists with a non-scalar kind. The value is consumed verbatim: no image base, no dereference. |
 | `QueryGameSymbolStructMember(moduleBase, name, &offset)` (API 114) | Return the `uint32` byte offset of a structMember record. Returns `MH_GAMESYMBOL_KIND_MISMATCH` for another kind. The offset is relative to an object; no image base is added. |
 
-`QueryGameSymbol` / `QueryGameSymbolByCRC64` require the caller to initialize `outSymbol->cbSize` to `sizeof(mh_gamesymbol_t)`; a smaller value returns `MH_GAMESYMBOL_OUTPUT_TOO_SMALL`. On failure the output fields are zeroed while `cbSize` is preserved. Scalar and structMember records report their kind with zero address fields; obtain the value or offset from their dedicated query function.
+`QueryGameSymbol` / `QueryGameSymbolByCRC64` are versioned through `cbSize`: the caller initializes `outSymbol->cbSize` to `sizeof(mh_gamesymbol_t)` as it was compiled, and only `min(cbSize, sizeof(mh_gamesymbol_t))` bytes are written. A caller built against an older, smaller shape therefore keeps working and receives every field it can hold; a `cbSize` below the versioned prefix (everything through `signature`) returns `MH_GAMESYMBOL_OUTPUT_TOO_SMALL`. On failure the output fields are zeroed while `cbSize` is preserved. Scalar and structMember records report their kind with zero address fields; obtain the value or offset from their dedicated query function. A virtualFunction record reports its owning vtable slot in `vfuncIndex`, and zero for every other kind.
 
 `IsGameSymbolAvailable` accepts no wildcard or numeric-range syntax. Callers that need a contiguous family of numbered records, such as `Cvar_Set_to_Cvar_DirectSet_callsite_0..N`, build each exact name themselves, probe with `IsGameSymbolAvailable`, and call `ResolveGameSymbol` only for names that exist.
 

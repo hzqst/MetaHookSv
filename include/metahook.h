@@ -109,7 +109,7 @@ typedef struct mh_plugininfo_s
 #include <ICommandLine.h>
 #include <IRegistry.h>
 
-#define METAHOOK_API_VERSION 114
+#define METAHOOK_API_VERSION 115
 
 typedef struct hook_s hook_t;
 
@@ -192,7 +192,8 @@ typedef enum mh_gamesymbol_kind_e
 	MH_GAMESYMBOL_KIND_SCALAR = 4,
 	// A virtual function is an address-bearing record whose rva is the function
 	// entry point taken from its owning vtable slot. ResolveGameSymbol accepts it
-	// and returns moduleBase + rva exactly like FUNCTION.
+	// and returns moduleBase + rva exactly like FUNCTION. The owning slot index is
+	// reported through mh_gamesymbol_t::vfuncIndex.
 	MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION = 5,
 	// A vtable is an address-bearing record whose rva is the virtual function
 	// table array itself (typically in .rdata). ResolveGameSymbol accepts it and
@@ -252,7 +253,12 @@ typedef struct mh_pattern_s
 /*
 	Purpose: Normalized metadata of a resolved game symbol.
 
-	Callers must initialize cbSize to sizeof(mh_gamesymbol_t) before calling.
+	Callers initialize cbSize to sizeof(mh_gamesymbol_t), or to the size of the
+	older shape they were compiled against. Only min(cbSize, sizeof(mh_gamesymbol_t))
+	bytes are written: a caller with a smaller, older shape receives every field it
+	can hold, and fields appended after its header was published are simply not
+	reported to it. A cbSize below the versioned prefix (everything through
+	`signature`) returns MH_GAMESYMBOL_OUTPUT_TOO_SMALL.
 	On failure the output fields are zeroed while cbSize is preserved.
 	Future fields may only be appended to the end.
 */
@@ -271,6 +277,10 @@ typedef struct mh_gamesymbol_s
 	DWORD instructionOffset;
 	DWORD operandOffset;
 	DWORD instructionLength;
+
+	// Owning vtable slot index; valid only when kind == MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION,
+	// zero for every other kind.
+	DWORD vfuncIndex;
 } mh_gamesymbol_t;
 
 typedef struct metahook_api_s
