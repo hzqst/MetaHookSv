@@ -48,7 +48,6 @@ typedef struct
 	void(__fastcall* ClientVGUI_Panel_Init)(void* pthis, int dummy, int x, int y, int w, int h);
 	void(__fastcall* ClientVGUI_Panel_SetSize)(void* pthis, int dummy, int width, int height);
 	void(__fastcall* ClientVGUI_LoadControlSettings)(void* pthis, int dummy, const char* controlResourceName, const char* pathID);
-	void** ClientVGUI_KeyValues_vftable;
 	bool(__fastcall* ClientVGUI_KeyValues_LoadFromFile)(void* pthis, int dummy, IFileSystem* pFileSystem, const char* resourceName, const char* pathId);
 
 	void(__fastcall* ClientVGUI_RichText_SetTextW)(void* pthis, int dummy, const wchar_t* text);

@@ -1406,39 +1406,17 @@ void R_RedirectEngineLegacyOpenGLCall(const mh_dll_info_t& DllInfo, const mh_dll
 	R_RedirectEngineLegacyOpenGLCallAPI(DllInfo, RealDllInfo);
 }
 
-void R_SCClientRedirectRenderPortalAngleVectors(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void R_SCClientRedirectRenderPortalAngleVectors(const mh_dll_info_t& RealDllInfo)
 {
-	int matches = 0;
-	const char pattern[] = "\xC7\x82\xE8\x00\x00\x00\x01\x00\x00\x00\x50\x8D\x42\x18\x50\x51\xE8";
-
-	PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
-	PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
-	while (SearchBegin < SearchLimit)
-	{
-		PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
-		if (pFound)
-		{
-			PVOID pRealCall = ConvertDllInfoSpace(pFound + Sig_Length(pattern) - 1, DllInfo, RealDllInfo);
-
-			g_pMetaHookAPI->InlinePatchRedirectBranch(pRealCall, ClientPortalManager_AngleVectors, nullptr);
-			++matches;
-
-			SearchBegin = pFound + Sig_Length(pattern);
-		}
-		else
-		{
-			break;
-		}
-	}
-	if (matches != 1)
-		Sys_Error("Sven portal angle patch: expected 1 match, found %d", matches);
+	auto pRealCall = GamedataResolvePtr(RealDllInfo.ImageBase,
+		"ClientPortalManager_RenderPortals_to_AngleVectors_callsite_0", MH_GAMESYMBOL_KIND_PATCH);
+	g_pMetaHookAPI->InlinePatchRedirectBranch(pRealCall, ClientPortalManager_AngleVectors, nullptr);
 }
 
 void R_SCClientRedirectLegacyOpenGLCall()
 {
 	if (g_bIsSvenCoop)
 	{
-		const auto& DllInfo = g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo;
 		const auto& RealDllInfo = g_ClientDLLInfo;
 
 		for (auto& entry : g_SCClientGLHooks)
@@ -1450,7 +1428,7 @@ void R_SCClientRedirectLegacyOpenGLCall()
 					Sys_Error("Could not hook Sven client import: %s", entry.name);
 			}
 		}
-		R_SCClientRedirectRenderPortalAngleVectors(DllInfo, RealDllInfo);
+		R_SCClientRedirectRenderPortalAngleVectors(RealDllInfo);
 	}
 }
 

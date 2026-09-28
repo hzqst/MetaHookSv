@@ -2,10 +2,10 @@
 
 #include <metahook.h>
 
-//SCCameraFix resolves its game-private client globals exclusively through the
+//SCCameraFix resolves its gamedata-covered client functions and globals through the
 //gamedata catalog, which requires the ResolveGameSymbol API slot introduced by
 //MetaHook API 109.
-static_assert(METAHOOK_API_VERSION >= 109, "SCCameraFix resolves client globals from gamedata and requires MetaHook API 109 (ResolveGameSymbol)");
+static_assert(METAHOOK_API_VERSION >= 109, "SCCameraFix resolves client symbols from gamedata and requires MetaHook API 109 (ResolveGameSymbol)");
 
 class IFileSystem;
 class IFileSystem_HL25;

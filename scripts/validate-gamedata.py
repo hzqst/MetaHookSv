@@ -272,6 +272,9 @@ RENDERER_CLIENT_SVEN_FUNCTIONS = (
     "ClientPortalManager_GetOriginalSurfaceTexture", "ClientPortalManager_DrawPortalSurface",
     "ClientPortalManager_EnableClipPlane", "ClientPortalManager_InitShader", "CParticleSystem_ParticleDraw",
 )
+RENDERER_CLIENT_SVEN_PATCHES = (
+    "ClientPortalManager_RenderPortals_to_AngleVectors_callsite_0",
+)
 RENDERER_CLIENT_SVEN_STRUCT_MEMBERS = ("ClientPortalManager.m_bShadersAvailable",)
 RENDERER_CLIENT_SVEN_SCALARS = (
     "ClientPortalManager_vector_begin_offset", "ClientPortalManager_vector_end_offset",
@@ -885,7 +888,11 @@ SCCAMERAFIX_CLIENT_GLOBALS = (
     "g_iEndDist",
     "g_iUser1",
     "g_iUser2",
+    "v_origin",
+    "iIsSpectator",
+    "g_vVecViewangles",
 )
+SCCAMERAFIX_CLIENT_FUNCTIONS = ("V_CalcNormalRefdef",)
 
 
 def validate_sccamerafix(symbols, game_version):
@@ -896,7 +903,35 @@ def validate_sccamerafix(symbols, game_version):
     """
     if game_version not in SCCAMERAFIX_CLIENT_GAMES:
         return []
-    return _consumer_check(symbols, game_version, SCCAMERAFIX_CLIENT_GLOBALS, "global", "client", "SCCameraFix")
+    errors = _consumer_check(symbols, game_version, SCCAMERAFIX_CLIENT_GLOBALS, "global", "client", "SCCameraFix")
+    errors += _consumer_check(symbols, game_version, SCCAMERAFIX_CLIENT_FUNCTIONS, "function", "client", "SCCameraFix")
+    return errors
+
+
+# Pin the published native UI entries on CS clients. Panel::Init and
+# KeyValues::LoadFromFile remain optional at runtime on other client identities;
+# LoadControlSettings is only resolved in the Counter-Strike branch.
+VGUI2EXTENSION_CLIENT_GAMES = CAPTIONMOD_CS_CLIENT_GAMES
+VGUI2EXTENSION_CLIENT_OPTIONAL_ENTRIES = {
+    "vgui2::Panel::Init(int, int, int, int)": "function",
+    "KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)": "virtualFunction",
+}
+VGUI2EXTENSION_CS_CLIENT_FUNCTIONS = (
+    "vgui2::Frame::LoadControlSettings(char const*, char const*)",
+)
+
+
+def validate_vgui2extension(symbols, game_version):
+    """Check native client UI entry coverage without requiring it on non-CS clients."""
+    errors = []
+    is_cs = game_version in VGUI2EXTENSION_CLIENT_GAMES
+    for name, kind in VGUI2EXTENSION_CLIENT_OPTIONAL_ENTRIES.items():
+        if is_cs or name in symbols:
+            errors += _consumer_check(symbols, game_version, (name,), kind, "client", "VGUI2Extension")
+    if is_cs:
+        errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_CS_CLIENT_FUNCTIONS,
+                                  "function", "client", "VGUI2Extension")
+    return errors
 
 
 def validate_renderer(symbols, game_version, include_engine=True, include_client=True):
@@ -959,6 +994,7 @@ def validate_renderer(symbols, game_version, include_engine=True, include_client
         return errors
     if game_version in RENDERER_SVENGINE_GAMES:
         errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_SVEN_FUNCTIONS, "function", "client")
+        errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_SVEN_PATCHES, "patch", "client")
         errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_SVEN_GLOBALS, "global", "client")
         errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_SVEN_STRUCT_MEMBERS, "structMember", "client")
         errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_SVEN_SCALARS, "scalar", "client")
@@ -1072,6 +1108,14 @@ def main():
             continue
         symbols = game_symbols[gv][1]
         all_errors.extend(validate_sccamerafix(symbols, gv))
+
+    # Native VGUI entries are required on the published CS clients; optional
+    # entries on other snapshots still need the right kind and owning module.
+    for gv in dict.fromkeys((*game_symbols, *VGUI2EXTENSION_CLIENT_GAMES)):
+        if gv not in game_symbols:
+            all_errors.append(f"'{gv}': snapshot not loaded (VGUI2Extension gate)")
+            continue
+        all_errors.extend(validate_vgui2extension(game_symbols[gv][1], gv))
 
     if all_errors:
         for e in all_errors:

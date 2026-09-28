@@ -1400,65 +1400,15 @@ void NativeClientUI_RichText_Search(const mh_dll_info_t& DllInfo, const mh_dll_i
 
 void NativeClientUI_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (1)
-	{
-		gPrivateFuncs.ClientVGUI_Panel_Init = (decltype(gPrivateFuncs.ClientVGUI_Panel_Init))VGUI2_FindPanelInit(DllInfo, RealDllInfo);
-		//Sig_FuncNotFound(ClientVGUI_Panel_Init);
-
-		gPrivateFuncs.ClientVGUI_KeyValues_vftable = (decltype(gPrivateFuncs.ClientVGUI_KeyValues_vftable))gPrivateFuncs.ClientVGUI_KeyValues_vftable = VGUI2_FindKeyValueVFTable(DllInfo, RealDllInfo);
-		//Sig_FuncNotFound(ClientVGUI_KeyValues_vftable);
-
-		if (gPrivateFuncs.ClientVGUI_KeyValues_vftable)
-		{
-			gPrivateFuncs.ClientVGUI_KeyValues_LoadFromFile = (decltype(gPrivateFuncs.ClientVGUI_KeyValues_LoadFromFile))gPrivateFuncs.ClientVGUI_KeyValues_vftable[2];
-		}
-	}
+	gPrivateFuncs.ClientVGUI_Panel_Init = (decltype(gPrivateFuncs.ClientVGUI_Panel_Init))GamedataResolvePtrIfAvailable(
+		RealDllInfo.ImageBase, "vgui2::Panel::Init(int, int, int, int)", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.ClientVGUI_KeyValues_LoadFromFile = (decltype(gPrivateFuncs.ClientVGUI_KeyValues_LoadFromFile))GamedataResolvePtrIfAvailable(
+		RealDllInfo.ImageBase, "KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 
 	if (g_bIsCounterStrike)
 	{
-		const char sigs[] = "Resource/UI/TeamMenu.res";
-		auto TeamMenu_res_String = Search_Pattern_From_Size(DllInfo.RdataBase, DllInfo.RdataSize, sigs);
-		if (!TeamMenu_res_String)
-			TeamMenu_res_String = Search_Pattern_From_Size(DllInfo.DataBase, DllInfo.DataSize, sigs);
-		Sig_VarNotFound(TeamMenu_res_String);
-
-		char pattern[] = "\x68\x2A\x2A\x2A\x2A";
-		*(DWORD*)(pattern + 1) = (DWORD)TeamMenu_res_String;
-		auto TeamMenu_res_PushString = Search_Pattern_From_Size(DllInfo.TextBase, DllInfo.TextSize, pattern);
-		Sig_VarNotFound(TeamMenu_res_PushString);
-
-		typedef struct TeamMenu_SearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-		}TeamMenu_SearchContext;
-
-		TeamMenu_SearchContext ctx = { DllInfo , RealDllInfo };
-
-		g_pMetaHookAPI->DisasmRanges(TeamMenu_res_PushString, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (TeamMenu_SearchContext*)context;
-
-			if (address[0] == 0xE8 && instCount <= 8)
-			{
-				PVOID ClientVGUI_LoadControlSettings_VA = GetCallAddress(address);
-				gPrivateFuncs.ClientVGUI_LoadControlSettings = (decltype(gPrivateFuncs.ClientVGUI_LoadControlSettings))ConvertDllInfoSpace(ClientVGUI_LoadControlSettings_VA, ctx->DllInfo, ctx->RealDllInfo);
-
-				return TRUE;
-			}
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-
-			}, 0, &ctx);
-
-		Sig_FuncNotFound(ClientVGUI_LoadControlSettings);
+		gPrivateFuncs.ClientVGUI_LoadControlSettings = (decltype(gPrivateFuncs.ClientVGUI_LoadControlSettings))GamedataResolvePtr(
+			RealDllInfo.ImageBase, "vgui2::Frame::LoadControlSettings(char const*, char const*)", MH_GAMESYMBOL_KIND_FUNCTION);
 	}
 
 	if (g_bIsCounterStrike)
@@ -1520,8 +1470,14 @@ void NativeClientUI_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_
 void NativeClientUI_InstallHooks(void)
 {
 	Install_InlineHook(ClientVGUI_LoadControlSettings);
-	Install_InlineHook(ClientVGUI_KeyValues_LoadFromFile);
-	Install_InlineHook(ClientVGUI_Panel_Init);
+	if (gPrivateFuncs.ClientVGUI_KeyValues_LoadFromFile)
+	{
+		Install_InlineHook(ClientVGUI_KeyValues_LoadFromFile);
+	}
+	if (gPrivateFuncs.ClientVGUI_Panel_Init)
+	{
+		Install_InlineHook(ClientVGUI_Panel_Init);
+	}
 }
 
 void NativeClientUI_UninstallHooks(void)

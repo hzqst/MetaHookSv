@@ -528,6 +528,7 @@ class RendererGateTests(unittest.TestCase):
 
         if game_version in validate.RENDERER_SVENGINE_GAMES:
             add(validate.RENDERER_CLIENT_SVEN_FUNCTIONS, "function")
+            add(validate.RENDERER_CLIENT_SVEN_PATCHES, "patch")
             add(validate.RENDERER_CLIENT_SVEN_GLOBALS, "global")
             add(validate.RENDERER_CLIENT_SVEN_STRUCT_MEMBERS, "structMember")
             add(validate.RENDERER_CLIENT_SVEN_SCALARS, "scalar")
@@ -570,6 +571,20 @@ class RendererGateTests(unittest.TestCase):
             symbols["ClientPortalManager.m_bShadersAvailable"]["kind"] = "global"
             errors = validate.validate_renderer(symbols, gv, include_engine=False)
             self.assertTrue(any("must be a structMember record" in e for e in errors), errors)
+
+    def test_portal_redirect_requires_a_client_patch_on_both_sven_clients(self):
+        name = "ClientPortalManager_RenderPortals_to_AngleVectors_callsite_0"
+        for gv in ("svencoop-8948", "svencoop-10257"):
+            for record in (None, {"kind": "function", "module": "client"},
+                           {"kind": "patch", "module": "engine"}):
+                with self.subTest(gv=gv, record=record):
+                    symbols = self.complete_client_symbols(gv)
+                    symbols.pop(name, None)
+                    if record is not None:
+                        symbols[name] = record
+                    errors = validate.validate_renderer(symbols, gv, include_engine=False)
+                    self.assertTrue(any(name in e for e in errors), errors)
+        self.assertEqual([], validate.validate_renderer({}, "hl-6153", include_engine=False))
 
     def test_gate_flags_missing_engine_function(self):
         symbols = self.complete_engine_symbols("hl-8684")
@@ -1139,6 +1154,8 @@ class SCCameraFixGateTests(unittest.TestCase):
         if game_version in validate.SCCAMERAFIX_CLIENT_GAMES:
             for n in validate.SCCAMERAFIX_CLIENT_GLOBALS:
                 symbols[n] = {"kind": "global", "module": "client"}
+            for n in validate.SCCAMERAFIX_CLIENT_FUNCTIONS:
+                symbols[n] = {"kind": "function", "module": "client"}
         return symbols
 
     def gate(self, symbols, game_version):
@@ -1148,6 +1165,20 @@ class SCCameraFixGateTests(unittest.TestCase):
         for gv in validate.SCCAMERAFIX_CLIENT_GAMES:
             with self.subTest(gv=gv):
                 self.assertEqual([], self.gate(self.complete_symbols(gv), gv))
+
+    def test_camera_symbols_require_the_client_module_and_correct_kind(self):
+        records = {"v_origin": "global", "iIsSpectator": "global",
+                   "g_vVecViewangles": "global", "V_CalcNormalRefdef": "function"}
+        for gv in ("svencoop-8948", "svencoop-10257"):
+            for name, kind in records.items():
+                for record in (None, {"kind": "patch", "module": "client"},
+                               {"kind": kind, "module": "engine"}):
+                    with self.subTest(gv=gv, name=name, record=record):
+                        symbols = self.complete_symbols(gv)
+                        symbols.pop(name, None)
+                        if record is not None:
+                            symbols[name] = record
+                        self.assertTrue(any(name in e for e in self.gate(symbols, gv)))
 
     def test_gate_requires_every_client_global(self):
         for name in validate.SCCAMERAFIX_CLIENT_GLOBALS:
@@ -1193,6 +1224,51 @@ class SCCameraFixGateTests(unittest.TestCase):
         self.assertEqual((), validate.RENDERER_CLIENT_STUDIO_GLOBALS)
         self.assertIn("g_iUser1", validate.SCCAMERAFIX_CLIENT_GLOBALS)
         self.assertIn("g_iUser2", validate.SCCAMERAFIX_CLIENT_GLOBALS)
+
+
+class VGUI2ExtensionGateTests(unittest.TestCase):
+    records = {
+        "vgui2::Panel::Init(int, int, int, int)": "function",
+        "KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)": "virtualFunction",
+        "vgui2::Frame::LoadControlSettings(char const*, char const*)": "function",
+    }
+    games = ("cstrike-3248", "cstrike-3647", "cstrike-4554", "cstrike-6153",
+             "cstrike-8684", "cstrike-10210", "czero-8684", "czero-10210",
+             "czeror-8684", "czeror-10210")
+
+    def complete_symbols(self):
+        return {name: {"kind": kind, "module": "client"}
+                for name, kind in self.records.items()}
+
+    def test_published_cs_clients_keep_all_three_entries(self):
+        for gv in self.games:
+            with self.subTest(gv=gv):
+                self.assertEqual([], validate.validate_vgui2extension(self.complete_symbols(), gv))
+
+    def test_missing_or_mistyped_client_entry_is_rejected(self):
+        for gv in self.games:
+            for name, kind in self.records.items():
+                for record in (None, {"kind": "global", "module": "client"},
+                               {"kind": kind, "module": "engine"}):
+                    with self.subTest(gv=gv, name=name, record=record):
+                        symbols = self.complete_symbols()
+                        del symbols[name]
+                        if record is not None:
+                            symbols[name] = record
+                        errors = validate.validate_vgui2extension(symbols, gv)
+                        self.assertTrue(any(name in e for e in errors), errors)
+
+    def test_other_clients_allow_absent_native_entries(self):
+        for gv in ("svencoop-8948", "svencoop-10257", "hl-8684", "hl-10210", "cof-5936"):
+            with self.subTest(gv=gv):
+                self.assertEqual([], validate.validate_vgui2extension({}, gv))
+
+    def test_optional_entries_are_type_checked_when_present(self):
+        for name in tuple(self.records)[:2]:
+            with self.subTest(name=name):
+                symbols = {name: {"kind": "global", "module": "client"}}
+                errors = validate.validate_vgui2extension(symbols, "svencoop-10257")
+                self.assertTrue(any(name in e for e in errors), errors)
 
 
 if __name__ == "__main__":

@@ -3,9 +3,9 @@
 #include <metahook.h>
 
 //VGUI2Extension resolves its gamedata-covered game-private symbols (FUNCTION/
-//GLOBAL) exclusively through the gamedata catalog, which requires the
-//ResolveGameSymbol API slot introduced by MetaHook API 109.
-static_assert(METAHOOK_API_VERSION >= 109, "VGUI2Extension resolves gamedata-covered game-private symbols from gamedata and requires MetaHook API 109");
+//GLOBAL/VIRTUAL_FUNCTION) exclusively through the gamedata catalog, which requires
+//the virtual-function kind introduced by MetaHook API 112.
+static_assert(METAHOOK_API_VERSION >= 112, "VGUI2Extension resolves gamedata-covered game-private symbols from gamedata and requires MetaHook API 112");
 
 extern IFileSystem *g_pFileSystem;
 extern IFileSystem_HL25 *g_pFileSystem_HL25;
@@ -48,6 +48,15 @@ inline PVOID GamedataResolvePtr(PVOID moduleBase, const char* symbolName, mh_gam
 	}
 
 	return address;
+}
+
+//Native client UI hooks are optional when the binary publishes no entry.
+inline PVOID GamedataResolvePtrIfAvailable(PVOID moduleBase, const char* symbolName, mh_gamesymbol_kind_t kind)
+{
+	if (g_pMetaHookAPI->IsGameSymbolAvailable(moduleBase, symbolName) != MH_GAMESYMBOL_OK)
+		return nullptr;
+
+	return GamedataResolvePtr(moduleBase, symbolName, kind);
 }
 
 #define Sig_Length(a) (sizeof(a)-1)
