@@ -948,11 +948,29 @@ VGUI2EXTENSION_CS_CLIENT_VIRTUAL_FUNCTIONS = (
 VGUI2EXTENSION_BACKGROUND_PANEL_STRUCT_MEMBERS = (
     "CounterStrikeViewport.m_pCSBackGround",
 )
+# The engine-side globals the disassembly locators used to derive. Only the
+# snapshots that publish an engine module carry them; the Counter-Strike clients
+# publish no engine module of their own and share the hl identities' engine
+# binary. The V_strncpy call-site patches the language redirect installs are NOT
+# gated here: the catalog publishes them on only 6 of the 11 engine identities
+# (hl-3248/3266/3329/3647/4554 have no record), so that locator still scans.
+VGUI2EXTENSION_ENGINE_GLOBALS = (
+    "cl_time",
+    "cl_oldtime",
+    "realtime",
+    "cl_viewentity",
+    "listener_origin",
+    "staticEngineSurface",
+    "host_parms",
+)
 
 
-def validate_vgui2extension(symbols, game_version):
+def validate_vgui2extension(symbols, game_version, include_engine=True):
     """Check native client UI entry coverage without requiring it on non-CS clients."""
     errors = []
+    if include_engine:
+        errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_ENGINE_GLOBALS,
+                                  "global", "engine", "VGUI2Extension")
     is_cs = game_version in VGUI2EXTENSION_CLIENT_GAMES
     for name, kind in VGUI2EXTENSION_CLIENT_OPTIONAL_ENTRIES.items():
         if is_cs or name in symbols:
@@ -1145,11 +1163,13 @@ def main():
 
     # Native VGUI entries are required on the published CS clients; optional
     # entries on other snapshots still need the right kind and owning module.
+    # The engine-side entries follow the engine-bearing snapshots only.
     for gv in dict.fromkeys((*game_symbols, *VGUI2EXTENSION_CLIENT_GAMES)):
         if gv not in game_symbols:
             all_errors.append(f"'{gv}': snapshot not loaded (VGUI2Extension gate)")
             continue
-        all_errors.extend(validate_vgui2extension(game_symbols[gv][1], gv))
+        all_errors.extend(validate_vgui2extension(
+            game_symbols[gv][1], gv, include_engine=gv in RENDERER_ALL_GAMES))
 
     if all_errors:
         for e in all_errors:

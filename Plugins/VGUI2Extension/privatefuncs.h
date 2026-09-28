@@ -25,9 +25,6 @@ typedef struct walk_context_s
 
 typedef struct
 {
-	//Engine Screen
-	void(*SCR_BeginLoadingPlaque)(qboolean reconnect);
-
 	//Engine VGUI2 wrapper
 	//void(*VGuiWrap2_Paint)(void);
 	void(__fastcall* EngineVGUI2_Panel_Init)(void* pthis, int dummy, int x, int y, int w, int h);
@@ -180,11 +177,8 @@ extern int *cl_viewentity;
 
 extern vec3_t *listener_origin;
 
-extern char *(*rgpszrawsentence)[CVOXFILESENTENCEMAX];
-extern int *cszrawsentences;
-
 //extern char(*s_pBaseDir)[512];
-extern char*(*hostparam_basedir);
+extern quakeparms_t* host_parms;
 
 extern char m_szCurrentGameLanguage[128];
 
@@ -206,8 +200,6 @@ extern mh_dll_info_t g_ServerBrowserDllInfo;
 PVOID VGUIClient001_CreateInterface(HINTERFACEMODULE hModule);
 
 void* Sys_GetMainWindow();
-
-bool SCR_IsLoadingVisible(void);
 
 PVOID VGUI2_FindPanelInit(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 PVOID *VGUI2_FindKeyValueVFTable(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);

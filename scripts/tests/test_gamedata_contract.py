@@ -1326,15 +1326,34 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
     # skips that block for czeror, so its member offset is not gated there.
     zds_games = ("czeror-8684", "czeror-10210")
     background_panel_member = "CounterStrikeViewport.m_pCSBackGround"
+    # The engine-side globals that replaced the disassembly locators. They live
+    # in the engine module, which the Counter-Strike client snapshots do not
+    # publish. The V_strncpy call-site patches stay ungated: the catalog covers
+    # them on only 6 of the 11 engine identities, so that locator still scans.
+    engine_records = {
+        "cl_time": "global",
+        "cl_oldtime": "global",
+        "realtime": "global",
+        "cl_viewentity": "global",
+        "listener_origin": "global",
+        "staticEngineSurface": "global",
+        "host_parms": "global",
+    }
+    engine_games = validate.RENDERER_ALL_GAMES
 
     def complete_symbols(self):
         return {name: {"kind": kind, "module": "client"}
                 for name, kind in self.records.items()}
 
+    def complete_engine_symbols(self):
+        return {name: {"kind": kind, "module": "engine"}
+                for name, kind in self.engine_records.items()}
+
     def test_published_cs_clients_keep_all_required_entries(self):
         for gv in self.games:
             with self.subTest(gv=gv):
-                self.assertEqual([], validate.validate_vgui2extension(self.complete_symbols(), gv))
+                self.assertEqual([], validate.validate_vgui2extension(
+                    self.complete_symbols(), gv, include_engine=False))
 
     def test_missing_or_mistyped_client_entry_is_rejected(self):
         for gv in self.games:
@@ -1348,7 +1367,7 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
                         del symbols[name]
                         if record is not None:
                             symbols[name] = record
-                        errors = validate.validate_vgui2extension(symbols, gv)
+                        errors = validate.validate_vgui2extension(symbols, gv, include_engine=False)
                         self.assertTrue(any(name in e for e in errors), errors)
 
     def test_zds_does_not_require_the_background_panel_member(self):
@@ -1356,19 +1375,53 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
             with self.subTest(gv=gv):
                 symbols = self.complete_symbols()
                 del symbols[self.background_panel_member]
-                self.assertEqual([], validate.validate_vgui2extension(symbols, gv))
+                self.assertEqual([], validate.validate_vgui2extension(symbols, gv, include_engine=False))
 
     def test_other_clients_allow_absent_native_entries(self):
         for gv in ("svencoop-8948", "svencoop-10257", "hl-8684", "hl-10210", "cof-5936"):
             with self.subTest(gv=gv):
-                self.assertEqual([], validate.validate_vgui2extension({}, gv))
+                self.assertEqual([], validate.validate_vgui2extension({}, gv, include_engine=False))
 
     def test_optional_entries_are_type_checked_when_present(self):
         for name in self.optional:
             with self.subTest(name=name):
                 symbols = {name: {"kind": "global", "module": "client"}}
-                errors = validate.validate_vgui2extension(symbols, "svencoop-10257")
+                errors = validate.validate_vgui2extension(symbols, "svencoop-10257", include_engine=False)
                 self.assertTrue(any(name in e for e in errors), errors)
+
+    def test_engine_entries_are_required_on_engine_snapshots(self):
+        for name in self.engine_records:
+            self.assertIn(name, validate.VGUI2EXTENSION_ENGINE_GLOBALS)
+        for gv in self.engine_games:
+            with self.subTest(gv=gv):
+                self.assertEqual([], validate.validate_vgui2extension(
+                    self.complete_engine_symbols(), gv))
+
+    def test_missing_or_mistyped_engine_entry_is_rejected(self):
+        for gv in self.engine_games:
+            for name, kind in self.engine_records.items():
+                wrong_kind = "patch" if kind == "global" else "global"
+                for record in (None, {"kind": wrong_kind, "module": "engine"},
+                               {"kind": kind, "module": "client"}):
+                    with self.subTest(gv=gv, name=name, record=record):
+                        symbols = self.complete_engine_symbols()
+                        del symbols[name]
+                        if record is not None:
+                            symbols[name] = record
+                        errors = validate.validate_vgui2extension(symbols, gv)
+                        self.assertTrue(any(name in e for e in errors), errors)
+
+    def test_client_only_snapshots_are_not_engine_gated(self):
+        # These snapshots publish no engine module, so the caller's include_engine
+        # is False for them; the client-side entries they do publish stay required.
+        for gv in validate.VGUI2EXTENSION_CLIENT_GAMES:
+            with self.subTest(gv=gv):
+                self.assertNotIn(gv, self.engine_games)
+                symbols = self.complete_symbols()
+                if gv in self.zds_games:
+                    del symbols[self.background_panel_member]
+                self.assertEqual([], validate.validate_vgui2extension(
+                    symbols, gv, include_engine=False))
 
 
 if __name__ == "__main__":

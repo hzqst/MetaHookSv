@@ -109,7 +109,7 @@ int FileSystem_SetGameDirectory(const char *pDefaultDir, const char *pGameDir)
 
 const char *GetBaseDirectory()
 {
-	return (const char *)(*hostparam_basedir);
+	return host_parms->basedir;
 }
 
 IBaseInterface* CreateInterfaceProxy(const char* pName, int* pReturnCode)
