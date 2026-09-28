@@ -37,6 +37,8 @@ typedef struct
 
 	//VGUI2;
 	char* (*V_strncpy)(char* a1, const char* a2, size_t a3);
+	void (__cdecl* Sys_GetRegKeyValueUnderRoot)(const char* subKey, const char* element,
+		char* output, int capacity, const char* defaultValue);
 
 	//Engine init
 	PVOID (*VGUIClient001_CreateInterface)(HINTERFACEMODULE hModule);

@@ -951,9 +951,8 @@ VGUI2EXTENSION_BACKGROUND_PANEL_STRUCT_MEMBERS = (
 # The engine-side globals the disassembly locators used to derive. Only the
 # snapshots that publish an engine module carry them; the Counter-Strike clients
 # publish no engine module of their own and share the hl identities' engine
-# binary. The V_strncpy call-site patches the language redirect installs are NOT
-# gated here: the catalog publishes them on only 6 of the 11 engine identities
-# (hl-3248/3266/3329/3647/4554 have no record), so that locator still scans.
+# binary. Older engines read the language directly from the registry; newer
+# engines retain the V_strncpy call-site locator.
 VGUI2EXTENSION_ENGINE_GLOBALS = (
     "cl_time",
     "cl_oldtime",
@@ -963,6 +962,10 @@ VGUI2EXTENSION_ENGINE_GLOBALS = (
     "staticEngineSurface",
     "host_parms",
 )
+VGUI2EXTENSION_REGISTRY_LANGUAGE_GAMES = (
+    "hl-3248", "hl-3266", "hl-3329", "hl-3647", "hl-4554",
+)
+VGUI2EXTENSION_REGISTRY_LANGUAGE_READER = "Sys_GetRegKeyValueUnderRoot"
 
 
 def validate_vgui2extension(symbols, game_version, include_engine=True):
@@ -971,6 +974,10 @@ def validate_vgui2extension(symbols, game_version, include_engine=True):
     if include_engine:
         errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_ENGINE_GLOBALS,
                                   "global", "engine", "VGUI2Extension")
+        if (game_version in VGUI2EXTENSION_REGISTRY_LANGUAGE_GAMES or
+                VGUI2EXTENSION_REGISTRY_LANGUAGE_READER in symbols):
+            errors += _consumer_check(symbols, game_version, (VGUI2EXTENSION_REGISTRY_LANGUAGE_READER,),
+                                      "function", "engine", "VGUI2Extension")
     is_cs = game_version in VGUI2EXTENSION_CLIENT_GAMES
     for name, kind in VGUI2EXTENSION_CLIENT_OPTIONAL_ENTRIES.items():
         if is_cs or name in symbols:

@@ -20,6 +20,8 @@ char m_szCurrentGameLanguage[128] = { 0 };
 
 private_funcs_t gPrivateFuncs = { 0 };
 
+static hook_t* g_phook_LanguageRegistry = nullptr;
+
 HMODULE g_hGameUI = NULL;
 HMODULE g_hServerBrowser = NULL;
 bool g_bIsServerBrowserHooked = false;
@@ -742,6 +744,10 @@ void Engine_PatchAddress_VGUIClient001(const mh_dll_info_t& DllInfo, const mh_dl
 
 void Engine_PatchAddress_LanguageStrncpy(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
+	// Old engines read the registry directly instead of copying an English literal.
+	if (gPrivateFuncs.Sys_GetRegKeyValueUnderRoot)
+		return;
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		const char pattern[] = "\xB8\x2A\x2A\x2A\x2A\x68\x80\x00\x00\x00\x50";
@@ -993,6 +999,8 @@ void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealD
 	Engine_FillAddress_ListenerOrigin(RealDllInfo);
 	Engine_FillAddress_HostParms(RealDllInfo);
 	Engine_FillAddress_StaticEngineSurface(RealDllInfo);
+	gPrivateFuncs.Sys_GetRegKeyValueUnderRoot = (decltype(gPrivateFuncs.Sys_GetRegKeyValueUnderRoot))
+		GamedataResolvePtrIfAvailable(RealDllInfo.ImageBase, "Sys_GetRegKeyValueUnderRoot", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void Client_FillAddress_SCClient_VisibleMouse(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -1209,12 +1217,24 @@ void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealD
 
 void Engine_InstallHooks(void)
 {
-
+	if (gPrivateFuncs.Sys_GetRegKeyValueUnderRoot && !g_phook_LanguageRegistry)
+	{
+		g_phook_LanguageRegistry = g_pMetaHookAPI->InlineHook(
+			(void*)gPrivateFuncs.Sys_GetRegKeyValueUnderRoot, NewEngineSys_GetRegKeyValueUnderRoot,
+			(void**)&gPrivateFuncs.Sys_GetRegKeyValueUnderRoot);
+		if (!g_phook_LanguageRegistry)
+			Sys_Error("Could not install the engine language registry hook.");
+	}
 }
 
 void Engine_UninstallHooks(void)
 {
-
+	if (g_phook_LanguageRegistry)
+	{
+		g_pMetaHookAPI->UnHook(g_phook_LanguageRegistry);
+		g_phook_LanguageRegistry = nullptr;
+		gPrivateFuncs.Sys_GetRegKeyValueUnderRoot = nullptr;
+	}
 }
 
 void Client_InstallHooks(void)

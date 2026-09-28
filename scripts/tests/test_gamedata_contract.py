@@ -1328,8 +1328,8 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
     background_panel_member = "CounterStrikeViewport.m_pCSBackGround"
     # The engine-side globals that replaced the disassembly locators. They live
     # in the engine module, which the Counter-Strike client snapshots do not
-    # publish. The V_strncpy call-site patches stay ungated: the catalog covers
-    # them on only 6 of the 11 engine identities, so that locator still scans.
+    # publish. Older engines use the separately gated registry reader; the
+    # remaining engines retain the V_strncpy call-site locator.
     engine_records = {
         "cl_time": "global",
         "cl_oldtime": "global",
@@ -1340,14 +1340,41 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
         "host_parms": "global",
     }
     engine_games = validate.RENDERER_ALL_GAMES
+    registry_games = ("hl-3248", "hl-3266", "hl-3329", "hl-3647", "hl-4554")
+    registry_reader = "Sys_GetRegKeyValueUnderRoot"
 
     def complete_symbols(self):
         return {name: {"kind": kind, "module": "client"}
                 for name, kind in self.records.items()}
 
-    def complete_engine_symbols(self):
-        return {name: {"kind": kind, "module": "engine"}
-                for name, kind in self.engine_records.items()}
+    def complete_engine_symbols(self, game_version=None):
+        symbols = {name: {"kind": kind, "module": "engine"}
+                   for name, kind in self.engine_records.items()}
+        if game_version in self.registry_games:
+            symbols[self.registry_reader] = {"kind": "function", "module": "engine"}
+        return symbols
+
+    def test_legacy_language_registry_reader_is_required_and_typed(self):
+        for gv in self.registry_games:
+            self.assertEqual([], validate.validate_vgui2extension(self.complete_engine_symbols(gv), gv))
+            for record in (None, {"kind": "patch", "module": "engine"},
+                           {"kind": "function", "module": "client"}):
+                with self.subTest(gv=gv, record=record):
+                    symbols = self.complete_engine_symbols(gv)
+                    del symbols[self.registry_reader]
+                    if record is not None:
+                        symbols[self.registry_reader] = record
+                    errors = validate.validate_vgui2extension(symbols, gv)
+                    self.assertTrue(any(self.registry_reader in error for error in errors), errors)
+
+    def test_other_engines_allow_absent_registry_reader_but_reject_wrong_kind(self):
+        for gv in set(self.engine_games) - set(self.registry_games):
+            with self.subTest(gv=gv):
+                symbols = self.complete_engine_symbols(gv)
+                self.assertEqual([], validate.validate_vgui2extension(symbols, gv))
+                symbols[self.registry_reader] = {"kind": "global", "module": "engine"}
+                errors = validate.validate_vgui2extension(symbols, gv)
+                self.assertTrue(any(self.registry_reader in error for error in errors), errors)
 
     def test_published_cs_clients_keep_all_required_entries(self):
         for gv in self.games:
@@ -1395,7 +1422,7 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
         for gv in self.engine_games:
             with self.subTest(gv=gv):
                 self.assertEqual([], validate.validate_vgui2extension(
-                    self.complete_engine_symbols(), gv))
+                    self.complete_engine_symbols(gv), gv))
 
     def test_missing_or_mistyped_engine_entry_is_rejected(self):
         for gv in self.engine_games:
@@ -1404,7 +1431,7 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
                 for record in (None, {"kind": wrong_kind, "module": "engine"},
                                {"kind": kind, "module": "client"}):
                     with self.subTest(gv=gv, name=name, record=record):
-                        symbols = self.complete_engine_symbols()
+                        symbols = self.complete_engine_symbols(gv)
                         del symbols[name]
                         if record is not None:
                             symbols[name] = record
