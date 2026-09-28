@@ -8,16 +8,6 @@ vec3_t* g_vVecViewangles = NULL;
 int* g_iUser1 = NULL;
 int* g_iUser2 = NULL;
 
-float* g_iFogColor_SCClient = NULL;
-float* g_iStartDist_SCClient = NULL;
-float* g_iEndDist_SCClient = NULL;
-
-int* g_iWaterLevel = NULL;
-int* g_iIsSpectator = NULL;
-bool* g_bRenderingPortals_SCClient = NULL;
-
-//pitchdrift_t* g_pitchdrift = NULL;
-
 struct event_api_s** g_pClientDLLEventAPI = NULL;
 
 private_funcs_t gPrivateFuncs = { 0 };
@@ -33,32 +23,18 @@ void Client_FillAddress_CL_IsThirdPerson(const mh_dll_info_t& DllInfo, const mh_
 	g_iUser2 = (decltype(g_iUser2))GamedataResolvePtr(RealDllInfo.ImageBase, "g_iUser2", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
-void Client_FillAddress_FogParams(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	//The old locator walked the `push 0x2601 / push 0xB65` texture-state block
-	//for five adjacent `movss xmm0, [imm]` reads and took the first, fourth and
-	//fifth (.data dword 0/3/4); the catalog publishes the same three globals.
-	g_iFogColor_SCClient = (decltype(g_iFogColor_SCClient))GamedataResolvePtr(RealDllInfo.ImageBase, "g_iFogColor", MH_GAMESYMBOL_KIND_GLOBAL);
-	g_iStartDist_SCClient = (decltype(g_iStartDist_SCClient))GamedataResolvePtr(RealDllInfo.ImageBase, "g_iStartDist", MH_GAMESYMBOL_KIND_GLOBAL);
-	g_iEndDist_SCClient = (decltype(g_iEndDist_SCClient))GamedataResolvePtr(RealDllInfo.ImageBase, "g_iEndDist", MH_GAMESYMBOL_KIND_GLOBAL);
-}
-
 void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	auto pfnClientFactory = g_pMetaHookAPI->GetClientFactory();
 
 	if (pfnClientFactory && pfnClientFactory("SCClientDLL001", 0))
 	{
-		if (1)
-		{
-			char pattern[] = "\xA1\x2A\x2A\x2A\x2A\x8B\x40\x0C\xFF\xE0";
-			auto addr = (PUCHAR)Search_Pattern(pattern, DllInfo);
-			Sig_AddrNotFound(ClientDLLEventAPI);
-
-			PVOID ClientDLLEventAPI_VA = *(decltype(ClientDLLEventAPI_VA)*)(addr + 1);
-
-			g_pClientDLLEventAPI = (decltype(g_pClientDLLEventAPI))ConvertDllInfoSpace(ClientDLLEventAPI_VA, DllInfo, RealDllInfo);
-		}
+		//The old locator disassembled the client's `mov eax,[gEngfuncs]; mov
+		//eax,[eax+EventAPI]; jmp eax` sequence and took the loaded .data operand
+		//as the EventAPI slot; the catalog publishes the `gEngfuncs` global, so
+		//the slot is its `pEventAPI` member.
+		auto pEngfuncs = (cl_enginefunc_t*)GamedataResolvePtr(RealDllInfo.ImageBase, "gEngfuncs", MH_GAMESYMBOL_KIND_GLOBAL);
+		g_pClientDLLEventAPI = &pEngfuncs->pEventAPI;
 	}
 	else
 	{
@@ -68,23 +44,8 @@ void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealD
 
 	v_origin = (decltype(v_origin))GamedataResolvePtr(RealDllInfo.ImageBase, "v_origin", MH_GAMESYMBOL_KIND_GLOBAL);
 
-	{
-		const char pattern[] = "\xA3\x2A\x2A\x2A\x2A\x83\x2A\xE0\x00\x00\x00\x00\x0F\x85\x2A\x2A\x2A\x2A\x80\x3D\x2A\x2A\x2A\x2A\x00";
-		auto addr = (PUCHAR)Search_Pattern(pattern, DllInfo);
-		Sig_AddrNotFound(g_bRenderingPortals);
-
-		auto g_iWaterLevel_VA = *(PVOID*)(addr + 1);
-		g_iWaterLevel = (decltype(g_iWaterLevel))ConvertDllInfoSpace(g_iWaterLevel_VA, DllInfo, RealDllInfo);
-
-		auto g_bRenderingPortals_SCClient_VA = *(PVOID*)(addr + 20);
-		g_bRenderingPortals_SCClient = (decltype(g_bRenderingPortals_SCClient))ConvertDllInfoSpace(g_bRenderingPortals_SCClient_VA, DllInfo, RealDllInfo);
-	}
-
-	g_iIsSpectator = (decltype(g_iIsSpectator))GamedataResolvePtr(RealDllInfo.ImageBase, "iIsSpectator", MH_GAMESYMBOL_KIND_GLOBAL);
 	gPrivateFuncs.V_CalcNormalRefdef = (decltype(gPrivateFuncs.V_CalcNormalRefdef))GamedataResolvePtr(RealDllInfo.ImageBase, "V_CalcNormalRefdef", MH_GAMESYMBOL_KIND_FUNCTION);
 	g_vVecViewangles = (decltype(g_vVecViewangles))GamedataResolvePtr(RealDllInfo.ImageBase, "g_vVecViewangles", MH_GAMESYMBOL_KIND_GLOBAL);
-
-	Client_FillAddress_FogParams(DllInfo, RealDllInfo);
 
 	Client_FillAddress_CL_IsThirdPerson(DllInfo, RealDllInfo);
 }

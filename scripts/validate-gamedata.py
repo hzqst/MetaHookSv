@@ -888,24 +888,24 @@ def validate_captionmod(symbols, game_version, include_engine=True):
 # factory answers SCClientDLL001), so its client globals only need to be
 # published by the two SvEngine snapshots.
 #
+# Only symbols with a live read point are pinned here. `g_iFogColor` /
+# `g_iStartDist` / `g_iEndDist` / `iIsSpectator` / `g_iWaterLevel` /
+# `g_bRenderingPortals_SCClient` were resolved from gamedata but read only
+# inside #if 0 blocks; they were deleted from the plugin, so gating them would
+# require the catalog to publish symbols nothing consumes.
+#
 # `g_iUser1` / `g_iUser2` were also the reason Renderer's retired
 # RENDERER_CLIENT_STUDIO_GLOBALS entry existed; SCCameraFix does read them, so
 # they are gated here instead of there.
 #
-# `g_iFogColor` / `g_iStartDist` / `g_iEndDist` are already gated for Renderer
-# via RENDERER_CLIENT_SVEN_GLOBALS; SCCameraFix reading them is an independent
-# dependency on the same records, pinned below so a catalog change that drops
-# them fails the gate for every consumer that would break.
+# `gEngfuncs` is resolved to derive `g_pClientDLLEventAPI` = &gEngfuncs.pEventAPI.
 SCCAMERAFIX_CLIENT_GAMES = ("svencoop-10257", "svencoop-8948")
 SCCAMERAFIX_CLIENT_GLOBALS = (
-    "g_iFogColor",
-    "g_iStartDist",
-    "g_iEndDist",
     "g_iUser1",
     "g_iUser2",
     "v_origin",
-    "iIsSpectator",
     "g_vVecViewangles",
+    "gEngfuncs",
 )
 SCCAMERAFIX_CLIENT_FUNCTIONS = ("V_CalcNormalRefdef",)
 

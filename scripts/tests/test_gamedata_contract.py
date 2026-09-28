@@ -1240,8 +1240,8 @@ class SCCameraFixGateTests(unittest.TestCase):
                 self.assertEqual([], self.gate(self.complete_symbols(gv), gv))
 
     def test_camera_symbols_require_the_client_module_and_correct_kind(self):
-        records = {"v_origin": "global", "iIsSpectator": "global",
-                   "g_vVecViewangles": "global", "V_CalcNormalRefdef": "function"}
+        records = {"v_origin": "global", "g_vVecViewangles": "global",
+                   "V_CalcNormalRefdef": "function"}
         for gv in ("svencoop-8948", "svencoop-10257"):
             for name, kind in records.items():
                 for record in (None, {"kind": "patch", "module": "client"},
@@ -1270,20 +1270,27 @@ class SCCameraFixGateTests(unittest.TestCase):
 
     def test_gate_flags_wrong_module(self):
         symbols = self.complete_symbols("svencoop-8948")
-        symbols["g_iFogColor"] = {"kind": "global", "module": "engine"}
+        symbols["g_vVecViewangles"] = {"kind": "global", "module": "engine"}
         errors = self.gate(symbols, "svencoop-8948")
-        self.assertTrue(any("g_iFogColor" in e and "client" in e for e in errors), errors)
+        self.assertTrue(any("g_vVecViewangles" in e and "client" in e for e in errors), errors)
 
-    def test_gate_requires_the_fog_globals_the_plugin_reads(self):
-        # g_iFogColor / g_iStartDist / g_iEndDist replace a five-candidate movss
-        # heuristic that picked .data dword 0, 3 and 4 of the client fog block.
-        for name in ("g_iFogColor", "g_iStartDist", "g_iEndDist"):
-            for gv in validate.SCCAMERAFIX_CLIENT_GAMES:
-                with self.subTest(name=name, gv=gv):
-                    symbols = self.complete_symbols(gv)
-                    del symbols[name]
-                    errors = self.gate(symbols, gv)
-                    self.assertTrue(any(name in e for e in errors), errors)
+    def test_gate_requires_engfuncs_for_the_eventapi_slot(self):
+        # gEngfuncs is dereferenced to its pEventAPI member to rebuild
+        # g_pClientDLLEventAPI, replacing the A1/8B 40 0C/FF E0 pattern block.
+        for gv in validate.SCCAMERAFIX_CLIENT_GAMES:
+            with self.subTest(gv=gv):
+                symbols = self.complete_symbols(gv)
+                del symbols["gEngfuncs"]
+                errors = self.gate(symbols, gv)
+                self.assertTrue(any("gEngfuncs" in e for e in errors), errors)
+
+    def test_gate_ignores_symbols_the_plugin_no_longer_reads(self):
+        # fog/waterlevel/portal/iIsSpectator were read only inside #if 0 blocks
+        # and were deleted; gating them would demand records nothing consumes.
+        for name in ("g_iFogColor", "g_iStartDist", "g_iEndDist",
+                     "iIsSpectator", "g_iWaterLevel", "g_bRenderingPortals_SCClient"):
+            with self.subTest(name=name):
+                self.assertNotIn(name, validate.SCCAMERAFIX_CLIENT_GLOBALS)
 
     def test_gate_does_not_require_client_globals_outside_sven_coop(self):
         for gv in ("hl-8684", "hl-10210", "cof-5936", "cstrike-8684", "czero-8684"):

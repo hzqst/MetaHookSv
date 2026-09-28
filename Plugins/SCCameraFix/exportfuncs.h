@@ -6,7 +6,6 @@
 void CAM_Think(void);
 void HUD_Init(void);
 void HUD_Shutdown(void);
-void V_CalcRefdef(struct ref_params_s* pparams);
 
 #define OBS_SVEN_NONE				0
 #define OBS_SVEN_CHASE_FREE			1
