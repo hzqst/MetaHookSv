@@ -71,15 +71,6 @@ ClientVGUI inline hook
 ============================================================
 */
 
-vgui::BuildGroup_Legacy* GetLegacyBuildGroup(vgui::Panel* pWindow)
-{
-	auto vftable = *(PVOID**)(pWindow);
-
-	auto pfnGetBuildGroup = (vgui::BuildGroup_Legacy * (__fastcall*)(vgui::Panel * pthis, int))vftable[139];
-
-	return pfnGetBuildGroup(pWindow, 0);
-}
-
 //Valve populate SetTextW with invalid chars.
 void __fastcall ClientVGUI_RichText_SetTextW(void* pthis, int dummy, const wchar_t* text)
 {
