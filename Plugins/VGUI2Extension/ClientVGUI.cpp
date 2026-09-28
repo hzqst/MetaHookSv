@@ -369,7 +369,9 @@ bool VGUI2_IsCWorldMapPaintBackground(PVOID Candidate, void** pSurfaceGetScreenS
 
 void __fastcall ClientVGUI_LoadControlSettings(vgui::Panel* pthis, int dummy, const char* controlResourceName, const char* pathID)
 {
-	if (!strcmp(controlResourceName, "Resource/UI/BuyMenu.res"))
+	//The Counter-Strike buy menu. vgui2::Frame::Activate() is only published on the
+	//CS-family client module, so this block must not run on other clients.
+	if (g_bIsCounterStrike && !strcmp(controlResourceName, "Resource/UI/BuyMenu.res"))
 	{
 		if (!gPrivateFuncs.CSBuyMenu_vftable)
 		{
