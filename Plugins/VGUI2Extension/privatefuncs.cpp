@@ -564,10 +564,10 @@ PVOID *VGUI2_FindKeyValueVFTable(const mh_dll_info_t &DllInfo, const mh_dll_info
 	return (PVOID *)ConvertDllInfoSpace((PVOID)ctx.KeyValues_vftable, DllInfo, RealDllInfo);
 }
 
-void Engine_FillAddress_PanelInit(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_PanelInit(const mh_dll_info_t& RealDllInfo)
 {
-	gPrivateFuncs.EngineVGUI2_Panel_Init = (decltype(gPrivateFuncs.EngineVGUI2_Panel_Init))VGUI2_FindPanelInit(DllInfo, RealDllInfo);
-	Sig_FuncNotFound(EngineVGUI2_Panel_Init);
+	gPrivateFuncs.EngineVGUI2_Panel_Init = (decltype(gPrivateFuncs.EngineVGUI2_Panel_Init))
+		GamedataResolvePtr(RealDllInfo.ImageBase, "vgui2::Panel::Init(int, int, int, int)", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void Engine_FillAddress_GetClientTime(const mh_dll_info_t& RealDllInfo)
@@ -990,9 +990,9 @@ void Engine_FillAddress_StaticEngineSurface(const mh_dll_info_t& RealDllInfo)
 	staticEngineSurface = (decltype(staticEngineSurface))GamedataResolvePtr(RealDllInfo.ImageBase, "staticEngineSurface", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
-void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress(const mh_dll_info_t& RealDllInfo)
 {
-	Engine_FillAddress_PanelInit(DllInfo, RealDllInfo);
+	Engine_FillAddress_PanelInit(RealDllInfo);
 	Engine_FillAddress_GetClientTime(RealDllInfo);
 	Engine_FillAddress_RealTime(RealDllInfo);
 	Engine_FillAddress_CL_ViewEntityVars(RealDllInfo);

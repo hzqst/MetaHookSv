@@ -470,7 +470,7 @@ def validate_snapshot(doc, game_version):
         errors.append(f"'{game_version}': missing records array")
         return errors, module_crc64, {}
 
-    symbols = {}  # symbolName -> record (windows only)
+    symbols = {}  # (module, symbolName) -> record (windows only)
     for rec in records:
         if not isinstance(rec, dict):
             continue
@@ -486,7 +486,10 @@ def validate_snapshot(doc, game_version):
             errors.append(f"'{game_version}': record '{name}' references unknown module '{mod}'")
             continue
 
-        key = (module_crc64[mod], name)
+        # The catalog legitimately publishes one symbol name under several
+        # modules (client/engine/gameui/serverbrowser); the index must keep them
+        # apart, so records are keyed by (module, name).
+        key = (mod, name)
         if kind == "function":
             p = payload if isinstance(payload, dict) else {}
             rva = parse_hex_u32(p.get("func_rva"))
@@ -499,9 +502,9 @@ def validate_snapshot(doc, game_version):
                 errors.append(f"'{game_version}': function '{name}' has a malformed signature")
                 continue
             rec = {"kind": "function", "rva": rva, "size": size, "module": mod}
-            if name in symbols and symbols[name] != rec:
+            if key in symbols and symbols[key] != rec:
                 errors.append(f"'{game_version}': conflicting duplicate symbol '{name}'")
-            symbols[name] = rec
+            symbols[key] = rec
         elif kind == "global":
             p = payload if isinstance(payload, dict) else {}
             gv_rva = parse_hex_u32(p.get("gv_rva"))
@@ -527,9 +530,9 @@ def validate_snapshot(doc, game_version):
             rec = {"kind": "global", "rva": gv_rva, "sig_rva": gv_sig_va - image_base,
                    "inst_off": inst_off, "inst_disp": inst_disp, "inst_len": inst_len,
                    "module": mod}
-            if name in symbols and symbols[name] != rec:
+            if key in symbols and symbols[key] != rec:
                 errors.append(f"'{game_version}': conflicting duplicate symbol '{name}'")
-            symbols[name] = rec
+            symbols[key] = rec
         elif kind == "patch":
             p = payload if isinstance(payload, dict) else {}
             patch_name = p.get("patch_name")
@@ -544,9 +547,9 @@ def validate_snapshot(doc, game_version):
                 errors.append(f"'{game_version}': patch '{name}' has a malformed signature")
                 continue
             rec = {"kind": "patch", "rva": patch_rva, "sig_disp": patch_sig_disp, "module": mod}
-            if name in symbols and symbols[name] != rec:
+            if key in symbols and symbols[key] != rec:
                 errors.append(f"'{game_version}': conflicting duplicate symbol '{name}'")
-            symbols[name] = rec
+            symbols[key] = rec
         elif kind == "scalar":
             p = payload if isinstance(payload, dict) else {}
             scalar_name = p.get("scalar_name")
@@ -559,9 +562,9 @@ def validate_snapshot(doc, game_version):
                 errors.append(f"'{game_version}': scalar '{name}' has an invalid uint32 scalar_value")
                 continue
             rec = {"kind": "scalar", "value": scalar_value, "module": mod}
-            if name in symbols and symbols[name] != rec:
+            if key in symbols and symbols[key] != rec:
                 errors.append(f"'{game_version}': conflicting duplicate symbol '{name}'")
-            symbols[name] = rec
+            symbols[key] = rec
         elif kind == "structMember":
             p = payload if isinstance(payload, dict) else {}
             struct_name = p.get("struct_name")
@@ -573,9 +576,9 @@ def validate_snapshot(doc, game_version):
                 errors.append(f"'{game_version}': structMember '{name}' missing/invalid struct_name/member_name/offset")
                 continue
             rec = {"kind": "structMember", "offset": offset, "module": mod}
-            if name in symbols and symbols[name] != rec:
+            if key in symbols and symbols[key] != rec:
                 errors.append(f"'{game_version}': conflicting duplicate symbol '{name}'")
-            symbols[name] = rec
+            symbols[key] = rec
         elif kind == "virtualFunction":
             p = payload if isinstance(payload, dict) else {}
             vfunc_index = p.get("vfunc_index")
@@ -607,9 +610,9 @@ def validate_snapshot(doc, game_version):
                 errors.append(f"'{game_version}': virtualFunction '{name}' has a malformed signature")
                 continue
             rec = {"kind": "virtualFunction", "rva": func_rva, "size": func_size, "module": mod}
-            if name in symbols and symbols[name] != rec:
+            if key in symbols and symbols[key] != rec:
                 errors.append(f"'{game_version}': conflicting duplicate symbol '{name}'")
-            symbols[name] = rec
+            symbols[key] = rec
         elif kind == "vtable":
             p = payload if isinstance(payload, dict) else {}
             vtable_rva = parse_hex_u32(p.get("vtable_rva"))
@@ -625,9 +628,9 @@ def validate_snapshot(doc, game_version):
                 errors.append(f"'{game_version}': vtable '{name}': vtable_size does not match vtable_numvfunc")
                 continue
             rec = {"kind": "vtable", "rva": vtable_rva, "size": vtable_size, "module": mod}
-            if name in symbols and symbols[name] != rec:
+            if key in symbols and symbols[key] != rec:
                 errors.append(f"'{game_version}': conflicting duplicate symbol '{name}'")
-            symbols[name] = rec
+            symbols[key] = rec
         else:
             # unsupported kind is tolerated by the catalog; skip.
             continue
@@ -639,7 +642,7 @@ def validate_required(symbols, family, game_version):
     """Return a list of required-symbol failures for a single gameVersion."""
     errors = []
     for sym, kind in COMMON_REQUIRED.items():
-        rec = symbols.get(sym)
+        rec = symbols.get(("engine", sym))
         if not isinstance(rec, dict):
             errors.append(f"'{game_version}' ({family}): missing common required symbol '{sym}'")
         elif rec.get("kind") != kind:
@@ -649,7 +652,7 @@ def validate_required(symbols, family, game_version):
         index = 0
         while True:
             name = f"{prefix}_{index}"
-            rec = symbols.get(name)
+            rec = symbols.get(("engine", name))
             if rec is None:
                 if index == 0:
                     errors.append(f"'{game_version}' ({family}): missing required patch '{name}'")
@@ -659,7 +662,7 @@ def validate_required(symbols, family, game_version):
             index += 1
 
     for sym, module in REQUIRED_SCALARS.items():
-        rec = symbols.get(sym)
+        rec = symbols.get((module, sym))
         if not isinstance(rec, dict):
             errors.append(f"'{game_version}' ({family}): missing required scalar '{sym}'")
         elif rec.get("kind") != "scalar":
@@ -669,20 +672,20 @@ def validate_required(symbols, family, game_version):
 
     # BulletPhysics engine-side consumer gate.
     for sym in BULLETPHYSICS_ENGINE_FUNCTIONS:
-        rec = symbols.get(sym)
+        rec = symbols.get(("engine", sym))
         if not isinstance(rec, dict):
             errors.append(f"'{game_version}' ({family}): missing BulletPhysics engine function '{sym}'")
         elif rec.get("kind") != "function":
             errors.append(f"'{game_version}' ({family}): '{sym}' must be a function record")
     for sym in BULLETPHYSICS_ENGINE_GLOBALS:
-        rec = symbols.get(sym)
+        rec = symbols.get(("engine", sym))
         if not isinstance(rec, dict):
             errors.append(f"'{game_version}' ({family}): missing BulletPhysics engine global '{sym}'")
         elif rec.get("kind") != "global":
             errors.append(f"'{game_version}' ({family}): '{sym}' must be a global record")
     if family == "ENGINE_SVENGINE":
         for sym in BULLETPHYSICS_SVENGINE_GLOBALS:
-            rec = symbols.get(sym)
+            rec = symbols.get(("engine", sym))
             if not isinstance(rec, dict):
                 errors.append(f"'{game_version}' ({family}): missing BulletPhysics engine global '{sym}'")
             elif rec.get("kind") != "global":
@@ -690,9 +693,10 @@ def validate_required(symbols, family, game_version):
 
     # cvar branch: the engine's native callback list, or at least one managed
     # Cvar_Set -> Cvar_DirectSet call-site redirect.
-    has_native = isinstance(symbols.get("cvar_hooks"), dict) and symbols["cvar_hooks"].get("kind") == "global"
-    has_managed = (isinstance(symbols.get("Cvar_Set_to_Cvar_DirectSet_callsite_0"), dict) and
-                   symbols["Cvar_Set_to_Cvar_DirectSet_callsite_0"].get("kind") == "patch")
+    has_native = (isinstance(symbols.get(("engine", "cvar_hooks")), dict) and
+                  symbols[("engine", "cvar_hooks")].get("kind") == "global")
+    has_managed = (isinstance(symbols.get(("engine", "Cvar_Set_to_Cvar_DirectSet_callsite_0")), dict) and
+                   symbols[("engine", "Cvar_Set_to_Cvar_DirectSet_callsite_0")].get("kind") == "patch")
     if not (has_native or has_managed):
         errors.append(
             f"'{game_version}' ({family}): missing cvar branch "
@@ -702,11 +706,11 @@ def validate_required(symbols, family, game_version):
     # blob client hooks
     if family in BLOB_CLIENT_FAMILIES:
         for sym in ("NLoadBlob", "FreeBlob"):
-            if sym not in symbols:
+            if ("engine", sym) not in symbols:
                 errors.append(f"'{game_version}' ({family}): missing blob client symbol '{sym}'")
     elif family == "ENGINE_SVENGINE":
         # SvEngine may ship without the blob client hooks, but only as a pair.
-        if ("NLoadBlob" in symbols) != ("FreeBlob" in symbols):
+        if (("engine", "NLoadBlob") in symbols) != (("engine", "FreeBlob") in symbols):
             errors.append(
                 f"'{game_version}' ({family}): NLoadBlob and FreeBlob must both be present or both absent"
             )
@@ -718,13 +722,13 @@ def validate_bulletphysics_client(symbols, game_version):
     """Return BulletPhysics client-side consumer failures for a game version."""
     errors = []
     for sym in BULLETPHYSICS_CLIENT_GLOBALS:
-        rec = symbols.get(sym)
+        rec = symbols.get(("client", sym))
         if not isinstance(rec, dict):
             errors.append(f"'{game_version}': missing BulletPhysics client global '{sym}'")
         elif rec.get("kind") != "global":
             errors.append(f"'{game_version}': '{sym}' must be a global record")
     for sym in BULLETPHYSICS_CLIENT_OPTIONAL_VFUNCS:
-        rec = symbols.get(sym)
+        rec = symbols.get(("client", sym))
         if rec is None:
             continue
         if not isinstance(rec, dict) or rec.get("kind") != "virtualFunction":
@@ -732,24 +736,24 @@ def validate_bulletphysics_client(symbols, game_version):
 
     if game_version == "svencoop-10257":
         for sym in BULLETPHYSICS_SVEN_CLIENT_GLOBALS:
-            rec = symbols.get(sym)
+            rec = symbols.get(("client", sym))
             if not isinstance(rec, dict):
                 errors.append(f"'{game_version}': missing Sven Co-op client global '{sym}'")
             elif rec.get("kind") != "global":
                 errors.append(f"'{game_version}': '{sym}' must be a global record")
     if game_version in BULLETPHYSICS_CS_CLIENT_GAMES:
-        rec = symbols.get("g_PlayerExtraInfo")
+        rec = symbols.get(("client", "g_PlayerExtraInfo"))
         if not isinstance(rec, dict):
             errors.append(f"'{game_version}': missing Counter-Strike client global 'g_PlayerExtraInfo'")
         elif rec.get("kind") != "global":
             errors.append(f"'{game_version}': 'g_PlayerExtraInfo' must be a global record")
-        rec = symbols.get("GameStudioRenderer__StudioDrawPlayer")
+        rec = symbols.get(("client", "GameStudioRenderer__StudioDrawPlayer"))
         if not isinstance(rec, dict):
             errors.append(f"'{game_version}': missing Counter-Strike client virtualFunction 'GameStudioRenderer__StudioDrawPlayer'")
         elif rec.get("kind") != "virtualFunction":
             errors.append(f"'{game_version}': 'GameStudioRenderer__StudioDrawPlayer' must be a virtualFunction record")
     if game_version in BULLETPHYSICS_CZDS_CLIENT_GAMES:
-        rec = symbols.get("g_PlayerExtraInfo_CZDS")
+        rec = symbols.get(("client", "g_PlayerExtraInfo_CZDS"))
         if not isinstance(rec, dict):
             errors.append(f"'{game_version}': missing Condition Zero client global 'g_PlayerExtraInfo_CZDS'")
         elif rec.get("kind") != "global":
@@ -767,7 +771,7 @@ def _consumer_check(symbols, game_version, names, kind, module, consumer):
     """Return consumer failures for one (symbol, kind, module) group."""
     errors = []
     for sym in names:
-        rec = symbols.get(sym)
+        rec = symbols.get((module, sym))
         if not isinstance(rec, dict):
             errors.append(f"'{game_version}': missing {consumer} {module} {kind} '{sym}'")
             continue
@@ -948,7 +952,7 @@ VGUI2EXTENSION_CS_CLIENT_VIRTUAL_FUNCTIONS = (
 VGUI2EXTENSION_BACKGROUND_PANEL_STRUCT_MEMBERS = (
     "CounterStrikeViewport.m_pCSBackGround",
 )
-# The engine-side globals the disassembly locators used to derive. Only the
+# The engine-side entries the disassembly locators used to derive. Only the
 # snapshots that publish an engine module carry them; the Counter-Strike clients
 # publish no engine module of their own and share the hl identities' engine
 # binary. Older engines read the language directly from the registry; newer
@@ -962,6 +966,12 @@ VGUI2EXTENSION_ENGINE_GLOBALS = (
     "staticEngineSurface",
     "host_parms",
 )
+# The engine's vgui2 panel init, previously located by the shared
+# VGUI2_FindPanelInit disassembly walk. Published as a FUNCTION on every engine
+# identity.
+VGUI2EXTENSION_ENGINE_FUNCTIONS = (
+    "vgui2::Panel::Init(int, int, int, int)",
+)
 VGUI2EXTENSION_REGISTRY_LANGUAGE_GAMES = (
     "hl-3248", "hl-3266", "hl-3329", "hl-3647", "hl-4554",
 )
@@ -974,13 +984,15 @@ def validate_vgui2extension(symbols, game_version, include_engine=True):
     if include_engine:
         errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_ENGINE_GLOBALS,
                                   "global", "engine", "VGUI2Extension")
+        errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_ENGINE_FUNCTIONS,
+                                  "function", "engine", "VGUI2Extension")
         if (game_version in VGUI2EXTENSION_REGISTRY_LANGUAGE_GAMES or
-                VGUI2EXTENSION_REGISTRY_LANGUAGE_READER in symbols):
+                ("engine", VGUI2EXTENSION_REGISTRY_LANGUAGE_READER) in symbols):
             errors += _consumer_check(symbols, game_version, (VGUI2EXTENSION_REGISTRY_LANGUAGE_READER,),
                                       "function", "engine", "VGUI2Extension")
     is_cs = game_version in VGUI2EXTENSION_CLIENT_GAMES
     for name, kind in VGUI2EXTENSION_CLIENT_OPTIONAL_ENTRIES.items():
-        if is_cs or name in symbols:
+        if is_cs or ("client", name) in symbols:
             errors += _consumer_check(symbols, game_version, (name,), kind, "client", "VGUI2Extension")
     if is_cs:
         errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_CS_CLIENT_FUNCTIONS,
@@ -1011,7 +1023,7 @@ def validate_renderer(symbols, game_version, include_engine=True, include_client
             index = 0
             while True:
                 name = f"{prefix}_{index}"
-                rec = symbols.get(name)
+                rec = symbols.get(("engine", name))
                 if rec is None:
                     if index == 0:
                         errors.append(f"'{game_version}': missing required Renderer patch '{name}'")

@@ -211,7 +211,7 @@ void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealD
 void Client_InstallHooks(void);
 void Client_UninstallHooks(void);
 void SDL2_FillAddress(void);
-void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void Engine_FillAddress(const mh_dll_info_t& RealDllInfo);
 void Engine_PatchAddress_VGUIClient001(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void Engine_PatchAddress_LanguageStrncpy(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void EngineSurface_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);

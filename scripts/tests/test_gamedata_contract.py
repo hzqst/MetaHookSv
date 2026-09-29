@@ -136,7 +136,7 @@ class SnapshotContractTests(unittest.TestCase):
         self.assertEqual([], errors, errors)
         self.assertEqual({"engine": 0x0011223344556677}, module_crc64)
         self.assertEqual({"kind": "scalar", "value": 17080, "module": "engine"},
-                         symbols["size_of_frame"])
+                         symbols[("engine", "size_of_frame")])
 
     def test_rejects_legacy_snapshot_schema(self):
         doc = make_snapshot(schema=4)
@@ -178,7 +178,7 @@ class SnapshotContractTests(unittest.TestCase):
         self.assertEqual([], errors, errors)
         self.assertEqual(
             {"kind": "structMember", "offset": 0x19c, "module": "engine"},
-            symbols["CVideoMode_Common.m_ImageID"],
+            symbols[("engine", "CVideoMode_Common.m_ImageID")],
         )
 
     def test_rejects_invalid_struct_member_payload(self):
@@ -197,7 +197,7 @@ class SnapshotContractTests(unittest.TestCase):
         self.assertEqual([], errors, errors)
         self.assertEqual(
             {"kind": "virtualFunction", "rva": 0x1000, "size": 0x20, "module": "engine"},
-            symbols["GameStudioRenderer_StudioDrawModel"],
+            symbols[("engine", "GameStudioRenderer_StudioDrawModel")],
         )
 
     def test_rejects_virtual_function_missing_slot_identity(self):
@@ -245,7 +245,7 @@ class SnapshotContractTests(unittest.TestCase):
         doc = make_snapshot([virtual_function_record(payload=payload)])
         errors, _, symbols = validate.validate_snapshot(doc, "hl-8684")
         self.assertEqual([], errors, errors)
-        self.assertNotIn("GameStudioRenderer_StudioDrawModel", symbols)
+        self.assertNotIn(("engine", "GameStudioRenderer_StudioDrawModel"), symbols)
 
     def test_accepts_virtual_function_signature_under_func_sig(self):
         payload = {
@@ -260,7 +260,7 @@ class SnapshotContractTests(unittest.TestCase):
         self.assertEqual([], errors, errors)
         self.assertEqual(
             {"kind": "virtualFunction", "rva": 0x1000, "size": 0x20, "module": "engine"},
-            symbols["GameStudioRenderer_StudioDrawModel"],
+            symbols[("engine", "GameStudioRenderer_StudioDrawModel")],
         )
 
     def test_accepts_virtual_function_without_signature(self):
@@ -273,7 +273,7 @@ class SnapshotContractTests(unittest.TestCase):
         doc = make_snapshot([virtual_function_record(payload=payload)])
         errors, _, symbols = validate.validate_snapshot(doc, "hl-8684")
         self.assertEqual([], errors, errors)
-        self.assertIn("GameStudioRenderer_StudioDrawModel", symbols)
+        self.assertIn(("engine", "GameStudioRenderer_StudioDrawModel"), symbols)
 
     def test_rejects_virtual_function_malformed_or_non_string_signature(self):
         for bad in ("zz", 1234):
@@ -297,7 +297,7 @@ class SnapshotContractTests(unittest.TestCase):
         self.assertEqual([], errors, errors)
         self.assertEqual(
             {"kind": "vtable", "rva": 0x2000, "size": 0x78, "module": "engine"},
-            symbols["GameStudioRenderer"],
+            symbols[("engine", "GameStudioRenderer")],
         )
 
     def test_rejects_vtable_missing_fields(self):
@@ -331,22 +331,61 @@ class SnapshotContractTests(unittest.TestCase):
             errors,
         )
 
+    def _shared_name_snapshot(self, name):
+        doc = make_snapshot()
+        doc["binaries"]["client"] = {
+            "windows": {
+                "crc64": "8899aabbccddeeff",
+                "size": 1024,
+                "sha256": SHA256_A,
+                "isBlob": True,
+            }
+        }
+        doc["records"] = [function_record(name=name),
+                          dict(function_record(name=name), module="client")]
+        return doc
+
+    def test_keeps_modules_apart_for_a_shared_symbol_name(self):
+        # One symbol name can be published under several modules (client, engine,
+        # gameui, serverbrowser). The index must store each module's record
+        # instead of reporting the second module as a conflicting duplicate.
+        name = "vgui2::Panel::Init(int, int, int, int)"
+        errors, _, symbols = validate.validate_snapshot(self._shared_name_snapshot(name), "hl-8684")
+        self.assertEqual([], errors, errors)
+        self.assertEqual(
+            {"kind": "function", "rva": 0x1000, "size": 0x10, "module": "engine"},
+            symbols[("engine", name)],
+        )
+        self.assertEqual(
+            {"kind": "function", "rva": 0x1000, "size": 0x10, "module": "client"},
+            symbols[("client", name)],
+        )
+
+    def test_rejects_divergent_duplicate_within_one_module(self):
+        name = "vgui2::Panel::Init(int, int, int, int)"
+        doc = self._shared_name_snapshot(name)
+        other = function_record(name=name)
+        other["payload"] = {"func_rva": "0x2000", "func_size": "0x10", "func_sig": "55 8B EC"}
+        doc["records"].append(other)
+        errors, _, _ = validate.validate_snapshot(doc, "hl-8684")
+        self.assertTrue(any("conflicting duplicate symbol" in e for e in errors), errors)
+
 
 class RequiredScalarGateTests(unittest.TestCase):
     def complete_symbols(self):
         symbols = {}
         for name, kind in validate.COMMON_REQUIRED.items():
-            symbols[name] = {"kind": kind}
+            symbols[("engine", name)] = {"kind": kind}
         for prefix in validate.NUMBERED_PATCH_SETS:
-            symbols[f"{prefix}_0"] = {"kind": "patch"}
-        symbols["cvar_hooks"] = {"kind": "global"}
+            symbols[("engine", f"{prefix}_0")] = {"kind": "patch"}
+        symbols[("engine", "cvar_hooks")] = {"kind": "global"}
         for name in ("NLoadBlob", "FreeBlob"):
-            symbols[name] = {"kind": "function"}
-        symbols["size_of_frame"] = {"kind": "scalar", "value": 17080, "module": "engine"}
+            symbols[("engine", name)] = {"kind": "function"}
+        symbols[("engine", "size_of_frame")] = {"kind": "scalar", "value": 17080, "module": "engine"}
         for name in validate.BULLETPHYSICS_ENGINE_FUNCTIONS:
-            symbols[name] = {"kind": "function"}
+            symbols[("engine", name)] = {"kind": "function"}
         for name in validate.BULLETPHYSICS_ENGINE_GLOBALS:
-            symbols[name] = {"kind": "global"}
+            symbols[("engine", name)] = {"kind": "global"}
         return symbols
 
     def test_scalar_gate_passes_when_present(self):
@@ -357,19 +396,19 @@ class RequiredScalarGateTests(unittest.TestCase):
 
     def test_scalar_gate_flags_missing_scalar(self):
         symbols = self.complete_symbols()
-        del symbols["size_of_frame"]
+        del symbols[("engine", "size_of_frame")]
         errors = validate.validate_required(symbols, "ENGINE_GOLDSRC", "hl-8684")
         self.assertTrue(any("missing required scalar 'size_of_frame'" in e for e in errors), errors)
 
     def test_scalar_gate_flags_wrong_kind(self):
         symbols = self.complete_symbols()
-        symbols["size_of_frame"] = {"kind": "global"}
+        symbols[("engine", "size_of_frame")] = {"kind": "global"}
         errors = validate.validate_required(symbols, "ENGINE_GOLDSRC", "hl-8684")
         self.assertTrue(any("must be a scalar record" in e for e in errors), errors)
 
     def test_scalar_gate_flags_wrong_module(self):
         symbols = self.complete_symbols()
-        symbols["size_of_frame"] = {"kind": "scalar", "value": 17080, "module": "client"}
+        symbols[("engine", "size_of_frame")] = {"kind": "scalar", "value": 17080, "module": "client"}
         errors = validate.validate_required(symbols, "ENGINE_GOLDSRC", "hl-8684")
         self.assertTrue(any("must belong to module 'engine'" in e for e in errors), errors)
 
@@ -378,28 +417,28 @@ class BulletPhysicsEngineGateTests(unittest.TestCase):
     def complete_symbols(self):
         symbols = {}
         for name, kind in validate.COMMON_REQUIRED.items():
-            symbols[name] = {"kind": kind}
+            symbols[("engine", name)] = {"kind": kind}
         for prefix in validate.NUMBERED_PATCH_SETS:
-            symbols[f"{prefix}_0"] = {"kind": "patch"}
-        symbols["cvar_hooks"] = {"kind": "global"}
+            symbols[("engine", f"{prefix}_0")] = {"kind": "patch"}
+        symbols[("engine", "cvar_hooks")] = {"kind": "global"}
         for name in ("NLoadBlob", "FreeBlob"):
-            symbols[name] = {"kind": "function"}
-        symbols["size_of_frame"] = {"kind": "scalar", "value": 17080, "module": "engine"}
+            symbols[("engine", name)] = {"kind": "function"}
+        symbols[("engine", "size_of_frame")] = {"kind": "scalar", "value": 17080, "module": "engine"}
         for name in validate.BULLETPHYSICS_ENGINE_FUNCTIONS:
-            symbols[name] = {"kind": "function"}
+            symbols[("engine", name)] = {"kind": "function"}
         for name in validate.BULLETPHYSICS_ENGINE_GLOBALS:
-            symbols[name] = {"kind": "global"}
+            symbols[("engine", name)] = {"kind": "global"}
         return symbols
 
     def test_engine_gate_flags_missing_function(self):
         symbols = self.complete_symbols()
-        del symbols["R_RenderView"]
+        del symbols[("engine", "R_RenderView")]
         errors = validate.validate_required(symbols, "ENGINE_GOLDSRC", "hl-8684")
         self.assertTrue(any("missing BulletPhysics engine function 'R_RenderView'" in e for e in errors), errors)
 
     def test_engine_gate_flags_wrong_global_kind(self):
         symbols = self.complete_symbols()
-        symbols["cl_frames"] = {"kind": "function"}
+        symbols[("engine", "cl_frames")] = {"kind": "function"}
         errors = validate.validate_required(symbols, "ENGINE_GOLDSRC", "hl-8684")
         self.assertTrue(any("'cl_frames' must be a global record" in e for e in errors), errors)
 
@@ -413,9 +452,9 @@ class BulletPhysicsClientGateTests(unittest.TestCase):
     def complete_client_symbols(self):
         symbols = {}
         for name in validate.BULLETPHYSICS_CLIENT_GLOBALS:
-            symbols[name] = {"kind": "global"}
+            symbols[("client", name)] = {"kind": "global"}
         for name in validate.BULLETPHYSICS_CLIENT_OPTIONAL_VFUNCS:
-            symbols[name] = {"kind": "virtualFunction"}
+            symbols[("client", name)] = {"kind": "virtualFunction"}
         return symbols
 
     def test_client_gate_passes_for_hl(self):
@@ -426,13 +465,13 @@ class BulletPhysicsClientGateTests(unittest.TestCase):
 
     def test_client_gate_tolerates_absent_optional_vfunc(self):
         symbols = self.complete_client_symbols()
-        del symbols["GameStudioRenderer_StudioDrawPlayer"]
+        del symbols[("client", "GameStudioRenderer_StudioDrawPlayer")]
         errors = validate.validate_bulletphysics_client(symbols, "hl-8684")
         self.assertEqual([], errors)
 
     def test_client_gate_flags_wrong_kind_optional_vfunc(self):
         symbols = self.complete_client_symbols()
-        symbols["GameStudioRenderer_StudioDrawPlayer"] = {"kind": "global"}
+        symbols[("client", "GameStudioRenderer_StudioDrawPlayer")] = {"kind": "global"}
         errors = validate.validate_bulletphysics_client(symbols, "hl-8684")
         self.assertTrue(
             any("GameStudioRenderer_StudioDrawPlayer' must be a virtualFunction record" in e for e in errors),
@@ -441,13 +480,13 @@ class BulletPhysicsClientGateTests(unittest.TestCase):
 
     def test_client_gate_flags_missing_global(self):
         symbols = self.complete_client_symbols()
-        del symbols["g_iUser2"]
+        del symbols[("client", "g_iUser2")]
         errors = validate.validate_bulletphysics_client(symbols, "hl-8684")
         self.assertTrue(any("missing BulletPhysics client global" in e for e in errors), errors)
 
     def test_client_gate_flags_wrong_kind(self):
         symbols = self.complete_client_symbols()
-        symbols["g_iUser1"] = {"kind": "function"}
+        symbols[("client", "g_iUser1")] = {"kind": "function"}
         errors = validate.validate_bulletphysics_client(symbols, "hl-8684")
         self.assertTrue(any("must be a global record" in e for e in errors), errors)
 
@@ -456,7 +495,7 @@ class BulletPhysicsClientGateTests(unittest.TestCase):
         errors = validate.validate_bulletphysics_client(symbols, "svencoop-10257")
         self.assertTrue(any("missing Sven Co-op client global 'g_pitchdrift'" in e for e in errors), errors)
         for name in validate.BULLETPHYSICS_SVEN_CLIENT_GLOBALS:
-            symbols[name] = {"kind": "global"}
+            symbols[("client", name)] = {"kind": "global"}
         self.assertEqual([], validate.validate_bulletphysics_client(symbols, "svencoop-10257"))
 
     def test_cs_client_gate_requires_extra_symbols(self):
@@ -553,15 +592,15 @@ class RendererGateTests(unittest.TestCase):
 
         def add(names, kind):
             for n in names:
-                symbols[n] = {"kind": kind, "module": "engine"}
+                symbols[("engine", n)] = {"kind": kind, "module": "engine"}
 
         add(validate.RENDERER_ENGINE_ALL_FUNCTIONS, "function")
         add(validate.RENDERER_ENGINE_ALL_GLOBALS, "global")
         add(validate.RENDERER_ENGINE_ALL_PATCHES, "patch")
         add(validate.RENDERER_ENGINE_STRUCT_MEMBERS, "structMember")
         for prefix in validate.RENDERER_NUMBERED_PATCH_SETS:
-            symbols[f"{prefix}_0"] = {"kind": "patch", "module": "engine"}
-            symbols[f"{prefix}_1"] = {"kind": "patch", "module": "engine"}
+            symbols[("engine", f"{prefix}_0")] = {"kind": "patch", "module": "engine"}
+            symbols[("engine", f"{prefix}_1")] = {"kind": "patch", "module": "engine"}
         if game_version in validate.RENDERER_NON_SVENGINE_GAMES:
             add(validate.RENDERER_ENGINE_NON_SVENGINE_FUNCTIONS, "function")
             add(validate.RENDERER_ENGINE_NON_SVENGINE_PATCHES, "patch")
@@ -597,7 +636,7 @@ class RendererGateTests(unittest.TestCase):
 
         def add(names, kind):
             for n in names:
-                symbols[n] = {"kind": kind, "module": "client"}
+                symbols[("client", n)] = {"kind": kind, "module": "client"}
 
         if game_version in validate.RENDERER_SVENGINE_GAMES:
             add(validate.RENDERER_CLIENT_SVEN_FUNCTIONS, "function")
@@ -634,14 +673,14 @@ class RendererGateTests(unittest.TestCase):
             for name in ("ClientPortalManager_EnableClipPlane", "ClientPortalManager_InitShader",
                          "CParticleSystem_ParticleDraw", "ClientPortalManager.m_bShadersAvailable"):
                 symbols = self.complete_client_symbols(gv)
-                del symbols[name]
+                del symbols[("client", name)]
                 errors = validate.validate_renderer(symbols, gv, include_engine=False)
                 self.assertTrue(any(name in e for e in errors), (gv, name, errors))
 
     def test_sven_shader_flag_requires_struct_member_kind(self):
         for gv in validate.RENDERER_SVENGINE_GAMES:
             symbols = self.complete_client_symbols(gv)
-            symbols["ClientPortalManager.m_bShadersAvailable"]["kind"] = "global"
+            symbols[("client", "ClientPortalManager.m_bShadersAvailable")]["kind"] = "global"
             errors = validate.validate_renderer(symbols, gv, include_engine=False)
             self.assertTrue(any("must be a structMember record" in e for e in errors), errors)
 
@@ -652,28 +691,28 @@ class RendererGateTests(unittest.TestCase):
                            {"kind": "patch", "module": "engine"}):
                 with self.subTest(gv=gv, record=record):
                     symbols = self.complete_client_symbols(gv)
-                    symbols.pop(name, None)
+                    symbols.pop(("client", name), None)
                     if record is not None:
-                        symbols[name] = record
+                        symbols[("client", name)] = record
                     errors = validate.validate_renderer(symbols, gv, include_engine=False)
                     self.assertTrue(any(name in e for e in errors), errors)
         self.assertEqual([], validate.validate_renderer({}, "hl-6153", include_engine=False))
 
     def test_gate_flags_missing_engine_function(self):
         symbols = self.complete_engine_symbols("hl-8684")
-        del symbols["R_NewMap"]
+        del symbols[("engine", "R_NewMap")]
         errors = validate.validate_renderer(symbols, "hl-8684")
         self.assertTrue(any("missing Renderer engine function 'R_NewMap'" in e for e in errors), errors)
 
     def test_gate_flags_kind_mismatch(self):
         symbols = self.complete_engine_symbols("hl-8684")
-        symbols["R_NewMap"] = {"kind": "global", "module": "engine"}
+        symbols[("engine", "R_NewMap")] = {"kind": "global", "module": "engine"}
         errors = validate.validate_renderer(symbols, "hl-8684")
         self.assertTrue(any("'R_NewMap' must be a function record" in e for e in errors), errors)
 
     def test_gate_flags_module_mismatch(self):
         symbols = self.complete_engine_symbols("hl-8684")
-        symbols["R_NewMap"] = {"kind": "function", "module": "client"}
+        symbols[("engine", "R_NewMap")] = {"kind": "function", "module": "client"}
         errors = validate.validate_renderer(symbols, "hl-8684")
         self.assertTrue(any("'R_NewMap' must belong to module 'engine'" in e for e in errors), errors)
 
@@ -681,32 +720,32 @@ class RendererGateTests(unittest.TestCase):
         for gv in validate.RENDERER_ALL_GAMES:
             for name in validate.RENDERER_ENGINE_STRUCT_MEMBERS:
                 symbols = self.complete_engine_symbols(gv)
-                del symbols[name]
+                del symbols[("engine", name)]
                 errors = validate.validate_renderer(symbols, gv)
                 self.assertTrue(any(name in e for e in errors), (gv, name, errors))
 
     def test_gate_requires_fbo_aspect_globals_only_when_published(self):
         for gv in validate.RENDERER_FBO_GAMES:
             symbols = self.complete_engine_symbols(gv)
-            del symbols["s_fXMouseAspectAdjustment"]
+            del symbols[("engine", "s_fXMouseAspectAdjustment")]
             errors = validate.validate_renderer(symbols, gv)
             self.assertTrue(any("s_fXMouseAspectAdjustment" in e for e in errors), (gv, errors))
         symbols = self.complete_engine_symbols("hl-3248")
-        self.assertNotIn("s_fXMouseAspectAdjustment", symbols)
+        self.assertNotIn(("engine", "s_fXMouseAspectAdjustment"), symbols)
         self.assertEqual([], validate.validate_renderer(symbols, "hl-3248"))
 
     def test_gate_requires_numbered_patch_set(self):
         symbols = self.complete_engine_symbols("hl-8684")
-        for name in list(symbols):
-            if name.startswith("CL_LinkPacketEntities_to_R_ResetLatched_callsite"):
-                del symbols[name]
+        for key in list(symbols):
+            if key[1].startswith("CL_LinkPacketEntities_to_R_ResetLatched_callsite"):
+                del symbols[key]
         errors = validate.validate_renderer(symbols, "hl-8684")
         self.assertTrue(any("missing required Renderer patch "
                             "'CL_LinkPacketEntities_to_R_ResetLatched_callsite_0'" in e for e in errors), errors)
 
     def test_gate_treats_svengine_variants_as_required(self):
         symbols = self.complete_engine_symbols("svencoop-10257")
-        del symbols["Draw_SpriteFrameHoles_SvEngine"]
+        del symbols[("engine", "Draw_SpriteFrameHoles_SvEngine")]
         errors = validate.validate_renderer(symbols, "svencoop-10257")
         self.assertTrue(any("Draw_SpriteFrameHoles_SvEngine" in e for e in errors), errors)
 
@@ -714,27 +753,27 @@ class RendererGateTests(unittest.TestCase):
         for gv in validate.RENDERER_SVENGINE_GAMES:
             for name in ("g_iFogColor", "g_iStartDist", "g_iEndDist"):
                 symbols = self.complete_engine_symbols(gv)
-                del symbols[name]
+                del symbols[("client", name)]
                 errors = validate.validate_renderer(symbols, gv)
                 self.assertTrue(any(name in e for e in errors), (gv, name, errors))
 
     def test_gate_does_not_require_base_symbol_for_svengine(self):
         symbols = self.complete_engine_symbols("svencoop-10257")
-        self.assertNotIn("Draw_SpriteFrameHoles", symbols)
+        self.assertNotIn(("engine", "Draw_SpriteFrameHoles"), symbols)
         self.assertEqual([], validate.validate_renderer(symbols, "svencoop-10257"))
 
     def test_gate_does_not_require_legacy_setmode_for_sdl_build(self):
         symbols = self.complete_engine_symbols("hl-8684")
-        self.assertNotIn("GL_SetModeLegacy", symbols)
-        self.assertIn("GL_SetMode", symbols)
+        self.assertNotIn(("engine", "GL_SetModeLegacy"), symbols)
+        self.assertIn(("engine", "GL_SetMode"), symbols)
         self.assertEqual([], validate.validate_renderer(symbols, "hl-8684"))
 
     def test_gate_requires_legacy_setmode_for_cof(self):
         symbols = self.complete_engine_symbols("cof-5936")
-        self.assertIn("GL_SetModeLegacy", symbols)
-        self.assertNotIn("GL_SetMode", symbols)
+        self.assertIn(("engine", "GL_SetModeLegacy"), symbols)
+        self.assertNotIn(("engine", "GL_SetMode"), symbols)
         self.assertEqual([], validate.validate_renderer(symbols, "cof-5936"))
-        del symbols["GL_SetModeLegacy"]
+        del symbols[("engine", "GL_SetModeLegacy")]
         errors = validate.validate_renderer(symbols, "cof-5936")
         self.assertTrue(any("GL_SetModeLegacy" in e for e in errors), errors)
 
@@ -745,47 +784,47 @@ class RendererGateTests(unittest.TestCase):
                 names += validate.RENDERER_LEGACY_TEXALLOC_HL_PATCHES
             for name in names:
                 symbols = self.complete_engine_symbols(gv)
-                del symbols[name]
+                del symbols[("engine", name)]
                 errors = validate.validate_renderer(symbols, gv)
                 self.assertTrue(any(name in e for e in errors), (gv, name, errors))
 
         symbols = self.complete_engine_symbols("cof-5936")
         for name in validate.RENDERER_LEGACY_TEXALLOC_HL_PATCHES:
-            self.assertNotIn(name, symbols)
+            self.assertNotIn(("engine", name), symbols)
         self.assertEqual([], validate.validate_renderer(symbols, "cof-5936"))
 
     def test_gate_does_not_require_sdl_initgl_without_sdl(self):
         symbols = self.complete_engine_symbols("hl-4554")
-        self.assertNotIn("SDL_InitGL", symbols)
+        self.assertNotIn(("engine", "SDL_InitGL"), symbols)
         self.assertEqual([], validate.validate_renderer(symbols, "hl-4554"))
 
     def test_gate_requires_exactly_one_multitexture_init_per_identity(self):
         for gv in validate.RENDERER_ALL_GAMES:
             symbols = self.complete_engine_symbols(gv)
             if gv in validate.RENDERER_INLINED_MTEX_PROBE_GAMES:
-                self.assertIn("DT_Initialize", symbols, gv)
-                self.assertNotIn("CheckMultiTextureExtensions", symbols, gv)
+                self.assertIn(("engine", "DT_Initialize"), symbols, gv)
+                self.assertNotIn(("engine", "CheckMultiTextureExtensions"), symbols, gv)
             else:
-                self.assertIn("CheckMultiTextureExtensions", symbols, gv)
-                self.assertNotIn("DT_Initialize", symbols, gv)
+                self.assertIn(("engine", "CheckMultiTextureExtensions"), symbols, gv)
+                self.assertNotIn(("engine", "DT_Initialize"), symbols, gv)
             self.assertEqual([], validate.validate_renderer(symbols, gv), gv)
 
     def test_gate_flags_missing_multitexture_probe(self):
         symbols = self.complete_engine_symbols("hl-8684")
-        del symbols["CheckMultiTextureExtensions"]
+        del symbols[("engine", "CheckMultiTextureExtensions")]
         errors = validate.validate_renderer(symbols, "hl-8684")
         self.assertTrue(any("CheckMultiTextureExtensions" in e for e in errors), errors)
 
     def test_gate_flags_missing_dt_initialize_where_probe_is_inlined(self):
         symbols = self.complete_engine_symbols("hl-10210")
-        del symbols["DT_Initialize"]
+        del symbols[("engine", "DT_Initialize")]
         errors = validate.validate_renderer(symbols, "hl-10210")
         self.assertTrue(any("DT_Initialize" in e for e in errors), errors)
 
     def test_gate_requires_mod_unloadspritetextures_on_every_identity(self):
         for gv in validate.RENDERER_ALL_GAMES:
             symbols = self.complete_engine_symbols(gv)
-            del symbols["Mod_UnloadSpriteTextures"]
+            del symbols[("engine", "Mod_UnloadSpriteTextures")]
             errors = validate.validate_renderer(symbols, gv)
             self.assertTrue(any("Mod_UnloadSpriteTextures" in e for e in errors), (gv, errors))
         self.assertNotIn("Mod_UnloadSpriteTextures", validate.RENDERER_ENGINE_E8_FUNCTIONS)
@@ -794,7 +833,7 @@ class RendererGateTests(unittest.TestCase):
         for name in ("Draw_FillRGBA", "Draw_FillRGBABlend"):
             for gv in validate.RENDERER_ALL_GAMES:
                 symbols = self.complete_engine_symbols(gv)
-                del symbols[name]
+                del symbols[("engine", name)]
                 errors = validate.validate_renderer(symbols, gv)
                 self.assertTrue(any(name in e for e in errors), (name, gv, errors))
             self.assertNotIn(name, validate.RENDERER_ENGINE_NON_SVENGINE_FUNCTIONS)
@@ -802,8 +841,8 @@ class RendererGateTests(unittest.TestCase):
     def test_gate_requires_draw_fillrgbabuf_on_svengine_only(self):
         for gv in validate.RENDERER_SVENGINE_GAMES:
             symbols = self.complete_engine_symbols(gv)
-            self.assertIn("Draw_FillRGBABuf", symbols)
-            del symbols["Draw_FillRGBABuf"]
+            self.assertIn(("engine", "Draw_FillRGBABuf"), symbols)
+            del symbols[("engine", "Draw_FillRGBABuf")]
             errors = validate.validate_renderer(symbols, gv)
             self.assertTrue(any("Draw_FillRGBABuf" in e for e in errors), (gv, errors))
         for gv in validate.RENDERER_NON_SVENGINE_GAMES:
@@ -817,11 +856,11 @@ class RendererGateTests(unittest.TestCase):
     def test_gate_skips_d_fillrect_on_svengine(self):
         for gv in validate.RENDERER_SVENGINE_GAMES:
             symbols = self.complete_engine_symbols(gv)
-            self.assertNotIn("D_FillRect", symbols)
+            self.assertNotIn(("engine", "D_FillRect"), symbols)
             self.assertEqual([], validate.validate_renderer(symbols, gv))
         for gv in validate.RENDERER_NON_SVENGINE_GAMES:
             symbols = self.complete_engine_symbols(gv)
-            del symbols["D_FillRect"]
+            del symbols[("engine", "D_FillRect")]
             errors = validate.validate_renderer(symbols, gv)
             self.assertTrue(any("D_FillRect" in e for e in errors), (gv, errors))
 
@@ -832,7 +871,7 @@ class RendererGateTests(unittest.TestCase):
             self.assertIn(name, validate.RENDERER_ENGINE_ALL_GLOBALS)
             for gv in validate.RENDERER_ALL_GAMES:
                 symbols = self.complete_engine_symbols(gv)
-                del symbols[name]
+                del symbols[("engine", name)]
                 errors = validate.validate_renderer(symbols, gv)
                 self.assertTrue(any(name in e for e in errors), (name, gv, errors))
         self.assertNotIn("R_RenderFinalFog", validate.RENDERER_ENGINE_ALL_FUNCTIONS)
@@ -842,7 +881,7 @@ class RendererGateTests(unittest.TestCase):
         self.assertIn("gSpriteMipMap", validate.RENDERER_ENGINE_ALL_GLOBALS)
         for gv in validate.RENDERER_ALL_GAMES:
             symbols = self.complete_engine_symbols(gv)
-            del symbols["gSpriteMipMap"]
+            del symbols[("engine", "gSpriteMipMap")]
             errors = validate.validate_renderer(symbols, gv)
             self.assertTrue(any("gSpriteMipMap" in e for e in errors), (gv, errors))
         self.assertNotIn("Mod_LoadSpriteFrame", validate.RENDERER_ENGINE_ALL_FUNCTIONS)
@@ -851,7 +890,7 @@ class RendererGateTests(unittest.TestCase):
         self.assertIn("scr_drawloading", validate.RENDERER_ENGINE_ALL_GLOBALS)
         for gv in validate.RENDERER_ALL_GAMES:
             symbols = self.complete_engine_symbols(gv)
-            del symbols["scr_drawloading"]
+            del symbols[("engine", "scr_drawloading")]
             errors = validate.validate_renderer(symbols, gv)
             self.assertTrue(any("scr_drawloading" in e for e in errors), (gv, errors))
         self.assertNotIn("SCR_BeginLoadingPlaque", validate.RENDERER_ENGINE_ALL_FUNCTIONS)
@@ -860,7 +899,7 @@ class RendererGateTests(unittest.TestCase):
         self.assertIn("window_rect", validate.RENDERER_ENGINE_ALL_GLOBALS)
         for gv in validate.RENDERER_ALL_GAMES:
             symbols = self.complete_engine_symbols(gv)
-            del symbols["window_rect"]
+            del symbols[("engine", "window_rect")]
             errors = validate.validate_renderer(symbols, gv)
             self.assertTrue(any("window_rect" in e for e in errors), (gv, errors))
         #VID_UpdateWindowVars was write-only; the catalog FUNCTION record has no
@@ -868,14 +907,14 @@ class RendererGateTests(unittest.TestCase):
         self.assertNotIn("VID_UpdateWindowVars", validate.RENDERER_ENGINE_ALL_FUNCTIONS)
         for gv in validate.RENDERER_ALL_GAMES:
             symbols = self.complete_engine_symbols(gv)
-            symbols["VID_UpdateWindowVars"] = {"kind": "function", "module": "engine"}
+            symbols[("engine", "VID_UpdateWindowVars")] = {"kind": "function", "module": "engine"}
             self.assertEqual([], validate.validate_renderer(symbols, gv))
 
     def test_gate_requires_texgammatable_on_every_identity(self):
         self.assertIn("texgammatable", validate.RENDERER_ENGINE_ALL_GLOBALS)
         for gv in validate.RENDERER_ALL_GAMES:
             symbols = self.complete_engine_symbols(gv)
-            del symbols["texgammatable"]
+            del symbols[("engine", "texgammatable")]
             errors = validate.validate_renderer(symbols, gv)
             self.assertTrue(any("texgammatable" in e for e in errors), (gv, errors))
         self.assertIn("BuildGammaTable", validate.RENDERER_ENGINE_ALL_FUNCTIONS)
@@ -884,7 +923,7 @@ class RendererGateTests(unittest.TestCase):
         self.assertIn("particletexture", validate.RENDERER_ENGINE_ALL_GLOBALS)
         for gv in validate.RENDERER_ALL_GAMES:
             symbols = self.complete_engine_symbols(gv)
-            del symbols["particletexture"]
+            del symbols[("engine", "particletexture")]
             errors = validate.validate_renderer(symbols, gv)
             self.assertTrue(any("particletexture" in e for e in errors), (gv, errors))
 
@@ -893,7 +932,7 @@ class RendererGateTests(unittest.TestCase):
             self.assertIn(name, validate.RENDERER_ENGINE_ALL_GLOBALS)
             for gv in validate.RENDERER_ALL_GAMES:
                 symbols = self.complete_engine_symbols(gv)
-                del symbols[name]
+                del symbols[("engine", name)]
                 errors = validate.validate_renderer(symbols, gv)
                 self.assertTrue(any(name in e for e in errors), (gv, errors))
 
@@ -906,7 +945,7 @@ class RendererGateTests(unittest.TestCase):
             self.assertIn(name, validate.RENDERER_ENGINE_ALL_GLOBALS)
             for gv in validate.RENDERER_ALL_GAMES:
                 symbols = self.complete_engine_symbols(gv)
-                del symbols[name]
+                del symbols[("engine", name)]
                 errors = validate.validate_renderer(symbols, gv)
                 self.assertTrue(any(name in e for e in errors), (gv, errors))
 
@@ -919,7 +958,7 @@ class RendererGateTests(unittest.TestCase):
             self.assertIn(name, validate.RENDERER_ENGINE_ALL_GLOBALS)
             for gv in validate.RENDERER_ALL_GAMES:
                 symbols = self.complete_engine_symbols(gv)
-                del symbols[name]
+                del symbols[("engine", name)]
                 errors = validate.validate_renderer(symbols, gv)
                 self.assertTrue(any(name in e for e in errors), (name, gv, errors))
         self.assertIn("Draw_Frame", validate.RENDERER_ENGINE_ALL_FUNCTIONS)
@@ -934,7 +973,7 @@ class RendererGateTests(unittest.TestCase):
             self.assertIn(name, validate.RENDERER_ENGINE_ALL_GLOBALS)
             for gv in validate.RENDERER_ALL_GAMES:
                 symbols = self.complete_engine_symbols(gv)
-                del symbols[name]
+                del symbols[("engine", name)]
                 errors = validate.validate_renderer(symbols, gv)
                 self.assertTrue(any(name in e for e in errors), (name, gv, errors))
         #pbodypart was written by the studio setup locator but never read; it must
@@ -944,16 +983,16 @@ class RendererGateTests(unittest.TestCase):
     def test_gate_requires_the_consumed_fallback_texture_for_each_engine_family(self):
         for gv in validate.RENDERER_SVENGINE_GAMES:
             symbols = self.complete_engine_symbols(gv)
-            self.assertIn("r_missingtexture", symbols)
-            self.assertNotIn("r_notexture_mip", symbols)
-            del symbols["r_missingtexture"]
+            self.assertIn(("engine", "r_missingtexture"), symbols)
+            self.assertNotIn(("engine", "r_notexture_mip"), symbols)
+            del symbols[("engine", "r_missingtexture")]
             errors = validate.validate_renderer(symbols, gv)
             self.assertTrue(any("r_missingtexture" in e for e in errors), (gv, errors))
         for gv in validate.RENDERER_NON_SVENGINE_GAMES:
             symbols = self.complete_engine_symbols(gv)
-            self.assertIn("r_notexture_mip", symbols)
-            self.assertNotIn("r_missingtexture", symbols)
-            del symbols["r_notexture_mip"]
+            self.assertIn(("engine", "r_notexture_mip"), symbols)
+            self.assertNotIn(("engine", "r_missingtexture"), symbols)
+            del symbols[("engine", "r_notexture_mip")]
             errors = validate.validate_renderer(symbols, gv)
             self.assertTrue(any("r_notexture_mip" in e for e in errors), (gv, errors))
 
@@ -962,7 +1001,7 @@ class RendererGateTests(unittest.TestCase):
         for gv in validate.RENDERER_ALL_GAMES:
             symbols = self.complete_engine_symbols(gv)
             for name in retired:
-                self.assertNotIn(name, symbols, (gv, name))
+                self.assertNotIn(("engine", name), symbols, (gv, name))
 
     def test_gate_requires_lightmap_and_decal_symbols_on_every_identity(self):
         names = (
@@ -972,7 +1011,7 @@ class RendererGateTests(unittest.TestCase):
         for name in names:
             for gv in validate.RENDERER_ALL_GAMES:
                 symbols = self.complete_engine_symbols(gv)
-                del symbols[name]
+                del symbols[("engine", name)]
                 errors = validate.validate_renderer(symbols, gv)
                 self.assertTrue(any(name in e for e in errors), (name, gv, errors))
 
@@ -983,7 +1022,7 @@ class RendererGateTests(unittest.TestCase):
             self.assertIn(name, validate.RENDERER_ENGINE_ALL_GLOBALS)
             for gv in validate.RENDERER_ALL_GAMES:
                 symbols = self.complete_engine_symbols(gv)
-                del symbols[name]
+                del symbols[("engine", name)]
                 errors = validate.validate_renderer(symbols, gv)
                 self.assertTrue(any(name in e for e in errors), (name, gv, errors))
 
@@ -1004,7 +1043,7 @@ class RendererGateTests(unittest.TestCase):
         for gv in validate.RENDERER_ALL_GAMES:
             symbols = self.complete_engine_symbols(gv)
             for name in retired:
-                self.assertNotIn(name, symbols, (gv, name))
+                self.assertNotIn(("engine", name), symbols, (gv, name))
             self.assertEqual([], validate.validate_renderer(symbols, gv), gv)
 
     def test_gate_ignores_function_resolutions_the_renderer_never_read(self):
@@ -1027,20 +1066,20 @@ class RendererGateTests(unittest.TestCase):
         for gv in validate.RENDERER_ALL_GAMES:
             symbols = self.complete_engine_symbols(gv)
             for name in retired:
-                self.assertNotIn(name, symbols, (gv, name))
+                self.assertNotIn(("engine", name), symbols, (gv, name))
             self.assertEqual([], validate.validate_renderer(symbols, gv), gv)
 
     def test_gate_alias_poly_counter_follows_engine_family(self):
         symbols = self.complete_engine_symbols("hl-8684")
-        self.assertIn("c_alias_polys", symbols)
-        self.assertNotIn("c_model_polys", symbols)
+        self.assertIn(("engine", "c_alias_polys"), symbols)
+        self.assertNotIn(("engine", "c_model_polys"), symbols)
         symbols = self.complete_engine_symbols("svencoop-10257")
-        self.assertIn("c_model_polys", symbols)
-        self.assertNotIn("c_alias_polys", symbols)
+        self.assertIn(("engine", "c_model_polys"), symbols)
+        self.assertNotIn(("engine", "c_alias_polys"), symbols)
 
     def test_gate_requires_client_virtuals_for_client_games(self):
         symbols = self.complete_client_symbols("hl-8684")
-        del symbols["GameStudioRenderer_StudioSetupBones"]
+        del symbols[("client", "GameStudioRenderer_StudioSetupBones")]
         errors = validate.validate_renderer(symbols, "hl-8684", include_engine=False)
         self.assertTrue(any("GameStudioRenderer_StudioSetupBones" in e for e in errors), errors)
 
@@ -1056,7 +1095,7 @@ class CaptionModGateTests(unittest.TestCase):
 
         def add(names, kind, module):
             for n in names:
-                symbols[n] = {"kind": kind, "module": module}
+                symbols[(module, n)] = {"kind": kind, "module": module}
 
         if game_version in validate.RENDERER_ALL_GAMES:
             add(validate.CAPTIONMOD_ENGINE_FUNCTIONS, "function", "engine")
@@ -1090,13 +1129,13 @@ class CaptionModGateTests(unittest.TestCase):
         for name in ("S_LoadSound", "cl_time"):
             with self.subTest(name=name):
                 symbols = self.complete_symbols("hl-8684")
-                del symbols[name]
+                del symbols[("engine", name)]
                 errors = self.gate(symbols, "hl-8684")
                 self.assertTrue(any(name in e for e in errors), errors)
 
     def test_gate_reports_wrong_kind(self):
         symbols = self.complete_symbols("hl-8684")
-        symbols["cl_time"] = {"kind": "function", "module": "engine"}
+        symbols[("engine", "cl_time")] = {"kind": "function", "module": "engine"}
         errors = self.gate(symbols, "hl-8684")
         self.assertTrue(any("cl_time" in e and "global" in e for e in errors), errors)
 
@@ -1111,7 +1150,7 @@ class CaptionModGateTests(unittest.TestCase):
             with self.subTest(gv=gv):
                 symbols = self.complete_symbols(gv)
                 self.assertEqual([], self.gate(symbols, gv))
-                del symbols["CClient_SoundEngine_LoadSoundList"]
+                del symbols[("client", "CClient_SoundEngine_LoadSoundList")]
                 errors = self.gate(symbols, gv)
                 self.assertTrue(any("LoadSoundList" in e for e in errors), errors)
 
@@ -1120,7 +1159,7 @@ class CaptionModGateTests(unittest.TestCase):
             for gv in validate.CAPTIONMOD_CLIENT_GAMES:
                 with self.subTest(name=name, gv=gv):
                     symbols = self.complete_symbols(gv)
-                    del symbols[name]
+                    del symbols[("client", name)]
                     errors = self.gate(symbols, gv)
                     self.assertTrue(any(name in e for e in errors), errors)
 
@@ -1129,7 +1168,7 @@ class CaptionModGateTests(unittest.TestCase):
             for gv in validate.CAPTIONMOD_CLIENT_GAMES:
                 with self.subTest(name=name, gv=gv):
                     symbols = self.complete_symbols(gv)
-                    del symbols[name]
+                    del symbols[("client", name)]
                     errors = self.gate(symbols, gv)
                     self.assertTrue(any(name in e for e in errors), errors)
 
@@ -1143,13 +1182,13 @@ class CaptionModGateTests(unittest.TestCase):
         for gv in validate.CAPTIONMOD_CLIENT_GAMES:
             with self.subTest(gv=gv):
                 symbols = self.complete_symbols(gv)
-                del symbols["CClient_SoundEngine.m_iSentenceCount"]
+                del symbols[("client", "CClient_SoundEngine.m_iSentenceCount")]
                 errors = self.gate(symbols, gv)
                 self.assertTrue(any("m_iSentenceCount" in e for e in errors), errors)
 
     def test_gate_reports_sentence_count_as_function(self):
         symbols = self.complete_symbols("svencoop-8948")
-        symbols["CClient_SoundEngine.m_iSentenceCount"] = {"kind": "function", "module": "client"}
+        symbols[("client", "CClient_SoundEngine.m_iSentenceCount")] = {"kind": "function", "module": "client"}
         errors = self.gate(symbols, "svencoop-8948")
         self.assertTrue(any("m_iSentenceCount" in e and "structMember" in e for e in errors), errors)
 
@@ -1157,7 +1196,7 @@ class CaptionModGateTests(unittest.TestCase):
         for gv in validate.CAPTIONMOD_CS_CLIENT_GAMES:
             with self.subTest(gv=gv):
                 symbols = self.complete_symbols(gv)
-                del symbols["GetClientColor"]
+                del symbols[("client", "GetClientColor")]
                 errors = self.gate(symbols, gv)
                 self.assertTrue(any("GetClientColor" in e for e in errors), errors)
 
@@ -1165,7 +1204,7 @@ class CaptionModGateTests(unittest.TestCase):
         for gv in validate.CAPTIONMOD_CS_TEXT_COLOR_GAMES:
             with self.subTest(gv=gv):
                 symbols = self.complete_symbols(gv)
-                del symbols["GetTextColor"]
+                del symbols[("client", "GetTextColor")]
                 errors = self.gate(symbols, gv)
                 self.assertTrue(any("GetTextColor" in e for e in errors), errors)
 
@@ -1191,13 +1230,13 @@ class CaptionModGateTests(unittest.TestCase):
         for gv in validate.CAPTIONMOD_CS_LOCATION_COLOR_GAMES:
             with self.subTest(gv=gv):
                 symbols = self.complete_symbols(gv)
-                del symbols["g_LocationColor"]
+                del symbols[("client", "g_LocationColor")]
                 errors = self.gate(symbols, gv)
                 self.assertTrue(any("g_LocationColor" in e for e in errors), errors)
 
     def test_gate_flags_location_color_as_a_function(self):
         symbols = self.complete_symbols("cstrike-10210")
-        symbols["g_LocationColor"] = {"kind": "function", "module": "client"}
+        symbols[("client", "g_LocationColor")] = {"kind": "function", "module": "client"}
         errors = self.gate(symbols, "cstrike-10210")
         self.assertTrue(any("g_LocationColor" in e and "global" in e for e in errors), errors)
 
@@ -1226,9 +1265,9 @@ class SCCameraFixGateTests(unittest.TestCase):
         symbols = {}
         if game_version in validate.SCCAMERAFIX_CLIENT_GAMES:
             for n in validate.SCCAMERAFIX_CLIENT_GLOBALS:
-                symbols[n] = {"kind": "global", "module": "client"}
+                symbols[("client", n)] = {"kind": "global", "module": "client"}
             for n in validate.SCCAMERAFIX_CLIENT_FUNCTIONS:
-                symbols[n] = {"kind": "function", "module": "client"}
+                symbols[("client", n)] = {"kind": "function", "module": "client"}
         return symbols
 
     def gate(self, symbols, game_version):
@@ -1248,9 +1287,9 @@ class SCCameraFixGateTests(unittest.TestCase):
                                {"kind": kind, "module": "engine"}):
                     with self.subTest(gv=gv, name=name, record=record):
                         symbols = self.complete_symbols(gv)
-                        symbols.pop(name, None)
+                        symbols.pop(("client", name), None)
                         if record is not None:
-                            symbols[name] = record
+                            symbols[("client", name)] = record
                         self.assertTrue(any(name in e for e in self.gate(symbols, gv)))
 
     def test_gate_requires_every_client_global(self):
@@ -1258,19 +1297,19 @@ class SCCameraFixGateTests(unittest.TestCase):
             for gv in validate.SCCAMERAFIX_CLIENT_GAMES:
                 with self.subTest(name=name, gv=gv):
                     symbols = self.complete_symbols(gv)
-                    del symbols[name]
+                    del symbols[("client", name)]
                     errors = self.gate(symbols, gv)
                     self.assertTrue(any(name in e for e in errors), errors)
 
     def test_gate_flags_wrong_kind(self):
         symbols = self.complete_symbols("svencoop-10257")
-        symbols["g_iUser1"] = {"kind": "function", "module": "client"}
+        symbols[("client", "g_iUser1")] = {"kind": "function", "module": "client"}
         errors = self.gate(symbols, "svencoop-10257")
         self.assertTrue(any("g_iUser1" in e and "global" in e for e in errors), errors)
 
     def test_gate_flags_wrong_module(self):
         symbols = self.complete_symbols("svencoop-8948")
-        symbols["g_vVecViewangles"] = {"kind": "global", "module": "engine"}
+        symbols[("client", "g_vVecViewangles")] = {"kind": "global", "module": "engine"}
         errors = self.gate(symbols, "svencoop-8948")
         self.assertTrue(any("g_vVecViewangles" in e and "client" in e for e in errors), errors)
 
@@ -1280,7 +1319,7 @@ class SCCameraFixGateTests(unittest.TestCase):
         for gv in validate.SCCAMERAFIX_CLIENT_GAMES:
             with self.subTest(gv=gv):
                 symbols = self.complete_symbols(gv)
-                del symbols["gEngfuncs"]
+                del symbols[("client", "gEngfuncs")]
                 errors = self.gate(symbols, gv)
                 self.assertTrue(any("gEngfuncs" in e for e in errors), errors)
 
@@ -1339,19 +1378,23 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
         "staticEngineSurface": "global",
         "host_parms": "global",
     }
+    # The engine's vgui2 panel init replaced the shared VGUI2_FindPanelInit walk.
+    engine_functions = {"vgui2::Panel::Init(int, int, int, int)": "function"}
     engine_games = validate.RENDERER_ALL_GAMES
     registry_games = ("hl-3248", "hl-3266", "hl-3329", "hl-3647", "hl-4554")
     registry_reader = "Sys_GetRegKeyValueUnderRoot"
 
     def complete_symbols(self):
-        return {name: {"kind": kind, "module": "client"}
+        return {("client", name): {"kind": kind, "module": "client"}
                 for name, kind in self.records.items()}
 
     def complete_engine_symbols(self, game_version=None):
-        symbols = {name: {"kind": kind, "module": "engine"}
+        symbols = {("engine", name): {"kind": kind, "module": "engine"}
                    for name, kind in self.engine_records.items()}
+        symbols.update({("engine", name): {"kind": kind, "module": "engine"}
+                        for name, kind in self.engine_functions.items()})
         if game_version in self.registry_games:
-            symbols[self.registry_reader] = {"kind": "function", "module": "engine"}
+            symbols[("engine", self.registry_reader)] = {"kind": "function", "module": "engine"}
         return symbols
 
     def test_legacy_language_registry_reader_is_required_and_typed(self):
@@ -1361,9 +1404,9 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
                            {"kind": "function", "module": "client"}):
                 with self.subTest(gv=gv, record=record):
                     symbols = self.complete_engine_symbols(gv)
-                    del symbols[self.registry_reader]
+                    del symbols[("engine", self.registry_reader)]
                     if record is not None:
-                        symbols[self.registry_reader] = record
+                        symbols[("engine", self.registry_reader)] = record
                     errors = validate.validate_vgui2extension(symbols, gv)
                     self.assertTrue(any(self.registry_reader in error for error in errors), errors)
 
@@ -1372,7 +1415,7 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
             with self.subTest(gv=gv):
                 symbols = self.complete_engine_symbols(gv)
                 self.assertEqual([], validate.validate_vgui2extension(symbols, gv))
-                symbols[self.registry_reader] = {"kind": "global", "module": "engine"}
+                symbols[("engine", self.registry_reader)] = {"kind": "global", "module": "engine"}
                 errors = validate.validate_vgui2extension(symbols, gv)
                 self.assertTrue(any(self.registry_reader in error for error in errors), errors)
 
@@ -1391,9 +1434,9 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
                                {"kind": kind, "module": "engine"}):
                     with self.subTest(gv=gv, name=name, record=record):
                         symbols = self.complete_symbols()
-                        del symbols[name]
+                        del symbols[("client", name)]
                         if record is not None:
-                            symbols[name] = record
+                            symbols[("client", name)] = record
                         errors = validate.validate_vgui2extension(symbols, gv, include_engine=False)
                         self.assertTrue(any(name in e for e in errors), errors)
 
@@ -1401,7 +1444,7 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
         for gv in self.zds_games:
             with self.subTest(gv=gv):
                 symbols = self.complete_symbols()
-                del symbols[self.background_panel_member]
+                del symbols[("client", self.background_panel_member)]
                 self.assertEqual([], validate.validate_vgui2extension(symbols, gv, include_engine=False))
 
     def test_other_clients_allow_absent_native_entries(self):
@@ -1412,17 +1455,32 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
     def test_optional_entries_are_type_checked_when_present(self):
         for name in self.optional:
             with self.subTest(name=name):
-                symbols = {name: {"kind": "global", "module": "client"}}
+                symbols = {("client", name): {"kind": "global", "module": "client"}}
                 errors = validate.validate_vgui2extension(symbols, "svencoop-10257", include_engine=False)
                 self.assertTrue(any(name in e for e in errors), errors)
 
     def test_engine_entries_are_required_on_engine_snapshots(self):
         for name in self.engine_records:
             self.assertIn(name, validate.VGUI2EXTENSION_ENGINE_GLOBALS)
+        for name in self.engine_functions:
+            self.assertIn(name, validate.VGUI2EXTENSION_ENGINE_FUNCTIONS)
         for gv in self.engine_games:
             with self.subTest(gv=gv):
                 self.assertEqual([], validate.validate_vgui2extension(
                     self.complete_engine_symbols(gv), gv))
+
+    def test_missing_or_mistyped_engine_function_is_rejected(self):
+        for gv in self.engine_games:
+            for name, kind in self.engine_functions.items():
+                for record in (None, {"kind": "global", "module": "engine"},
+                               {"kind": kind, "module": "client"}):
+                    with self.subTest(gv=gv, name=name, record=record):
+                        symbols = self.complete_engine_symbols(gv)
+                        del symbols[("engine", name)]
+                        if record is not None:
+                            symbols[("engine", name)] = record
+                        errors = validate.validate_vgui2extension(symbols, gv)
+                        self.assertTrue(any(name in e for e in errors), errors)
 
     def test_missing_or_mistyped_engine_entry_is_rejected(self):
         for gv in self.engine_games:
@@ -1432,9 +1490,9 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
                                {"kind": kind, "module": "client"}):
                     with self.subTest(gv=gv, name=name, record=record):
                         symbols = self.complete_engine_symbols(gv)
-                        del symbols[name]
+                        del symbols[("engine", name)]
                         if record is not None:
-                            symbols[name] = record
+                            symbols[("engine", name)] = record
                         errors = validate.validate_vgui2extension(symbols, gv)
                         self.assertTrue(any(name in e for e in errors), errors)
 
@@ -1446,7 +1504,7 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
                 self.assertNotIn(gv, self.engine_games)
                 symbols = self.complete_symbols()
                 if gv in self.zds_games:
-                    del symbols[self.background_panel_member]
+                    del symbols[("client", self.background_panel_member)]
                 self.assertEqual([], validate.validate_vgui2extension(
                     symbols, gv, include_engine=False))
 
