@@ -116,9 +116,10 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 	g_hClientModule = g_pMetaHookAPI->GetClientModule();
 
+	//This must be called before Client_FillAddress
+	ClientVGUI_InstallHooks(pExportFunc);
 	Client_FillAddress(g_ClientDLLInfo);
 	Client_InstallHooks();
-	ClientVGUI_InstallHooks(pExportFunc);
 	VGUI1_InstallHooks();
 	InitWindowStuffs();
 

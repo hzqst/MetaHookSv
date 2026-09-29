@@ -672,13 +672,16 @@ void Engine_FillAddress(const mh_dll_info_t& RealDllInfo)
 	Engine_FillAddress_Sys_GetRegKeyValueUnderRoot(RealDllInfo);
 }
 
+extern bool g_IsNativeClientVGUI2;
+
 void Client_FillAddress_VisibleMouse(const mh_dll_info_t& RealDllInfo)
 {
 	// Make client dll aware of VGUI2 mouse input capture, which is not natively supported by VGUI1 mods.
-
-	// TODO: check if client has g_pClientVGUI ?
-	g_iVisibleMouse = (decltype(g_iVisibleMouse))GamedataResolvePtrIfAvailable(
-		RealDllInfo.ImageBase, "g_iVisibleMouse", MH_GAMESYMBOL_KIND_GLOBAL);
+	if (!g_IsNativeClientVGUI2)
+	{
+		g_iVisibleMouse = (decltype(g_iVisibleMouse))GamedataResolvePtrIfAvailable(
+			RealDllInfo.ImageBase, "g_iVisibleMouse", MH_GAMESYMBOL_KIND_GLOBAL);
+	}
 }
 
 void Client_FillAddress(const mh_dll_info_t& RealDllInfo)
