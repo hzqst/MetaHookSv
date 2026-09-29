@@ -653,6 +653,13 @@ void Engine_FillAddress_StaticEngineSurface(const mh_dll_info_t& RealDllInfo)
 	staticEngineSurface = (decltype(staticEngineSurface))GamedataResolvePtr(RealDllInfo.ImageBase, "staticEngineSurface", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
+void Engine_FillAddress_Sys_GetRegKeyValueUnderRoot(const mh_dll_info_t& RealDllInfo)
+{
+	// For blob engine only
+	gPrivateFuncs.Sys_GetRegKeyValueUnderRoot = (decltype(gPrivateFuncs.Sys_GetRegKeyValueUnderRoot))
+		GamedataResolvePtrIfAvailable(RealDllInfo.ImageBase, "Sys_GetRegKeyValueUnderRoot", MH_GAMESYMBOL_KIND_FUNCTION);
+}
+
 void Engine_FillAddress(const mh_dll_info_t& RealDllInfo)
 {
 	Engine_FillAddress_PanelInit(RealDllInfo);
@@ -662,8 +669,7 @@ void Engine_FillAddress(const mh_dll_info_t& RealDllInfo)
 	Engine_FillAddress_ListenerOrigin(RealDllInfo);
 	Engine_FillAddress_HostParms(RealDllInfo);
 	Engine_FillAddress_StaticEngineSurface(RealDllInfo);
-	gPrivateFuncs.Sys_GetRegKeyValueUnderRoot = (decltype(gPrivateFuncs.Sys_GetRegKeyValueUnderRoot))
-		GamedataResolvePtrIfAvailable(RealDllInfo.ImageBase, "Sys_GetRegKeyValueUnderRoot", MH_GAMESYMBOL_KIND_FUNCTION);
+	Engine_FillAddress_Sys_GetRegKeyValueUnderRoot(RealDllInfo);
 }
 
 void Client_FillAddress_VisibleMouse(const mh_dll_info_t& RealDllInfo)
