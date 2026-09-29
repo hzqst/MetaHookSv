@@ -668,8 +668,9 @@ void Engine_FillAddress(const mh_dll_info_t& RealDllInfo)
 
 void Client_FillAddress_VisibleMouse(const mh_dll_info_t& RealDllInfo)
 {
-	// Only the Sven Co-op clients publish this record so far; the remaining
-	// client families stay null until the upstream catalog covers them.
+	// Make client dll aware of VGUI2 mouse input capture, which is not natively supported by VGUI1 mods.
+
+	// TODO: check if client has g_pClientVGUI ?
 	g_iVisibleMouse = (decltype(g_iVisibleMouse))GamedataResolvePtrIfAvailable(
 		RealDllInfo.ImageBase, "g_iVisibleMouse", MH_GAMESYMBOL_KIND_GLOBAL);
 }
