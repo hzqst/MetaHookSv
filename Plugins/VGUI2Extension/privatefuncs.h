@@ -207,7 +207,7 @@ PVOID VGUI2_FindPanelInit(const mh_dll_info_t& DllInfo, const mh_dll_info_t& Rea
 PVOID *VGUI2_FindKeyValueVFTable(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 PVOID* VGUI2_FindMenuVFTable(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 
-void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void Client_FillAddress(const mh_dll_info_t& RealDllInfo);
 void Client_InstallHooks(void);
 void Client_UninstallHooks(void);
 void SDL2_FillAddress(void);

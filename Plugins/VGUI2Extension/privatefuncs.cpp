@@ -596,391 +596,54 @@ void Engine_FillAddress_HostParms(const mh_dll_info_t& RealDllInfo)
 	host_parms = (decltype(host_parms))GamedataResolvePtr(RealDllInfo.ImageBase, "host_parms", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
-void Engine_PatchAddress_VGUIClient001(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_PatchAddress_VGUIClient001(const mh_dll_info_t&, const mh_dll_info_t& RealDllInfo)
 {
-	if (g_iEngineType == ENGINE_SVENGINE)
+	const char* patchName = "VGUIClient001_CreateInterface";
+	const auto status = g_pMetaHookAPI->IsGameSymbolAvailable(RealDllInfo.ImageBase, patchName);
+	if (status == MH_GAMESYMBOL_SYMBOL_NOT_FOUND)
 	{
-		const char sigs[] = "VClientVGUI001";
-		auto VClientVGUI001_String = Search_Pattern_Data(sigs, DllInfo);
-		if (!VClientVGUI001_String)
-			VClientVGUI001_String = Search_Pattern_Rdata(sigs, DllInfo);
-		Sig_VarNotFound(VClientVGUI001_String);
-		char pattern[] = "\x8B\x2A\x2A\x6A\x00\x68\x2A\x2A\x2A\x2A\x89";
-		*(DWORD*)(pattern + 6) = (DWORD)VClientVGUI001_String;
-		auto VClientVGUI001_PushString = Search_Pattern(pattern, DllInfo);
-		Sig_VarNotFound(VClientVGUI001_PushString);
-
-		const char sigs2[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x85\xC0";
-		auto Call_VClientVGUI001_CreateInterface = g_pMetaHookAPI->ReverseSearchPattern(VClientVGUI001_PushString, 0x50, sigs2, sizeof(sigs2) - 1);
-		Sig_VarNotFound(Call_VClientVGUI001_CreateInterface);
-
-		PUCHAR address = (PUCHAR)Call_VClientVGUI001_CreateInterface + 15;
-
-		address = (PUCHAR)ConvertDllInfoSpace(address, DllInfo, RealDllInfo);
-
-		gPrivateFuncs.VGUIClient001_CreateInterface = (decltype(gPrivateFuncs.VGUIClient001_CreateInterface))GetCallAddress(address);
-
-		g_pMetaHookAPI->InlinePatchRedirectBranch(address, VGUIClient001_CreateInterface, NULL);
+		// Legacy engines obtain the factory through the zero-argument ClientFactory callback.
+		g_pClientFactory = (decltype(g_pClientFactory))GamedataResolvePtr(
+			RealDllInfo.ImageBase, "g_pClientFactory", MH_GAMESYMBOL_KIND_GLOBAL);
+		return;
 	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	if (status != MH_GAMESYMBOL_OK)
 	{
-		const char sigs[] = "VClientVGUI001";
-		auto VClientVGUI001_String = Search_Pattern_Data(sigs, DllInfo);
-		if (!VClientVGUI001_String)
-			VClientVGUI001_String = Search_Pattern_Rdata(sigs, DllInfo);
-		Sig_VarNotFound(VClientVGUI001_String);
-		char pattern[] = "\x8B\x4B\x1C\x6A\x00\x68\x2A\x2A\x2A\x2A\x89";
-		*(DWORD*)(pattern + 6) = (DWORD)VClientVGUI001_String;
-		auto VClientVGUI001_PushString = Search_Pattern(pattern, DllInfo);
-		Sig_VarNotFound(VClientVGUI001_PushString);
-
-		/*
-				if ( !dword_1E67088 )
-				__debugbreak();
-				if ( ClientFactory )
-				{
-					factory = VGUIClient001_CreateInterface(hModule);
-					if ( factory )
-					{
-						v4[v4[7]++ + 1] = factory;
-						dword_1E66F4C = ((int (__cdecl *)(char *, _DWORD))factory)("VClientVGUI001", 0);
-					}
-				}
-		*/
-
-		const char sigs2[] = "\xFF\x35\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x85\xC0\x74\x28";
-
-		auto Call_VClientVGUI001_CreateInterface = g_pMetaHookAPI->ReverseSearchPattern(VClientVGUI001_PushString, 0x50, sigs2, sizeof(sigs2) - 1);
-		Sig_VarNotFound(Call_VClientVGUI001_CreateInterface);
-
-		PUCHAR address = (PUCHAR)Call_VClientVGUI001_CreateInterface + 6;
-
-		address = (PUCHAR)ConvertDllInfoSpace(address, DllInfo, RealDllInfo);
-
-		gPrivateFuncs.VGUIClient001_CreateInterface = (decltype(gPrivateFuncs.VGUIClient001_CreateInterface))GetCallAddress(address);
-
-		g_pMetaHookAPI->InlinePatchRedirectBranch(address, VGUIClient001_CreateInterface, NULL);
+		Sys_Error("Could not query gamedata symbol: %s (%s)\nEngine buildnum: %d",
+			patchName, g_pMetaHookAPI->GetGameSymbolStatusString(status), g_dwEngineBuildnum);
+		return;
 	}
-	else
-	{
-		const char sigs[] = "VClientVGUI001";
-		auto VClientVGUI001_String = Search_Pattern_Data(sigs, DllInfo);
-		if (!VClientVGUI001_String)
-			VClientVGUI001_String = Search_Pattern_Rdata(sigs, DllInfo);
-		Sig_VarNotFound(VClientVGUI001_String);
-		char pattern[] = "\x6A\x00\x68\x2A\x2A\x2A\x2A\x89";
-		*(DWORD*)(pattern + 3) = (DWORD)VClientVGUI001_String;
-		auto VClientVGUI001_PushString = Search_Pattern(pattern, DllInfo);
-		if (!VClientVGUI001_PushString)
-		{
-			char pattern2[] = "\x6A\x00\x68\x2A\x2A\x2A\x2A\xFF";
-			*(DWORD*)(pattern2 + 3) = (DWORD)VClientVGUI001_String;
-			VClientVGUI001_PushString = Search_Pattern(pattern2, DllInfo);
-		}
-		Sig_VarNotFound(VClientVGUI001_PushString);
 
-		/*
-		if ( !dword_1E67088 )
-			__debugbreak();
-		if ( ClientFactory )
-		{
-			factory = VGUIClient001_CreateInterface(hModule);
-			if ( factory )
-			{
-				v4[v4[7]++ + 1] = factory;
-				dword_1E66F4C = ((int (__cdecl *)(char *, _DWORD))factory)("VClientVGUI001", 0);
-			}
-		}
-		*/
-
-		const char sigs2[] = "\xA1\x2A\x2A\x2A\x2A\x50\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x85\xC0";
-		auto Call_VClientVGUI001_CreateInterface = g_pMetaHookAPI->ReverseSearchPattern(VClientVGUI001_PushString, 0x50, sigs2, sizeof(sigs2) - 1);
-		if (Call_VClientVGUI001_CreateInterface)
-		{
-			PUCHAR address = (PUCHAR)Call_VClientVGUI001_CreateInterface + 6;
-
-			address = (PUCHAR)ConvertDllInfoSpace(address, DllInfo, RealDllInfo);
-
-			gPrivateFuncs.VGUIClient001_CreateInterface = (decltype(gPrivateFuncs.VGUIClient001_CreateInterface))GetCallAddress(address);
-
-			g_pMetaHookAPI->InlinePatchRedirectBranch(address, VGUIClient001_CreateInterface, NULL);
-		}
-		else
-		{
-			/*
-				if ( !dword_1EF4070 )
-					__debugbreak();
-				if ( ClientFactory )
-				{
-					v14 = (int (__cdecl *)(const char *, _DWORD))ClientFactory();
-					if ( v14 )
-					v3[v3[6]++ + 1] = v14;
-					g_VClientVGUI = v14("VClientVGUI001", 0);
-				}
-			*/
-
-			/*
-.text:01D011E9 CC                                                  int     3               ; Trap to Debugger
-.text:01D011EA
-.text:01D011EA                                     loc_1D011EA:                            ; CODE XREF: sub_1D010D0+117↑j
-.text:01D011EA A1 48 13 F7 02                                      mov     eax, ClientFactory
-.text:01D011EF 85 C0                                               test    eax, eax
-.text:01D011F1 74 27                                               jz      short loc_1D0121A
-.text:01D011F3 FF D0                                               call    eax ; ClientFactory
-.text:01D011F5 85 C0                                               test    eax, eax
-			*/
-#if 1
-			const char sigs3[] = "\xCC\xA1\x2A\x2A\x2A\x2A\x85\xC0\x74\x2A\xFF";
-			auto pClientFactoryAddr = (PUCHAR)g_pMetaHookAPI->ReverseSearchPattern(VClientVGUI001_PushString, 0x50, sigs3, sizeof(sigs3) - 1);
-			if (pClientFactoryAddr)
-			{
-				auto g_pClientFactory_VA = *(PVOID*)(pClientFactoryAddr + 2);
-				g_pClientFactory = (decltype(g_pClientFactory))ConvertDllInfoSpace(g_pClientFactory_VA, DllInfo, RealDllInfo);
-			}
-#endif
-		}
-	}
+	// The PATCH is the Sys_GetFactory(hClientDLL) CALL, not the interface query.
+	auto address = (PUCHAR)GamedataResolvePtr(RealDllInfo.ImageBase, patchName, MH_GAMESYMBOL_KIND_PATCH);
+	gPrivateFuncs.VGUIClient001_CreateInterface = (decltype(gPrivateFuncs.VGUIClient001_CreateInterface))GetCallAddress(address);
+	g_pMetaHookAPI->InlinePatchRedirectBranch(address, VGUIClient001_CreateInterface, NULL);
 }
 
-void Engine_PatchAddress_LanguageStrncpy(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_PatchAddress_LanguageStrncpy(const mh_dll_info_t&, const mh_dll_info_t& RealDllInfo)
 {
 	// Old engines read the registry directly instead of copying an English literal.
 	if (gPrivateFuncs.Sys_GetRegKeyValueUnderRoot)
 		return;
 
-	if (g_iEngineType == ENGINE_SVENGINE)
+	// Both filesystem owners copy the default language through the same function.
+	const char* patchNames[] = {
+		"FileSystem_SetGameDirectory_V_strncpy_callsite_0",
+		"FileSystem_AddFallbackGameDir_V_strncpy_callsite_0",
+	};
+	PVOID patchSites[_countof(patchNames)] = {};
+	for (size_t i = 0; i < _countof(patchNames); ++i)
 	{
-		const char pattern[] = "\xB8\x2A\x2A\x2A\x2A\x68\x80\x00\x00\x00\x50";
-
-		PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
-		PUCHAR SearchEnd = SearchBegin + DllInfo.TextSize;
-		while (1)
-		{
-			auto LanguageStrncpy = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchEnd - SearchBegin, pattern);
-			if (LanguageStrncpy)
-			{
-				typedef struct LanguageStrncpySearchContext_s
-				{
-					const mh_dll_info_t& DllInfo;
-					const mh_dll_info_t& RealDllInfo;
-					bool bHasPushEax;
-					bool bHasPushEnglish;
-				}LanguageStrncpySearchContext;
-
-				LanguageStrncpySearchContext ctx = { DllInfo, RealDllInfo };
-
-				g_pMetaHookAPI->DisasmRanges(LanguageStrncpy, 0x30, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-					auto ctx = (LanguageStrncpySearchContext*)context;
-					auto pinst = (cs_insn*)inst;
-
-					if (!ctx->bHasPushEax && pinst->id == X86_INS_PUSH &&
-						pinst->detail->x86.op_count == 1 &&
-						pinst->detail->x86.operands[0].type == X86_OP_REG &&
-						pinst->detail->x86.operands[0].reg == X86_REG_EAX)
-					{
-						ctx->bHasPushEax = true;
-					}
-
-					if (!ctx->bHasPushEnglish && pinst->id == X86_INS_PUSH &&
-						pinst->detail->x86.op_count == 1 &&
-						pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-						(((PUCHAR)pinst->detail->x86.operands[0].imm >= (PUCHAR)ctx->DllInfo.RdataBase && (PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx->DllInfo.RdataBase + ctx->DllInfo.RdataSize)
-							|| ((PUCHAR)pinst->detail->x86.operands[0].imm >= (PUCHAR)ctx->DllInfo.DataBase && (PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-							))
-					{
-						const char* pPushString = (const char*)pinst->detail->x86.operands[0].imm;
-
-						if (!memcmp(pPushString, "english", sizeof("english")))
-						{
-							ctx->bHasPushEnglish = true;
-						}
-					}
-
-					if (!ctx->bHasPushEnglish && pinst->id == X86_INS_MOV &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_REG &&
-						pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-						(((PUCHAR)pinst->detail->x86.operands[1].imm >= (PUCHAR)ctx->DllInfo.RdataBase && (PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.RdataBase + ctx->DllInfo.RdataSize)
-							|| ((PUCHAR)pinst->detail->x86.operands[1].imm >= (PUCHAR)ctx->DllInfo.DataBase && (PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-							))
-					{
-						const char* pPushString = (const char*)pinst->detail->x86.operands[1].imm;
-
-						if (!memcmp(pPushString, "english", sizeof("english")))
-						{
-							ctx->bHasPushEnglish = true;
-						}
-					}
-
-					if (ctx->bHasPushEax && ctx->bHasPushEnglish)
-					{
-						if (address[0] == 0xE8)
-						{
-							auto address_RealDllBased = ConvertDllInfoSpace(address, ctx->DllInfo, ctx->RealDllInfo);
-
-							gPrivateFuncs.V_strncpy = (decltype(gPrivateFuncs.V_strncpy))GetCallAddress(address_RealDllBased);
-							g_pMetaHookAPI->InlinePatchRedirectBranch(address_RealDllBased, NewV_strncpy, NULL);
-							return TRUE;
-						}
-						else if (address[0] == 0xEB)
-						{
-							char jmprva = *(char*)(address + 1);
-							PUCHAR jmptarget = address + 2 + jmprva;
-
-							if (jmptarget[0] == 0xE8)
-							{
-								auto jmptarget_RealDllBased = ConvertDllInfoSpace(jmptarget, ctx->DllInfo, ctx->RealDllInfo);
-
-								gPrivateFuncs.V_strncpy = (decltype(gPrivateFuncs.V_strncpy))GetCallAddress(jmptarget_RealDllBased);
-								g_pMetaHookAPI->InlinePatchRedirectBranch(jmptarget_RealDllBased, NewV_strncpy, NULL);
-								return TRUE;
-							}
-						}
-						else if (address[0] == 0xFF && address[1] == 0x15)
-						{
-							auto address_RealDllBased = (PUCHAR)ConvertDllInfoSpace(address, ctx->DllInfo, ctx->RealDllInfo);
-
-							gPrivateFuncs.V_strncpy = (decltype(gPrivateFuncs.V_strncpy)) * *(ULONG_PTR**)(address_RealDllBased + 2);
-							g_pMetaHookAPI->InlinePatchRedirectBranch(address_RealDllBased, NewV_strncpy, (void**)&gPrivateFuncs.V_strncpy);
-							return TRUE;
-						}
-					}
-
-					if (instCount > 12)
-						return TRUE;
-
-					if (address[0] == 0xCC)
-						return TRUE;
-
-					if (pinst->id == X86_INS_RET)
-						return TRUE;
-
-					return FALSE;
-				}, 0, &ctx);
-
-				SearchBegin = LanguageStrncpy + Sig_Length(pattern);
-			}
-			else
-			{
-				break;
-			}
-		}
+		patchSites[i] = GamedataResolvePtr(RealDllInfo.ImageBase, patchNames[i], MH_GAMESYMBOL_KIND_PATCH);
 	}
-	else
+
+	for (size_t i = 0; i < _countof(patchNames); ++i)
 	{
-		const char pattern[] = "\x68\x80\x00\x00\x00\x50";
-
-		PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
-		PUCHAR SearchEnd = SearchBegin + DllInfo.TextSize;
-		while (1)
+		// The hook API handles both direct and import-indirect CALLs and saves the original target.
+		if (!g_pMetaHookAPI->InlinePatchRedirectBranch(patchSites[i], NewV_strncpy, (void**)&gPrivateFuncs.V_strncpy))
 		{
-			auto LanguageStrncpy = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchEnd - SearchBegin, pattern);
-			if (LanguageStrncpy)
-			{
-				typedef struct LanguageStrncpySearchContext_s
-				{
-					const mh_dll_info_t& DllInfo;
-					const mh_dll_info_t& RealDllInfo;
-					bool bHasPushEax;
-					bool bHasPushEnglish;
-				}LanguageStrncpySearchContext;
-
-				LanguageStrncpySearchContext ctx = { DllInfo, RealDllInfo };
-
-				g_pMetaHookAPI->DisasmRanges(LanguageStrncpy, 0x30, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-					auto ctx = (LanguageStrncpySearchContext*)context;
-					auto pinst = (cs_insn*)inst;
-
-					if (!ctx->bHasPushEax && pinst->id == X86_INS_PUSH &&
-						pinst->detail->x86.op_count == 1 &&
-						pinst->detail->x86.operands[0].type == X86_OP_REG &&
-						pinst->detail->x86.operands[0].reg == X86_REG_EAX)
-					{
-						ctx->bHasPushEax = true;
-					}
-
-					if (!ctx->bHasPushEnglish && pinst->id == X86_INS_PUSH &&
-						pinst->detail->x86.op_count == 1 &&
-						pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-						(((PUCHAR)pinst->detail->x86.operands[0].imm >= (PUCHAR)ctx->DllInfo.RdataBase && (PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx->DllInfo.RdataBase + ctx->DllInfo.RdataSize)
-							|| ((PUCHAR)pinst->detail->x86.operands[0].imm >= (PUCHAR)ctx->DllInfo.DataBase && (PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-							))
-					{
-						const char* pPushString = (const char*)pinst->detail->x86.operands[0].imm;
-
-						if (!memcmp(pPushString, "english", sizeof("english")))
-						{
-							ctx->bHasPushEnglish = true;
-						}
-					}
-
-					if (!ctx->bHasPushEnglish && pinst->id == X86_INS_MOV &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_REG &&
-						pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-						(((PUCHAR)pinst->detail->x86.operands[1].imm >= (PUCHAR)ctx->DllInfo.RdataBase && (PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.RdataBase + ctx->DllInfo.RdataSize)
-							|| ((PUCHAR)pinst->detail->x86.operands[1].imm >= (PUCHAR)ctx->DllInfo.DataBase && (PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-							))
-					{
-						const char* pPushString = (const char*)pinst->detail->x86.operands[1].imm;
-
-						if (!memcmp(pPushString, "english", sizeof("english")))
-						{
-							ctx->bHasPushEnglish = true;
-						}
-					}
-
-					if (ctx->bHasPushEax && ctx->bHasPushEnglish)
-					{
-						if (address[0] == 0xE8)
-						{
-							auto address_RealDllBased = (PUCHAR)ConvertDllInfoSpace(address, ctx->DllInfo, ctx->RealDllInfo);
-
-							gPrivateFuncs.V_strncpy = (decltype(gPrivateFuncs.V_strncpy))GetCallAddress(address_RealDllBased);
-							g_pMetaHookAPI->InlinePatchRedirectBranch(address_RealDllBased, NewV_strncpy, NULL);
-							return TRUE;
-						}
-						else if (address[0] == 0xEB)
-						{
-							char jmprva = *(char*)(address + 1);
-							PUCHAR jmptarget = address + 2 + jmprva;
-
-							if (jmptarget[0] == 0xE8)
-							{
-								auto jmptarget_RealDllBased = (PUCHAR)ConvertDllInfoSpace(jmptarget, ctx->DllInfo, ctx->RealDllInfo);
-
-								gPrivateFuncs.V_strncpy = (decltype(gPrivateFuncs.V_strncpy))GetCallAddress(jmptarget_RealDllBased);
-								g_pMetaHookAPI->InlinePatchRedirectBranch(jmptarget_RealDllBased, NewV_strncpy, NULL);
-								return TRUE;
-							}
-						}
-						else if (address[0] == 0xFF && address[1] == 0x15)
-						{
-							auto address_RealDllBased = (PUCHAR)ConvertDllInfoSpace(address, ctx->DllInfo, ctx->RealDllInfo);
-
-							g_pMetaHookAPI->InlinePatchRedirectBranch(address_RealDllBased, NewV_strncpy, (void**)&gPrivateFuncs.V_strncpy);
-							return TRUE;
-						}
-					}
-
-					if (instCount > 12)
-						return TRUE;
-
-					if (address[0] == 0xCC)
-						return TRUE;
-
-					if (pinst->id == X86_INS_RET)
-						return TRUE;
-
-					return FALSE;
-				}, 0, &ctx);
-
-				SearchBegin = LanguageStrncpy + Sig_Length(pattern);
-			}
-			else
-			{
-				break;
-			}
+			Sys_Error("Could not redirect gamedata patch: %s\nEngine buildnum: %d", patchNames[i], g_dwEngineBuildnum);
+			return;
 		}
 	}
 }
@@ -1003,197 +666,15 @@ void Engine_FillAddress(const mh_dll_info_t& RealDllInfo)
 		GamedataResolvePtrIfAvailable(RealDllInfo.ImageBase, "Sys_GetRegKeyValueUnderRoot", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
-void Client_FillAddress_SCClient_VisibleMouse(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Client_FillAddress_VisibleMouse(const mh_dll_info_t& RealDllInfo)
 {
-	/*
-.text:1006C550                                     sub_1006C550    proc near               ; CODE XREF: sub_10030310+6↑j
-.text:1006C550                                                                             ; .text:100324D2↑p ...
-.text:1006C550 56                                                  push    esi
-.text:1006C551 8B F1                                               mov     esi, ecx
-.text:1006C553 57                                                  push    edi
-.text:1006C554 8B 8E E4 15 00 00                                   mov     ecx, [esi+15E4h]
-.text:1006C55A 39 8E 1C 14 00 00                                   cmp     [esi+141Ch], ecx
-.text:1006C560 75 5A                                               jnz     short loc_1006C5BC
-.text:1006C562 85 C9                                               test    ecx, ecx
-.text:1006C564 74 56                                               jz      short loc_1006C5BC
-.text:1006C566 8B 01                                               mov     eax, [ecx]
-.text:1006C568 8B 40 28                                            mov     eax, [eax+28h]
-.text:1006C56B FF D0                                               call    eax
-.text:1006C56D 84 C0                                               test    al, al
-.text:1006C56F 74 4B                                               jz      short loc_1006C5BC
-.text:1006C571 C7 05 9C A9 63 10 01 00 00 00                       mov     g_iVisibleMouse, 1
-.text:1006C57B 8B 8E E4 15 00 00                                   mov     ecx, [esi+15E4h]
-	*/
-
-	char pattern[] = "\x8B\x40\x28\xFF\xD0\x84\xC0\x2A\x2A\xC7\x05\x2A\x2A\x2A\x2A\x01\x00\x00\x00";
-	auto addr = (PUCHAR)Search_Pattern(pattern, DllInfo);
-	Sig_AddrNotFound(g_iVisibleMouse);
-
-	PVOID g_iVisibleMouse_VA = *(PVOID*)(addr + 11);
-	g_iVisibleMouse = (decltype(g_iVisibleMouse))ConvertDllInfoSpace(g_iVisibleMouse_VA, DllInfo, RealDllInfo);
+	// Only the Sven Co-op clients publish this record so far; the remaining
+	// client families stay null until the upstream catalog covers them.
+	g_iVisibleMouse = (decltype(g_iVisibleMouse))GamedataResolvePtrIfAvailable(
+		RealDllInfo.ImageBase, "g_iVisibleMouse", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
-void Client_FillAddress_VisibleMouse(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (g_iVisibleMouse)
-		return;
-
-	PVOID IN_Accumulate = ConvertDllInfoSpace((void*)g_pMetaSave->pExportFuncs->IN_Accumulate, RealDllInfo, DllInfo);
-
-	if (!IN_Accumulate)
-	{
-		if (g_pMetaHookAPI->GetClientModule())
-		{
-			IN_Accumulate = ConvertDllInfoSpace(GetProcAddress(g_pMetaHookAPI->GetClientModule(), "IN_Accumulate"), RealDllInfo, DllInfo);
-		}
-	}
-
-	if (IN_Accumulate)
-	{
-		typedef struct IN_Accumulate_SearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-			DWORD candidate{};
-			int candidate_register{};
-		}IN_Accumulate_SearchContext;
-
-		IN_Accumulate_SearchContext ctx = { DllInfo, RealDllInfo };
-
-		g_pMetaHookAPI->DisasmRanges(IN_Accumulate, 0x30, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-				auto ctx = (IN_Accumulate_SearchContext*)context;
-				auto pinst = (cs_insn*)inst;
-
-				if (pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[1].mem.base == 0 &&
-					pinst->detail->x86.operands[1].mem.index == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-				{
-					ctx->candidate = pinst->detail->x86.operands[1].mem.disp;
-					ctx->candidate_register = pinst->detail->x86.operands[0].reg;
-				}
-
-				auto findVisibleMouseFillZero = [ctx](PVOID address, size_t oprandSize) -> bool{
-
-					typedef struct findVisibleMouseFillZero_SearchContext
-					{
-						bool FoundCall{};
-					}findVisibleMouseFillZero_SearchContext_t;
-
-					findVisibleMouseFillZero_SearchContext_t ctx2{};
-
-					const auto& DllInfo = ctx->DllInfo;
-					//C7 05 78 4D 9A 01 00 00 00 00                       mov     g_iVisibleMouse, 0
-					if (oprandSize == 4)
-					{
-						char pattern[] = "\xC7\x05\x2A\x2A\x2A\x2A\x01\x00\x00\x00";
-						*(PVOID*)(pattern + 2) = address;
-						auto addr = (PUCHAR)Search_Pattern(pattern, DllInfo);
-
-						if (addr)
-						{
-							g_pMetaHookAPI->DisasmSingleInstruction(addr + Sig_Length(pattern), [](void* inst2, PUCHAR address2, size_t instLen2, PVOID context2) {
-								auto ctx2 = (findVisibleMouseFillZero_SearchContext_t*)context2;
-								auto pinst2 = (cs_insn*)inst2;
-
-								if (pinst2->id == X86_INS_CALL)
-								{
-									ctx2->FoundCall = true;
-								}
-
-							}, & ctx2);
-							return ctx2.FoundCall;
-						}
-					}
-					else if (oprandSize == 1)
-					{
-						char pattern[] = "\xC6\x05\x2A\x2A\x2A\x2A\x01";
-						*(PVOID*)(pattern + 2) = address;
-						auto addr = (PUCHAR)Search_Pattern(pattern, DllInfo);
-
-						if (addr)
-						{
-							g_pMetaHookAPI->DisasmSingleInstruction(addr + Sig_Length(pattern), [](void* inst2, PUCHAR address2, size_t instLen2, PVOID context2) {
-								auto ctx2 = (findVisibleMouseFillZero_SearchContext_t*)context2;
-								auto pinst2 = (cs_insn*)inst2;
-
-								if (pinst2->id == X86_INS_CALL)
-								{
-									ctx2->FoundCall = true;
-								}
-
-							}, &ctx2);
-							return ctx2.FoundCall;
-						}
-					}
-
-					return false;
-				};
-
-				if (ctx->candidate_register &&
-					pinst->id == X86_INS_TEST &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					pinst->detail->x86.operands[0].reg == ctx->candidate_register &&
-					pinst->detail->x86.operands[1].type == X86_OP_REG &&
-					pinst->detail->x86.operands[1].reg == ctx->candidate_register)
-				{
-					if (findVisibleMouseFillZero((PVOID)ctx->candidate, pinst->detail->x86.operands[0].size))
-					{
-						g_iVisibleMouse = (decltype(g_iVisibleMouse))ConvertDllInfoSpace((PVOID)ctx->candidate, ctx->DllInfo, ctx->RealDllInfo);
-					}
-				}
-
-				if (pinst->id == X86_INS_CMP &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[0].mem.base == 0 &&
-					pinst->detail->x86.operands[0].mem.index == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
-					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-					pinst->detail->x86.operands[1].imm == 0)
-				{
-					if (findVisibleMouseFillZero((PVOID)pinst->detail->x86.operands[0].mem.disp, pinst->detail->x86.operands[0].size))
-					{
-						g_iVisibleMouse = (decltype(g_iVisibleMouse))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-					}
-				}
-
-				if (g_iVisibleMouse)
-					return TRUE;
-
-				if (address[0] == 0xCC)
-					return TRUE;
-
-				if (pinst->id == X86_INS_RET)
-					return TRUE;
-
-				return FALSE;
-			}, 0, &ctx);
-	}
-}
-
-void Client_FillAddress_SCClient(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	auto pfnClientFactory = g_pMetaHookAPI->GetClientFactory();
-
-	if (pfnClientFactory)
-	{
-		auto SCClient001 = pfnClientFactory("SCClientDLL001", 0);
-
-		if (SCClient001)
-		{
-			Client_FillAddress_SCClient_VisibleMouse(DllInfo, RealDllInfo);
-		}
-	}
-}
-
-void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Client_FillAddress(const mh_dll_info_t& RealDllInfo)
 {
 	if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "cstrike") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czero") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror"))
 	{
@@ -1210,9 +691,7 @@ void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealD
 		g_bIsCZDS = true;
 	}
 
-	Client_FillAddress_SCClient(DllInfo, RealDllInfo);
-
-	Client_FillAddress_VisibleMouse(DllInfo, RealDllInfo);
+	Client_FillAddress_VisibleMouse(RealDllInfo);
 }
 
 void Engine_InstallHooks(void)

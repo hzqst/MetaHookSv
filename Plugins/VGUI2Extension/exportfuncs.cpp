@@ -88,6 +88,8 @@ void *gHud = NULL;
 HWND g_MainWnd = NULL;
 WNDPROC g_MainWndProc = NULL;
 
+//No need to support custom dpi here
+
 #if 0
 
 int FileSystem_SetGameDirectory(const char *pDefaultDir, const char *pGameDir)
@@ -157,6 +159,7 @@ void HUD_Frame(double time)
 	gExportfuncs.HUD_Frame(time);
 }
 
+// Purpose: Make IN_MouseEvent aware of VGUI2 mouse input capture, which is not natively supported by VGUI1 mods.
 void IN_MouseEvent(int mstate)
 {
 	if (g_iVisibleMouse && vgui::surface() && vgui::surface()->IsCursorVisible())
@@ -174,6 +177,7 @@ void IN_MouseEvent(int mstate)
 	}
 }
 
+// Purpose: Make IN_Accumulate aware of VGUI2 mouse input capture, which is not natively supported by VGUI1 mods.
 void IN_Accumulate(void)
 {
 	if (g_iVisibleMouse && vgui::surface() && vgui::surface()->IsCursorVisible())
@@ -191,6 +195,7 @@ void IN_Accumulate(void)
 	}
 }
 
+// Purpose: Make CL_CreateMove aware of VGUI2 mouse input capture, which is not natively supported by VGUI1 mods.
 void CL_CreateMove(float frametime, struct usercmd_s *cmd, int active)
 {
 	if (g_iVisibleMouse && vgui::surface() && vgui::surface()->IsCursorVisible())

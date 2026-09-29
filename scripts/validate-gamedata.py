@@ -952,11 +952,22 @@ VGUI2EXTENSION_CS_CLIENT_VIRTUAL_FUNCTIONS = (
 VGUI2EXTENSION_BACKGROUND_PANEL_STRUCT_MEMBERS = (
     "CounterStrikeViewport.m_pCSBackGround",
 )
+# The cursor-visibility global is resolved from the catalog on every client, but
+# only the Sven Co-op snapshots publish it so far. The Counter-Strike, Condition
+# Zero and Half-Life client coverage is tracked by GoldSrc_VibeSignatures issue
+# #295; until those records exist the other clients resolve null and skip the
+# cursor adjustment, so the gate stays on the publishing identities only.
+VGUI2EXTENSION_VISIBLE_MOUSE_GAMES = (
+    "svencoop-10257", "svencoop-8948",
+)
+VGUI2EXTENSION_CLIENT_GLOBALS = (
+    "g_iVisibleMouse",
+)
 # The engine-side entries the disassembly locators used to derive. Only the
 # snapshots that publish an engine module carry them; the Counter-Strike clients
 # publish no engine module of their own and share the hl identities' engine
 # binary. Older engines read the language directly from the registry; newer
-# engines retain the V_strncpy call-site locator.
+# engines require both language-copy call-site patches.
 VGUI2EXTENSION_ENGINE_GLOBALS = (
     "cl_time",
     "cl_oldtime",
@@ -976,12 +987,28 @@ VGUI2EXTENSION_REGISTRY_LANGUAGE_GAMES = (
     "hl-3248", "hl-3266", "hl-3329", "hl-3647", "hl-4554",
 )
 VGUI2EXTENSION_REGISTRY_LANGUAGE_READER = "Sys_GetRegKeyValueUnderRoot"
+VGUI2EXTENSION_LANGUAGE_PATCHES = (
+    "FileSystem_SetGameDirectory_V_strncpy_callsite_0",
+    "FileSystem_AddFallbackGameDir_V_strncpy_callsite_0",
+)
+VGUI2EXTENSION_MODULE_FACTORY_GAMES = (
+    "hl-6153", "hl-8684", "hl-10210", "svencoop-8948", "svencoop-10257",
+)
+VGUI2EXTENSION_MODULE_FACTORY_PATCH = "VGUIClient001_CreateInterface"
 
 
 def validate_vgui2extension(symbols, game_version, include_engine=True):
     """Check native client UI entry coverage without requiring it on non-CS clients."""
     errors = []
     if include_engine:
+        factory_patch = VGUI2EXTENSION_MODULE_FACTORY_PATCH
+        if (game_version in VGUI2EXTENSION_MODULE_FACTORY_GAMES or
+                ("engine", factory_patch) in symbols):
+            errors += _consumer_check(symbols, game_version, (factory_patch,),
+                                      "patch", "engine", "VGUI2Extension")
+        else:
+            errors += _consumer_check(symbols, game_version, ("g_pClientFactory",),
+                                      "global", "engine", "VGUI2Extension")
         errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_ENGINE_GLOBALS,
                                   "global", "engine", "VGUI2Extension")
         errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_ENGINE_FUNCTIONS,
@@ -990,6 +1017,9 @@ def validate_vgui2extension(symbols, game_version, include_engine=True):
                 ("engine", VGUI2EXTENSION_REGISTRY_LANGUAGE_READER) in symbols):
             errors += _consumer_check(symbols, game_version, (VGUI2EXTENSION_REGISTRY_LANGUAGE_READER,),
                                       "function", "engine", "VGUI2Extension")
+        else:
+            errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_LANGUAGE_PATCHES,
+                                      "patch", "engine", "VGUI2Extension")
     is_cs = game_version in VGUI2EXTENSION_CLIENT_GAMES
     for name, kind in VGUI2EXTENSION_CLIENT_OPTIONAL_ENTRIES.items():
         if is_cs or ("client", name) in symbols:
@@ -1002,6 +1032,9 @@ def validate_vgui2extension(symbols, game_version, include_engine=True):
     if game_version in VGUI2EXTENSION_BACKGROUND_PANEL_GAMES:
         errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_BACKGROUND_PANEL_STRUCT_MEMBERS,
                                   "structMember", "client", "VGUI2Extension")
+    if game_version in VGUI2EXTENSION_VISIBLE_MOUSE_GAMES:
+        errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_CLIENT_GLOBALS,
+                                  "global", "client", "VGUI2Extension")
     return errors
 
 

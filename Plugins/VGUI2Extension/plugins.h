@@ -20,7 +20,6 @@ extern HMODULE g_hClientModule;
 extern mh_dll_info_t g_EngineDLLInfo;
 extern mh_dll_info_t g_MirrorEngineDLLInfo;
 extern mh_dll_info_t g_ClientDLLInfo;
-extern mh_dll_info_t g_MirrorClientDLLInfo;
 
 extern bool g_bIsSvenCoop;
 extern bool g_bIsCounterStrike;

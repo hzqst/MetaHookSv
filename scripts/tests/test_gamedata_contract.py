@@ -1368,7 +1368,7 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
     # The engine-side globals that replaced the disassembly locators. They live
     # in the engine module, which the Counter-Strike client snapshots do not
     # publish. Older engines use the separately gated registry reader; the
-    # remaining engines retain the V_strncpy call-site locator.
+    # remaining engines require both language-copy call-site patches.
     engine_records = {
         "cl_time": "global",
         "cl_oldtime": "global",
@@ -1383,6 +1383,16 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
     engine_games = validate.RENDERER_ALL_GAMES
     registry_games = ("hl-3248", "hl-3266", "hl-3329", "hl-3647", "hl-4554")
     registry_reader = "Sys_GetRegKeyValueUnderRoot"
+    language_patches = (
+        "FileSystem_SetGameDirectory_V_strncpy_callsite_0",
+        "FileSystem_AddFallbackGameDir_V_strncpy_callsite_0",
+    )
+    module_factory_games = ("hl-6153", "hl-8684", "hl-10210", "svencoop-8948", "svencoop-10257")
+    factory_patch = "VGUIClient001_CreateInterface"
+    # The cursor-visibility global is published only by the Sven Co-op clients;
+    # CS/CZ/HL coverage is tracked by GoldSrc_VibeSignatures issue #295.
+    visible_mouse_games = ("svencoop-8948", "svencoop-10257")
+    visible_mouse_global = "g_iVisibleMouse"
 
     def complete_symbols(self):
         return {("client", name): {"kind": kind, "module": "client"}
@@ -1395,7 +1405,61 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
                         for name, kind in self.engine_functions.items()})
         if game_version in self.registry_games:
             symbols[("engine", self.registry_reader)] = {"kind": "function", "module": "engine"}
+        else:
+            symbols.update({("engine", name): {"kind": "patch", "module": "engine"}
+                            for name in self.language_patches})
+        if game_version in self.module_factory_games:
+            symbols[("engine", self.factory_patch)] = {"kind": "patch", "module": "engine"}
+        else:
+            symbols[("engine", "g_pClientFactory")] = {"kind": "global", "module": "engine"}
+        if game_version in self.visible_mouse_games:
+            symbols[("client", self.visible_mouse_global)] = {"kind": "global", "module": "client"}
         return symbols
+
+    def test_factory_path_requires_the_correct_address_kind_and_module(self):
+        for gv in self.engine_games:
+            name = self.factory_patch if gv in self.module_factory_games else "g_pClientFactory"
+            expected_kind = "patch" if gv in self.module_factory_games else "global"
+            for record in (None, {"kind": "function", "module": "engine"},
+                           {"kind": expected_kind, "module": "client"}):
+                with self.subTest(gv=gv, record=record):
+                    symbols = self.complete_engine_symbols(gv)
+                    del symbols[("engine", name)]
+                    if record is not None:
+                        symbols[("engine", name)] = record
+                    # A callback slot cannot replace a missing module-factory CALL.
+                    if gv in self.module_factory_games:
+                        symbols[("engine", "g_pClientFactory")] = {"kind": "global", "module": "engine"}
+                    errors = validate.validate_vgui2extension(symbols, gv)
+                    self.assertTrue(any(name in error for error in errors), errors)
+
+    def test_factory_patch_is_type_checked_when_present_on_other_engines(self):
+        symbols = self.complete_engine_symbols("cof-5936")
+        symbols[("engine", self.factory_patch)] = {"kind": "function", "module": "engine"}
+        errors = validate.validate_vgui2extension(symbols, "cof-5936")
+        self.assertTrue(any(self.factory_patch in error for error in errors), errors)
+
+    def test_both_language_copy_patches_are_required_and_typed(self):
+        for gv in set(self.engine_games) - set(self.registry_games):
+            for name in self.language_patches:
+                for record in (None, {"kind": "function", "module": "engine"},
+                               {"kind": "patch", "module": "client"}):
+                    with self.subTest(gv=gv, name=name, record=record):
+                        symbols = self.complete_engine_symbols(gv)
+                        del symbols[("engine", name)]
+                        if record is not None:
+                            symbols[("engine", name)] = record
+                        errors = validate.validate_vgui2extension(symbols, gv)
+                        self.assertTrue(any(name in error for error in errors), errors)
+
+    def test_registry_language_path_does_not_require_copy_patches(self):
+        for gv in self.engine_games:
+            with self.subTest(gv=gv):
+                symbols = self.complete_engine_symbols(gv)
+                for name in self.language_patches:
+                    symbols.pop(("engine", name), None)
+                symbols[("engine", self.registry_reader)] = {"kind": "function", "module": "engine"}
+                self.assertEqual([], validate.validate_vgui2extension(symbols, gv))
 
     def test_legacy_language_registry_reader_is_required_and_typed(self):
         for gv in self.registry_games:
@@ -1425,6 +1489,26 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
                 self.assertEqual([], validate.validate_vgui2extension(
                     self.complete_symbols(), gv, include_engine=False))
 
+    def test_visible_mouse_global_is_required_on_the_sven_clients(self):
+        for gv in self.visible_mouse_games:
+            self.assertEqual([], validate.validate_vgui2extension(self.complete_engine_symbols(gv), gv))
+            for record in (None, {"kind": "function", "module": "client"},
+                           {"kind": "global", "module": "engine"}):
+                with self.subTest(gv=gv, record=record):
+                    symbols = self.complete_engine_symbols(gv)
+                    del symbols[("client", self.visible_mouse_global)]
+                    if record is not None:
+                        symbols[("client", self.visible_mouse_global)] = record
+                    errors = validate.validate_vgui2extension(symbols, gv)
+                    self.assertTrue(any(self.visible_mouse_global in error for error in errors), errors)
+
+    def test_other_clients_do_not_require_the_visible_mouse_global(self):
+        for gv in set(self.engine_games) - set(self.visible_mouse_games):
+            with self.subTest(gv=gv):
+                symbols = self.complete_engine_symbols(gv)
+                symbols.pop(("client", self.visible_mouse_global), None)
+                self.assertEqual([], validate.validate_vgui2extension(symbols, gv))
+
     def test_missing_or_mistyped_client_entry_is_rejected(self):
         for gv in self.games:
             for name, kind in self.records.items():
@@ -1450,7 +1534,10 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
     def test_other_clients_allow_absent_native_entries(self):
         for gv in ("svencoop-8948", "svencoop-10257", "hl-8684", "hl-10210", "cof-5936"):
             with self.subTest(gv=gv):
-                self.assertEqual([], validate.validate_vgui2extension({}, gv, include_engine=False))
+                symbols = {}
+                if gv in self.visible_mouse_games:
+                    symbols[("client", self.visible_mouse_global)] = {"kind": "global", "module": "client"}
+                self.assertEqual([], validate.validate_vgui2extension(symbols, gv, include_engine=False))
 
     def test_optional_entries_are_type_checked_when_present(self):
         for name in self.optional:

@@ -17,7 +17,6 @@ HMODULE g_hClientModule = NULL;
 mh_dll_info_t g_EngineDLLInfo = {0};
 mh_dll_info_t g_MirrorEngineDLLInfo = { 0 };
 mh_dll_info_t g_ClientDLLInfo = { 0 };
-mh_dll_info_t g_MirrorClientDLLInfo = { 0 };
 
 bool g_bIsSvenCoop = false;
 bool g_bIsCounterStrike = false;
@@ -115,19 +114,9 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	g_ClientDLLInfo.DataBase = g_pMetaHookAPI->GetSectionByName(g_ClientDLLInfo.ImageBase, ".data\0\0\0", &g_ClientDLLInfo.DataSize);
 	g_ClientDLLInfo.RdataBase = g_pMetaHookAPI->GetSectionByName(g_ClientDLLInfo.ImageBase, ".rdata\0\0", &g_ClientDLLInfo.RdataSize);
 
-	g_MirrorClientDLLInfo.ImageBase = g_pMetaHookAPI->GetMirrorClientBase();
-	g_MirrorClientDLLInfo.ImageSize = g_pMetaHookAPI->GetMirrorClientSize();
-
-	if (g_MirrorClientDLLInfo.ImageBase)
-	{
-		g_MirrorClientDLLInfo.TextBase = g_pMetaHookAPI->GetSectionByName(g_MirrorClientDLLInfo.ImageBase, ".text\0\0\0", &g_MirrorClientDLLInfo.TextSize);
-		g_MirrorClientDLLInfo.DataBase = g_pMetaHookAPI->GetSectionByName(g_MirrorClientDLLInfo.ImageBase, ".data\0\0\0", &g_MirrorClientDLLInfo.DataSize);
-		g_MirrorClientDLLInfo.RdataBase = g_pMetaHookAPI->GetSectionByName(g_MirrorClientDLLInfo.ImageBase, ".rdata\0\0", &g_MirrorClientDLLInfo.RdataSize);
-	}
-
 	g_hClientModule = g_pMetaHookAPI->GetClientModule();
 
-	Client_FillAddress(g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
+	Client_FillAddress(g_ClientDLLInfo);
 	Client_InstallHooks();
 	ClientVGUI_InstallHooks(pExportFunc);
 	VGUI1_InstallHooks();
