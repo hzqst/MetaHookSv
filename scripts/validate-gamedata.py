@@ -953,6 +953,7 @@ VGUI2EXTENSION_CS_CLIENT_VIRTUAL_FUNCTIONS = (
 VGUI2EXTENSION_BACKGROUND_PANEL_STRUCT_MEMBERS = (
     "CounterStrikeViewport.m_pCSBackGround",
     "CounterStrikeViewport::CCSBackGroundPanel.m_offsetX",
+    "CounterStrikeViewport::CCSBackGroundPanel.m_offsetY",
 )
 # CCSBackGroundPanel's own Activate override; the panel's slot is published on the
 # same identities that carry the background-panel member (the ZDS client does not).

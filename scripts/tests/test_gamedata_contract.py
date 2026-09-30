@@ -1363,6 +1363,7 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
         "CounterStrikeViewport.m_pCSBackGround": "structMember",
         "CounterStrikeViewport::CCSBackGroundPanel::Activate()": "virtualFunction",
         "CounterStrikeViewport::CCSBackGroundPanel.m_offsetX": "structMember",
+        "CounterStrikeViewport::CCSBackGroundPanel.m_offsetY": "structMember",
     }
     # The first two are only type-checked when present on non-CS clients.
     optional = ("vgui2::Panel::Init(int, int, int, int)",
@@ -1377,6 +1378,7 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
     background_panel_records = (
         "CounterStrikeViewport.m_pCSBackGround",
         "CounterStrikeViewport::CCSBackGroundPanel.m_offsetX",
+        "CounterStrikeViewport::CCSBackGroundPanel.m_offsetY",
         "CounterStrikeViewport::CCSBackGroundPanel::Activate()",
     )
     # The CZDS WorldMap entries, published only by the czeror snapshots.
@@ -1682,6 +1684,19 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
             with self.subTest(gv=gv):
                 self.assertEqual([], validate.validate_vgui2extension(
                     self.complete_symbols(), gv, include_engine=False))
+
+    def test_background_panel_dimension_offsets_are_both_required(self):
+        # CCSBackGroundPanel_Activate zeroes both dimension members; m_offsetY
+        # replaced the m_offsetX + 4 arithmetic, so it is gated like m_offsetX.
+        for name in ("CounterStrikeViewport::CCSBackGroundPanel.m_offsetX",
+                     "CounterStrikeViewport::CCSBackGroundPanel.m_offsetY"):
+            self.assertIn(name, validate.VGUI2EXTENSION_BACKGROUND_PANEL_STRUCT_MEMBERS)
+        for gv in set(self.games) - set(self.zds_games):
+            with self.subTest(gv=gv):
+                symbols = self.complete_symbols()
+                del symbols[("client", "CounterStrikeViewport::CCSBackGroundPanel.m_offsetY")]
+                errors = validate.validate_vgui2extension(symbols, gv, include_engine=False)
+                self.assertTrue(any("m_offsetY" in error for error in errors), errors)
 
     def test_missing_or_mistyped_background_panel_entry_is_rejected(self):
         for gv in set(self.games) - set(self.zds_games):
