@@ -595,6 +595,7 @@ void CSurfaceProxy::Invalidate(VPANEL panel)
 	g_pSurface->Invalidate(panel);
 }
 
+//This is not used now.
 void CSurfaceProxy::SetCursor(HCursor cursor)
 {
 	switch (cursor)
@@ -725,12 +726,14 @@ VPANEL CSurfaceProxy::GetModalPanel(void)
 	return g_pSurface->GetModalPanel();
 }
 
+//This is not used now
 void CSurfaceProxy::UnlockCursor(void)
 {
 	VGUI1_UnlockCursor();
 	m_pfnUnlockCursor(this, 0);
 }
 
+//This is not used now
 void CSurfaceProxy::LockCursor(void)
 {
 	VGUI1_LockCursor();
@@ -1607,14 +1610,18 @@ VPANEL CSurfaceProxy_HL25::GetModalPanel(void)
 	return g_pSurface_HL25->GetModalPanel();
 }
 
+//This is not used now
 void CSurfaceProxy_HL25::UnlockCursor(void)
 {
 	VGUI1_UnlockCursor();
+	m_pfnUnlockCursor(this, 0);
 }
 
+//This is not used now
 void CSurfaceProxy_HL25::LockCursor(void)
 {
 	VGUI1_LockCursor();
+	m_pfnLockCursor(this, 0);
 }
 
 void CSurfaceProxy_HL25::SetTranslateExtendedKeys(bool state)
