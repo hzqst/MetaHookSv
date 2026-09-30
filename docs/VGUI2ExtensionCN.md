@@ -53,3 +53,7 @@
 `-high_dpi` : 启用高DPI缩放支持
 
 `-no_high_dpi` : 禁用高DPI缩放支持
+
+`-clientui_use_hdp` : 为ClientUI的VGUI2控件强制启用HD控件比例（仅在HL25客户端下生效）
+
+`-clientui_no_hdp` : 为ClientUI的VGUI2控件强制禁用HD控件比例（仅在HL25客户端下生效）

@@ -54,6 +54,6 @@ e.g. `\Sven Co-op\svencoop_hidpi` or `\Half-Life\valve_hidpi`
 
 `-no_high_dpi` : Disable HiDpi Support
 
-`-clientui_use_hdp` : Enable HDProportional for VGUI2 components from ClientUI
+`-clientui_use_hdp` : Enable HDProportional for VGUI2 components from ClientUI (only on HL25th client)
 
-`-clientui_no_hdp` : Disable HDProportional for VGUI2 components from ClientUI
+`-clientui_no_hdp` : Disable HDProportional for VGUI2 components from ClientUI (only on HL25th client)
