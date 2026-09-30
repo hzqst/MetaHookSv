@@ -2977,16 +2977,16 @@ void GameUI_FillAddress_ConsoleEntry(const mh_dll_info_t& DllInfo, const mh_dll_
 	Sig_VarNotFound(ctx.ConsoleEntry_vftable);
 
 	gPrivateFuncs.GameUI_TextEntry_OnKeyCodeTyped = (decltype(gPrivateFuncs.GameUI_TextEntry_OnKeyCodeTyped))
-		GetVFunctionFromVFTable(ctx.ConsoleEntry_vftable, 0x194 / 4, DllInfo, RealDllInfo, RealDllInfo);
+		GetVFunctionFromVFTable(ctx.ConsoleEntry_vftable, 0x194 / 4, DllInfo, RealDllInfo, RealDllInfo);//TODO: need to move to gamedata
 
 	//gPrivateFuncs.GameUI_TextEntry_InsertChar = (decltype(gPrivateFuncs.GameUI_TextEntry_InsertChar))
-	// GetVFunctionFromVFTable(ctx.ConsoleEntry_vftable, 0x250 / 4, DllInfo, RealDllInfo, RealDllInfo);
+	// GetVFunctionFromVFTable(ctx.ConsoleEntry_vftable, 0x250 / 4, DllInfo, RealDllInfo, RealDllInfo);//TODO: need to move to gamedata
 
 	gPrivateFuncs.GameUI_TextEntry_LayoutVerticalScrollBarSlider = (decltype(gPrivateFuncs.GameUI_TextEntry_LayoutVerticalScrollBarSlider))
-		GetVFunctionFromVFTable(ctx.ConsoleEntry_vftable, 0x2C0 / 4, DllInfo, RealDllInfo, RealDllInfo);
+		GetVFunctionFromVFTable(ctx.ConsoleEntry_vftable, 0x2C0 / 4, DllInfo, RealDllInfo, RealDllInfo);//TODO: need to move to gamedata
 
 	gPrivateFuncs.GameUI_TextEntry_GetStartDrawIndex = (decltype(gPrivateFuncs.GameUI_TextEntry_GetStartDrawIndex))
-		GetVFunctionFromVFTable(ctx.ConsoleEntry_vftable, 0x2F8 / 4, DllInfo, RealDllInfo, RealDllInfo);
+		GetVFunctionFromVFTable(ctx.ConsoleEntry_vftable, 0x2F8 / 4, DllInfo, RealDllInfo, RealDllInfo);//TODO: need to move to gamedata
 }
 
 void GameUI_FillAddress_Sheet(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -3112,8 +3112,8 @@ void GameUI_FillAddress_Sheet(const mh_dll_info_t& DllInfo, const mh_dll_info_t&
 
 		}, 0, &ctx);
 
-	Sig_FuncNotFound(GameUI_Sheet_ctor);
-	Sig_FuncNotFound(offset_propertySheet);
+	Sig_FuncNotFound(GameUI_Sheet_ctor);//TODO: need to move to gamedata
+	Sig_FuncNotFound(offset_propertySheet);//TODO: need to move to gamedata
 }
 
 void GameUI_FillAddress_PropertySheet(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
