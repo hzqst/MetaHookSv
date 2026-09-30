@@ -1229,6 +1229,42 @@ void* __fastcall COptionsDialog_ctor(vgui::Panel* pthis, int dummy, vgui::Panel*
 	return result;
 }
 
+//hl-10210 inlined COptionsSubVideo::ApplyVidSettings into the OnApplyChanges
+//virtual, so that identity installs no standalone ApplyVidSettings hook. Deliver
+//the callback from the virtual instead, bracketing its original call the way the
+//standalone hook brackets ApplyVidSettings, so plugins observe it exactly once on
+//every identity. Everywhere else the standalone hook still delivers it, from
+//inside this same virtual.
+static void COptionsSubVideo_DeliverApplyVidSettings(void* _this)
+{
+	if (gPrivateFuncs.COptionsSubVideo_ApplyVidSettings)
+		return;
+
+	VGUI2Extension_CallbackContext CallbackContext;
+
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
+
+	//The inlined host takes no bForceRestart, so the value the standalone
+	//signature would have received is unknowable here.
+	bool bForceRestart = false;
+
+	VGUI2ExtensionInternal()->GameUI_COptionsSubVideo_ApplyVidSettings(_this, bForceRestart, &CallbackContext);
+
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
+	{
+		gPrivateFuncs.COptionsSubVideo_OnApplyChanges(_this, 0);
+	}
+
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
+
+		VGUI2ExtensionInternal()->GameUI_COptionsSubVideo_ApplyVidSettings(_this, bForceRestart, &CallbackContext);
+	}
+}
+
 void __fastcall COptionsSubVideo_OnApplyChanges(void* pthis, int dummy)
 {
 	void* _this = pthis;
@@ -1242,7 +1278,7 @@ void __fastcall COptionsSubVideo_OnApplyChanges(void* pthis, int dummy)
 
 	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
-		gPrivateFuncs.COptionsSubVideo_OnApplyChanges(_this, dummy);
+		COptionsSubVideo_DeliverApplyVidSettings(_this);
 	}
 
 	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
