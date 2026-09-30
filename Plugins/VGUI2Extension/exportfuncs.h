@@ -18,6 +18,8 @@
 extern cl_enginefunc_t gEngfuncs;
 
 char * NewV_strncpy(char *a1, const char *a2, size_t a3);
+void __cdecl NewEngineSys_GetRegKeyValueUnderRoot(const char* subKey, const char* element,
+	char* output, int capacity, const char* defaultValue);
 
 void HUD_Init(void);
 int HUD_VidInit(void);

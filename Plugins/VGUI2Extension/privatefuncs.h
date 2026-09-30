@@ -25,9 +25,6 @@ typedef struct walk_context_s
 
 typedef struct
 {
-	//Engine Screen
-	void(*SCR_BeginLoadingPlaque)(qboolean reconnect);
-
 	//Engine VGUI2 wrapper
 	//void(*VGuiWrap2_Paint)(void);
 	void(__fastcall* EngineVGUI2_Panel_Init)(void* pthis, int dummy, int x, int y, int w, int h);
@@ -40,6 +37,8 @@ typedef struct
 
 	//VGUI2;
 	char* (*V_strncpy)(char* a1, const char* a2, size_t a3);
+	void (__cdecl* Sys_GetRegKeyValueUnderRoot)(const char* subKey, const char* element,
+		char* output, int capacity, const char* defaultValue);
 
 	//Engine init
 	PVOID (*VGUIClient001_CreateInterface)(HINTERFACEMODULE hModule);
@@ -48,29 +47,25 @@ typedef struct
 	void(__fastcall* ClientVGUI_Panel_Init)(void* pthis, int dummy, int x, int y, int w, int h);
 	void(__fastcall* ClientVGUI_Panel_SetSize)(void* pthis, int dummy, int width, int height);
 	void(__fastcall* ClientVGUI_LoadControlSettings)(void* pthis, int dummy, const char* controlResourceName, const char* pathID);
-	void** ClientVGUI_KeyValues_vftable;
 	bool(__fastcall* ClientVGUI_KeyValues_LoadFromFile)(void* pthis, int dummy, IFileSystem* pFileSystem, const char* resourceName, const char* pathId);
 
 	void(__fastcall* ClientVGUI_RichText_SetTextW)(void* pthis, int dummy, const wchar_t* text);
-	void(__fastcall* ClientVGUI_RichText_SetTextA)(void* pthis, int dummy, const char* text);
+
+	//Valve populate SetTextW with invalid chars, and CTeamMenu::LoadMapPage is the
+	//only caller that hands it the corrupted map description text.
+	void(__fastcall* TeamMenu_LoadMapPage)(void* pthis, int dummy, const char* mapname);
 
 	//void** ClientVGUI_BuildGroup_vftable;
 	//void(__fastcall* ClientVGUI_BuildGroup_ApplySettings)(void* pthis, int dummy, void* resourceData);
 	//void(__fastcall* ClientVGUI_BuildGroup_LoadControlSettings)(void* pthis, int dummy, const char* controlResourceName, const char* pathID);
 
-	int ClientVGUI_Frame_Activate_vftable_index;
 	//void* (__fastcall* CCSBackGroundPanel_ctor)(void* pthis, int, void* parent);
 	void (__fastcall* CCSBackGroundPanel_Activate)(void* pthis, int dummy);
-	void** CCSBackGroundPanel_vftable;
-	int CCSBackGroundPanel_XOffsetBase;
+	int CCSBackGroundPanel_m_offsetX;
+	int CCSBackGroundPanel_m_offsetY;
 
-	int CWorldMap_PaintBackground_vftable_index;
-	void(__fastcall* CWorldMap_PaintBackground)(void* pthis, int dummy);
-	void** CWorldMap_vftable;
-
-	int CWorldMapMissionSelect_PaintBackground_vftable_index;
+	void (__fastcall* CWorldMap_PaintBackground)(void* pthis, int dummy);
 	void(__fastcall* CWorldMapMissionSelect_PaintBackground)(void* pthis, int dummy);
-	void** CWorldMapMissionSelect_vftable;
 
 	//void* (__fastcall* CClientMOTD_ctor)(void* pthis, int, void* parent);
 	//void (__fastcall* CClientMOTD_PerformLayout)(void* pthis, int dummy);
@@ -127,7 +122,6 @@ typedef struct
 	void (__fastcall* COptionsSubMultiplayer_OnApplyChanges)(void* pthis, int dummy);
 
 	void(__fastcall *COptionsSubVideo_ApplyVidSettings)(void *pthis, int dummy, bool bForceRestart);
-	void(__fastcall *COptionsSubVideo_ApplyVidSettings_HL25)(void *pthis, int dummy);
 
 	void** CTaskBar_vftable;
 	void*(__fastcall*CTaskBar_ctor)(void* pthis, int dummy, void* parent, const char* panelName);
@@ -179,11 +173,8 @@ extern int *cl_viewentity;
 
 extern vec3_t *listener_origin;
 
-extern char *(*rgpszrawsentence)[CVOXFILESENTENCEMAX];
-extern int *cszrawsentences;
-
 //extern char(*s_pBaseDir)[512];
-extern char*(*hostparam_basedir);
+extern quakeparms_t* host_parms;
 
 extern char m_szCurrentGameLanguage[128];
 
@@ -206,17 +197,14 @@ PVOID VGUIClient001_CreateInterface(HINTERFACEMODULE hModule);
 
 void* Sys_GetMainWindow();
 
-bool SCR_IsLoadingVisible(void);
-
-PVOID VGUI2_FindPanelInit(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 PVOID *VGUI2_FindKeyValueVFTable(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 PVOID* VGUI2_FindMenuVFTable(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 
-void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void Client_FillAddress(const mh_dll_info_t& RealDllInfo);
 void Client_InstallHooks(void);
 void Client_UninstallHooks(void);
 void SDL2_FillAddress(void);
-void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void Engine_FillAddress(const mh_dll_info_t& RealDllInfo);
 void Engine_PatchAddress_VGUIClient001(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void Engine_PatchAddress_LanguageStrncpy(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void EngineSurface_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
@@ -230,7 +218,8 @@ void GameUI_UninstallHooks(void);
 void ServerBrowser_FillAddress(void);
 void ServerBrowser_InstallHooks(void);
 void ServerBrowser_UninstallHooks(void);
-void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc); 
+void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc);
+void ClientVGUI_UninstallHooks(void);
 void NativeClientUI_UninstallHooks(void);
 void VGUI1_InstallHooks(void);
 void VGUI1_PostInstallHooks(void);

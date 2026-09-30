@@ -131,8 +131,8 @@ void CBaseUIProxy::Initialize(CreateInterfaceFn *factories, int count)
 	else
 		staticSurface = (IEngineSurface*)factories[0](ENGINE_SURFACE_VERSION, NULL);
 
-	KeyValuesSystem_InstallHooks();
 	Surface_InstallHooks();
+	KeyValuesSystem_InstallHooks();
 	Scheme_InstallHooks();
 	GameUI_FillAddress();
 	GameUI_InstallHooks();
@@ -157,6 +157,8 @@ void CBaseUIProxy::Shutdown(void)
 	VGUI2ExtensionInternal()->ClientVGUI_Shutdown();
 
 	GameUI_UninstallHooks();
+	KeyValuesSystem_UninstallHooks();
+	Surface_UninstallHooks();
 
 	//GameUI.dll and vgui2.dll will be unloaded by engine!CBaseUI::Shutdown
 	m_pfnCBaseUI_Shutdown(this, 0);
@@ -383,8 +385,8 @@ void CBaseUILegacyProxy::Initialize(CreateInterfaceFn* factories, int count)
 	else
 		staticSurface = (IEngineSurface*)factories[0](ENGINE_SURFACE_VERSION, NULL);
 
-	KeyValuesSystem_InstallHooks();
 	Surface_InstallHooks();
+	KeyValuesSystem_InstallHooks();
 	Scheme_InstallHooks();
 	GameUI_FillAddress();
 	GameUI_InstallHooks();
@@ -409,6 +411,8 @@ void CBaseUILegacyProxy::Shutdown(void)
 	VGUI2ExtensionInternal()->ClientVGUI_Shutdown();
 
 	GameUI_UninstallHooks();
+	KeyValuesSystem_UninstallHooks();
+	Surface_UninstallHooks();
 
 	//GameUI.dll and vgui2.dll will be unloaded by engine!CBaseUI::Shutdown
 	m_pfnCBaseUI_Shutdown(this, 0);

@@ -48,8 +48,9 @@ COMMON_REQUIRED = {
     "Host_IsSinglePlayerGame": "function",
     "DM_PlayerState": "global",
     "cl_players_model": "global",
-    # ThreadGuard (plugin resolves the engine IEngine* slot via ResolveGameSymbol)
-    "engine": "global",
+    # ThreadGuard (plugin resolves the engine IEngine* slot via ResolveGameSymbol).
+    # Upstream renamed this global from `engine` to `eng` in the 2026-09-30 release.
+    "eng": "global",
     # StudioEvents (plugin resolves the engine current-render-model slot via ResolveGameSymbol)
     "r_model": "global",
 }
@@ -272,6 +273,9 @@ RENDERER_CLIENT_SVEN_FUNCTIONS = (
     "ClientPortalManager_GetOriginalSurfaceTexture", "ClientPortalManager_DrawPortalSurface",
     "ClientPortalManager_EnableClipPlane", "ClientPortalManager_InitShader", "CParticleSystem_ParticleDraw",
 )
+RENDERER_CLIENT_SVEN_PATCHES = (
+    "ClientPortalManager_RenderPortals_to_AngleVectors_callsite_0",
+)
 RENDERER_CLIENT_SVEN_STRUCT_MEMBERS = ("ClientPortalManager.m_bShadersAvailable",)
 RENDERER_CLIENT_SVEN_SCALARS = (
     "ClientPortalManager_vector_begin_offset", "ClientPortalManager_vector_end_offset",
@@ -467,7 +471,7 @@ def validate_snapshot(doc, game_version):
         errors.append(f"'{game_version}': missing records array")
         return errors, module_crc64, {}
 
-    symbols = {}  # symbolName -> record (windows only)
+    symbols = {}  # (module, symbolName) -> record (windows only)
     for rec in records:
         if not isinstance(rec, dict):
             continue
@@ -483,7 +487,10 @@ def validate_snapshot(doc, game_version):
             errors.append(f"'{game_version}': record '{name}' references unknown module '{mod}'")
             continue
 
-        key = (module_crc64[mod], name)
+        # The catalog legitimately publishes one symbol name under several
+        # modules (client/engine/gameui/serverbrowser); the index must keep them
+        # apart, so records are keyed by (module, name).
+        key = (mod, name)
         if kind == "function":
             p = payload if isinstance(payload, dict) else {}
             rva = parse_hex_u32(p.get("func_rva"))
@@ -496,9 +503,9 @@ def validate_snapshot(doc, game_version):
                 errors.append(f"'{game_version}': function '{name}' has a malformed signature")
                 continue
             rec = {"kind": "function", "rva": rva, "size": size, "module": mod}
-            if name in symbols and symbols[name] != rec:
+            if key in symbols and symbols[key] != rec:
                 errors.append(f"'{game_version}': conflicting duplicate symbol '{name}'")
-            symbols[name] = rec
+            symbols[key] = rec
         elif kind == "global":
             p = payload if isinstance(payload, dict) else {}
             gv_rva = parse_hex_u32(p.get("gv_rva"))
@@ -524,9 +531,9 @@ def validate_snapshot(doc, game_version):
             rec = {"kind": "global", "rva": gv_rva, "sig_rva": gv_sig_va - image_base,
                    "inst_off": inst_off, "inst_disp": inst_disp, "inst_len": inst_len,
                    "module": mod}
-            if name in symbols and symbols[name] != rec:
+            if key in symbols and symbols[key] != rec:
                 errors.append(f"'{game_version}': conflicting duplicate symbol '{name}'")
-            symbols[name] = rec
+            symbols[key] = rec
         elif kind == "patch":
             p = payload if isinstance(payload, dict) else {}
             patch_name = p.get("patch_name")
@@ -541,9 +548,9 @@ def validate_snapshot(doc, game_version):
                 errors.append(f"'{game_version}': patch '{name}' has a malformed signature")
                 continue
             rec = {"kind": "patch", "rva": patch_rva, "sig_disp": patch_sig_disp, "module": mod}
-            if name in symbols and symbols[name] != rec:
+            if key in symbols and symbols[key] != rec:
                 errors.append(f"'{game_version}': conflicting duplicate symbol '{name}'")
-            symbols[name] = rec
+            symbols[key] = rec
         elif kind == "scalar":
             p = payload if isinstance(payload, dict) else {}
             scalar_name = p.get("scalar_name")
@@ -556,9 +563,9 @@ def validate_snapshot(doc, game_version):
                 errors.append(f"'{game_version}': scalar '{name}' has an invalid uint32 scalar_value")
                 continue
             rec = {"kind": "scalar", "value": scalar_value, "module": mod}
-            if name in symbols and symbols[name] != rec:
+            if key in symbols and symbols[key] != rec:
                 errors.append(f"'{game_version}': conflicting duplicate symbol '{name}'")
-            symbols[name] = rec
+            symbols[key] = rec
         elif kind == "structMember":
             p = payload if isinstance(payload, dict) else {}
             struct_name = p.get("struct_name")
@@ -570,28 +577,43 @@ def validate_snapshot(doc, game_version):
                 errors.append(f"'{game_version}': structMember '{name}' missing/invalid struct_name/member_name/offset")
                 continue
             rec = {"kind": "structMember", "offset": offset, "module": mod}
-            if name in symbols and symbols[name] != rec:
+            if key in symbols and symbols[key] != rec:
                 errors.append(f"'{game_version}': conflicting duplicate symbol '{name}'")
-            symbols[name] = rec
+            symbols[key] = rec
         elif kind == "virtualFunction":
             p = payload if isinstance(payload, dict) else {}
-            func_rva = parse_hex_u32(p.get("func_rva"))
-            func_size = parse_hex_u32(p.get("func_size"))
-            vfunc_sig = p.get("vfunc_sig")
             vfunc_index = p.get("vfunc_index")
             vtable_name = p.get("vtable_name")
-            if (func_rva is None or func_size is None or not isinstance(vfunc_sig, str) or
-                    not isinstance(vfunc_index, int) or isinstance(vfunc_index, bool) or
+            if (not isinstance(vfunc_index, int) or isinstance(vfunc_index, bool) or
                     not isinstance(vtable_name, str) or not vtable_name):
-                errors.append(f"'{game_version}': virtualFunction '{name}' missing/invalid func_rva/func_size/vfunc_sig/vfunc_index/vtable_name")
+                errors.append(f"'{game_version}': virtualFunction '{name}' missing/invalid vfunc_index/vtable_name")
                 continue
-            if not validate_signature(vfunc_sig):
+            # Upstream also publishes slot-only declarations (vtable_name +
+            # vfunc_index + vfunc_offset) that carry no address and no signature.
+            # The runtime cannot resolve them and no consumer queries them, so
+            # they are accepted without being recorded.
+            if "func_rva" not in p and "func_size" not in p:
+                continue
+            func_rva = parse_hex_u32(p.get("func_rva"))
+            func_size = parse_hex_u32(p.get("func_size"))
+            if func_rva is None or func_size is None:
+                errors.append(f"'{game_version}': virtualFunction '{name}' missing/invalid func_rva/func_size")
+                continue
+            # The signature is optional and upstream publishes it under either
+            # vfunc_sig or func_sig.
+            signature = p.get("vfunc_sig")
+            if signature is None:
+                signature = p.get("func_sig")
+            if signature is not None and not isinstance(signature, str):
+                errors.append(f"'{game_version}': virtualFunction '{name}' has a non-string signature")
+                continue
+            if isinstance(signature, str) and not validate_signature(signature):
                 errors.append(f"'{game_version}': virtualFunction '{name}' has a malformed signature")
                 continue
             rec = {"kind": "virtualFunction", "rva": func_rva, "size": func_size, "module": mod}
-            if name in symbols and symbols[name] != rec:
+            if key in symbols and symbols[key] != rec:
                 errors.append(f"'{game_version}': conflicting duplicate symbol '{name}'")
-            symbols[name] = rec
+            symbols[key] = rec
         elif kind == "vtable":
             p = payload if isinstance(payload, dict) else {}
             vtable_rva = parse_hex_u32(p.get("vtable_rva"))
@@ -607,9 +629,9 @@ def validate_snapshot(doc, game_version):
                 errors.append(f"'{game_version}': vtable '{name}': vtable_size does not match vtable_numvfunc")
                 continue
             rec = {"kind": "vtable", "rva": vtable_rva, "size": vtable_size, "module": mod}
-            if name in symbols and symbols[name] != rec:
+            if key in symbols and symbols[key] != rec:
                 errors.append(f"'{game_version}': conflicting duplicate symbol '{name}'")
-            symbols[name] = rec
+            symbols[key] = rec
         else:
             # unsupported kind is tolerated by the catalog; skip.
             continue
@@ -621,7 +643,7 @@ def validate_required(symbols, family, game_version):
     """Return a list of required-symbol failures for a single gameVersion."""
     errors = []
     for sym, kind in COMMON_REQUIRED.items():
-        rec = symbols.get(sym)
+        rec = symbols.get(("engine", sym))
         if not isinstance(rec, dict):
             errors.append(f"'{game_version}' ({family}): missing common required symbol '{sym}'")
         elif rec.get("kind") != kind:
@@ -631,7 +653,7 @@ def validate_required(symbols, family, game_version):
         index = 0
         while True:
             name = f"{prefix}_{index}"
-            rec = symbols.get(name)
+            rec = symbols.get(("engine", name))
             if rec is None:
                 if index == 0:
                     errors.append(f"'{game_version}' ({family}): missing required patch '{name}'")
@@ -641,7 +663,7 @@ def validate_required(symbols, family, game_version):
             index += 1
 
     for sym, module in REQUIRED_SCALARS.items():
-        rec = symbols.get(sym)
+        rec = symbols.get((module, sym))
         if not isinstance(rec, dict):
             errors.append(f"'{game_version}' ({family}): missing required scalar '{sym}'")
         elif rec.get("kind") != "scalar":
@@ -651,20 +673,20 @@ def validate_required(symbols, family, game_version):
 
     # BulletPhysics engine-side consumer gate.
     for sym in BULLETPHYSICS_ENGINE_FUNCTIONS:
-        rec = symbols.get(sym)
+        rec = symbols.get(("engine", sym))
         if not isinstance(rec, dict):
             errors.append(f"'{game_version}' ({family}): missing BulletPhysics engine function '{sym}'")
         elif rec.get("kind") != "function":
             errors.append(f"'{game_version}' ({family}): '{sym}' must be a function record")
     for sym in BULLETPHYSICS_ENGINE_GLOBALS:
-        rec = symbols.get(sym)
+        rec = symbols.get(("engine", sym))
         if not isinstance(rec, dict):
             errors.append(f"'{game_version}' ({family}): missing BulletPhysics engine global '{sym}'")
         elif rec.get("kind") != "global":
             errors.append(f"'{game_version}' ({family}): '{sym}' must be a global record")
     if family == "ENGINE_SVENGINE":
         for sym in BULLETPHYSICS_SVENGINE_GLOBALS:
-            rec = symbols.get(sym)
+            rec = symbols.get(("engine", sym))
             if not isinstance(rec, dict):
                 errors.append(f"'{game_version}' ({family}): missing BulletPhysics engine global '{sym}'")
             elif rec.get("kind") != "global":
@@ -672,9 +694,10 @@ def validate_required(symbols, family, game_version):
 
     # cvar branch: the engine's native callback list, or at least one managed
     # Cvar_Set -> Cvar_DirectSet call-site redirect.
-    has_native = isinstance(symbols.get("cvar_hooks"), dict) and symbols["cvar_hooks"].get("kind") == "global"
-    has_managed = (isinstance(symbols.get("Cvar_Set_to_Cvar_DirectSet_callsite_0"), dict) and
-                   symbols["Cvar_Set_to_Cvar_DirectSet_callsite_0"].get("kind") == "patch")
+    has_native = (isinstance(symbols.get(("engine", "cvar_hooks")), dict) and
+                  symbols[("engine", "cvar_hooks")].get("kind") == "global")
+    has_managed = (isinstance(symbols.get(("engine", "Cvar_Set_to_Cvar_DirectSet_callsite_0")), dict) and
+                   symbols[("engine", "Cvar_Set_to_Cvar_DirectSet_callsite_0")].get("kind") == "patch")
     if not (has_native or has_managed):
         errors.append(
             f"'{game_version}' ({family}): missing cvar branch "
@@ -684,11 +707,11 @@ def validate_required(symbols, family, game_version):
     # blob client hooks
     if family in BLOB_CLIENT_FAMILIES:
         for sym in ("NLoadBlob", "FreeBlob"):
-            if sym not in symbols:
+            if ("engine", sym) not in symbols:
                 errors.append(f"'{game_version}' ({family}): missing blob client symbol '{sym}'")
     elif family == "ENGINE_SVENGINE":
         # SvEngine may ship without the blob client hooks, but only as a pair.
-        if ("NLoadBlob" in symbols) != ("FreeBlob" in symbols):
+        if (("engine", "NLoadBlob") in symbols) != (("engine", "FreeBlob") in symbols):
             errors.append(
                 f"'{game_version}' ({family}): NLoadBlob and FreeBlob must both be present or both absent"
             )
@@ -700,13 +723,13 @@ def validate_bulletphysics_client(symbols, game_version):
     """Return BulletPhysics client-side consumer failures for a game version."""
     errors = []
     for sym in BULLETPHYSICS_CLIENT_GLOBALS:
-        rec = symbols.get(sym)
+        rec = symbols.get(("client", sym))
         if not isinstance(rec, dict):
             errors.append(f"'{game_version}': missing BulletPhysics client global '{sym}'")
         elif rec.get("kind") != "global":
             errors.append(f"'{game_version}': '{sym}' must be a global record")
     for sym in BULLETPHYSICS_CLIENT_OPTIONAL_VFUNCS:
-        rec = symbols.get(sym)
+        rec = symbols.get(("client", sym))
         if rec is None:
             continue
         if not isinstance(rec, dict) or rec.get("kind") != "virtualFunction":
@@ -714,24 +737,24 @@ def validate_bulletphysics_client(symbols, game_version):
 
     if game_version == "svencoop-10257":
         for sym in BULLETPHYSICS_SVEN_CLIENT_GLOBALS:
-            rec = symbols.get(sym)
+            rec = symbols.get(("client", sym))
             if not isinstance(rec, dict):
                 errors.append(f"'{game_version}': missing Sven Co-op client global '{sym}'")
             elif rec.get("kind") != "global":
                 errors.append(f"'{game_version}': '{sym}' must be a global record")
     if game_version in BULLETPHYSICS_CS_CLIENT_GAMES:
-        rec = symbols.get("g_PlayerExtraInfo")
+        rec = symbols.get(("client", "g_PlayerExtraInfo"))
         if not isinstance(rec, dict):
             errors.append(f"'{game_version}': missing Counter-Strike client global 'g_PlayerExtraInfo'")
         elif rec.get("kind") != "global":
             errors.append(f"'{game_version}': 'g_PlayerExtraInfo' must be a global record")
-        rec = symbols.get("GameStudioRenderer__StudioDrawPlayer")
+        rec = symbols.get(("client", "GameStudioRenderer__StudioDrawPlayer"))
         if not isinstance(rec, dict):
             errors.append(f"'{game_version}': missing Counter-Strike client virtualFunction 'GameStudioRenderer__StudioDrawPlayer'")
         elif rec.get("kind") != "virtualFunction":
             errors.append(f"'{game_version}': 'GameStudioRenderer__StudioDrawPlayer' must be a virtualFunction record")
     if game_version in BULLETPHYSICS_CZDS_CLIENT_GAMES:
-        rec = symbols.get("g_PlayerExtraInfo_CZDS")
+        rec = symbols.get(("client", "g_PlayerExtraInfo_CZDS"))
         if not isinstance(rec, dict):
             errors.append(f"'{game_version}': missing Condition Zero client global 'g_PlayerExtraInfo_CZDS'")
         elif rec.get("kind") != "global":
@@ -749,7 +772,7 @@ def _consumer_check(symbols, game_version, names, kind, module, consumer):
     """Return consumer failures for one (symbol, kind, module) group."""
     errors = []
     for sym in names:
-        rec = symbols.get(sym)
+        rec = symbols.get((module, sym))
         if not isinstance(rec, dict):
             errors.append(f"'{game_version}': missing {consumer} {module} {kind} '{sym}'")
             continue
@@ -870,22 +893,26 @@ def validate_captionmod(symbols, game_version, include_engine=True):
 # factory answers SCClientDLL001), so its client globals only need to be
 # published by the two SvEngine snapshots.
 #
+# Only symbols with a live read point are pinned here. `g_iFogColor` /
+# `g_iStartDist` / `g_iEndDist` / `iIsSpectator` / `g_iWaterLevel` /
+# `g_bRenderingPortals_SCClient` were resolved from gamedata but read only
+# inside #if 0 blocks; they were deleted from the plugin, so gating them would
+# require the catalog to publish symbols nothing consumes.
+#
 # `g_iUser1` / `g_iUser2` were also the reason Renderer's retired
 # RENDERER_CLIENT_STUDIO_GLOBALS entry existed; SCCameraFix does read them, so
 # they are gated here instead of there.
 #
-# `g_iFogColor` / `g_iStartDist` / `g_iEndDist` are already gated for Renderer
-# via RENDERER_CLIENT_SVEN_GLOBALS; SCCameraFix reading them is an independent
-# dependency on the same records, pinned below so a catalog change that drops
-# them fails the gate for every consumer that would break.
+# `gEngfuncs` is resolved to derive `g_pClientDLLEventAPI` = &gEngfuncs.pEventAPI.
 SCCAMERAFIX_CLIENT_GAMES = ("svencoop-10257", "svencoop-8948")
 SCCAMERAFIX_CLIENT_GLOBALS = (
-    "g_iFogColor",
-    "g_iStartDist",
-    "g_iEndDist",
     "g_iUser1",
     "g_iUser2",
+    "v_origin",
+    "g_vVecViewangles",
+    "gEngfuncs",
 )
+SCCAMERAFIX_CLIENT_FUNCTIONS = ("V_CalcNormalRefdef",)
 
 
 def validate_sccamerafix(symbols, game_version):
@@ -896,7 +923,217 @@ def validate_sccamerafix(symbols, game_version):
     """
     if game_version not in SCCAMERAFIX_CLIENT_GAMES:
         return []
-    return _consumer_check(symbols, game_version, SCCAMERAFIX_CLIENT_GLOBALS, "global", "client", "SCCameraFix")
+    errors = _consumer_check(symbols, game_version, SCCAMERAFIX_CLIENT_GLOBALS, "global", "client", "SCCameraFix")
+    errors += _consumer_check(symbols, game_version, SCCAMERAFIX_CLIENT_FUNCTIONS, "function", "client", "SCCameraFix")
+    return errors
+
+
+# Pin the published native UI entries on CS clients. Panel::Init and
+# KeyValues::LoadFromFile remain optional at runtime on other client identities;
+# the Counter-Strike branch resolves LoadControlSettings, LoadMapPage and
+# RichText::SetText there, plus Frame::Activate (the shared vtable slot the
+# background panel and buy menu hook) and the background panel's member offset.
+# Condition Zero Deleted Scenes publishes no background panel, so the plugin
+# skips that block for czeror and it is not gated there.
+VGUI2EXTENSION_CLIENT_GAMES = CAPTIONMOD_CS_CLIENT_GAMES
+VGUI2EXTENSION_BACKGROUND_PANEL_GAMES = tuple(
+    gv for gv in VGUI2EXTENSION_CLIENT_GAMES if not gv.startswith("czeror-"))
+VGUI2EXTENSION_CLIENT_OPTIONAL_ENTRIES = {
+    "vgui2::Panel::Init(int, int, int, int)": "function",
+    "KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)": "virtualFunction",
+}
+VGUI2EXTENSION_CS_CLIENT_FUNCTIONS = (
+    "vgui2::Frame::LoadControlSettings(char const*, char const*)",
+    "CTeamMenu::LoadMapPage(char const*)",
+    "vgui2::RichText::SetText(wchar_t const*)",
+)
+VGUI2EXTENSION_CS_CLIENT_VIRTUAL_FUNCTIONS = (
+    "vgui2::Frame::Activate()",
+)
+VGUI2EXTENSION_BACKGROUND_PANEL_STRUCT_MEMBERS = (
+    "CounterStrikeViewport.m_pCSBackGround",
+    "CounterStrikeViewport::CCSBackGroundPanel.m_offsetX",
+    "CounterStrikeViewport::CCSBackGroundPanel.m_offsetY",
+)
+# CCSBackGroundPanel's own Activate override; the panel's slot is published on the
+# same identities that carry the background-panel member (the ZDS client does not).
+VGUI2EXTENSION_BACKGROUND_PANEL_VIRTUAL_FUNCTIONS = (
+    "CounterStrikeViewport::CCSBackGroundPanel::Activate()",
+)
+# Condition Zero Deleted Scenes keeps its WorldMap panels; the plugin resolves the
+# panel member offset and both PaintBackground entries there. Only the czeror
+# snapshots publish these records. `vgui2::ISurface::GetScreenSize` is deliberately
+# not gated: the catalog carries it as a slot-only declaration (no func_rva), which
+# is metadata only and never enters the symbol table, so the plugin keeps the
+# interface ABI offset for the call-site scan instead of resolving it.
+VGUI2EXTENSION_CZDS_CLIENT_GAMES = BULLETPHYSICS_CZDS_CLIENT_GAMES
+VGUI2EXTENSION_CZDS_STRUCT_MEMBERS = (
+    "CZEROViewPort.m_pWorldMapPanel",
+)
+VGUI2EXTENSION_CZDS_VIRTUAL_FUNCTIONS = (
+    "CWorldMap::PaintBackground()",
+    "CWorldMapMissionSelect::PaintBackground()",
+)
+# The cursor-visibility global is resolved from the catalog on every client, but
+# only the Sven Co-op snapshots publish it so far. The Counter-Strike, Condition
+# Zero and Half-Life client coverage is tracked by GoldSrc_VibeSignatures issue
+# #295; until those records exist the other clients resolve null and skip the
+# cursor adjustment, so the gate stays on the publishing identities only.
+VGUI2EXTENSION_VISIBLE_MOUSE_GAMES = (
+    "svencoop-10257", "svencoop-8948",
+)
+VGUI2EXTENSION_CLIENT_GLOBALS = (
+    "g_iVisibleMouse",
+)
+# The engine-side entries the disassembly locators used to derive. Only the
+# snapshots that publish an engine module carry them; the Counter-Strike clients
+# publish no engine module of their own and share the hl identities' engine
+# binary. Older engines read the language directly from the registry; newer
+# engines require both language-copy call-site patches.
+VGUI2EXTENSION_ENGINE_GLOBALS = (
+    "cl_time",
+    "cl_oldtime",
+    "realtime",
+    "cl_viewentity",
+    "listener_origin",
+    "staticEngineSurface",
+    "host_parms",
+)
+# The engine's vgui2 panel init, previously located by the shared
+# VGUI2_FindPanelInit disassembly walk. Published as a FUNCTION on every engine
+# identity.
+VGUI2EXTENSION_ENGINE_FUNCTIONS = (
+    "vgui2::Panel::Init(int, int, int, int)",
+)
+# GameUI.dll and ServerBrowser.dll are loaded from the same module identities as
+# the engine snapshots: the Counter-Strike / Condition Zero clients ship the hl
+# GameUI.dll and ServerBrowser.dll, so their entries resolve against these
+# records too. The three dialog constructors and vgui2::Panel::Init replaced the
+# string-anchored reverse-search locators in GameUI.cpp; ServerBrowser only
+# publishes Panel::Init. Both modules are published on every engine identity.
+VGUI2EXTENSION_GAMEUI_FUNCTIONS = (
+    "CGameConsoleDialog::CGameConsoleDialog()",
+    "CCreateMultiplayerGameDialog::CCreateMultiplayerGameDialog(vgui2::Panel*)",
+    "COptionsDialog::COptionsDialog(vgui2::Panel*)",
+    "COptionsSubAudio::COptionsSubAudio(vgui2::Panel*)",
+    "COptionsSubVideo::COptionsSubVideo(vgui2::Panel*)",
+    "COptionsSubMultiplayer::COptionsSubMultiplayer(vgui2::Panel*)",
+    "vgui2::Panel::Init(int, int, int, int)",
+)
+# vgui2::RichText::OnThink replaced the ConsoleHistory vftable scan. Published with
+# a func_rva, so a VIRTUAL_FUNCTION record is address-bearing like a FUNCTION one.
+VGUI2EXTENSION_GAMEUI_VIRTUAL_FUNCTIONS = (
+    "vgui2::RichText::OnThink()",
+)
+# The career frames live in the shared Half-Life GameUI.dll that Condition Zero and
+# CZDS load; Sven Co-op ships its own binary and publishes none of them.
+VGUI2EXTENSION_GAMEUI_CAREER_GAMES = (
+    "cof-5936", "hl-10210", "hl-3248", "hl-3266", "hl-3329", "hl-3647",
+    "hl-4554", "hl-6153", "hl-8684",
+)
+VGUI2EXTENSION_GAMEUI_CAREER_FUNCTIONS = (
+    "CCareerProfileFrame::CCareerProfileFrame(vgui2::Panel*)",
+    "CCareerMapFrame::CCareerMapFrame(vgui2::Panel*)",
+    "CCareerBotFrame::CCareerBotFrame(vgui2::Panel*)",
+)
+# hl-10210 inlined ApplyVidSettings into the OnApplyChanges() virtual, which the
+# sub-page ctor wrapper already hooks through its vtable slot; every other GameUI
+# identity publishes the standalone function. The plugin resolves it optionally.
+VGUI2EXTENSION_GAMEUI_APPLYVIDSETTINGS_GAMES = tuple(
+    game for game in RENDERER_ALL_GAMES if game != "hl-10210")
+VGUI2EXTENSION_GAMEUI_APPLYVIDSETTINGS = (
+    "COptionsSubVideo::ApplyVidSettings(bool)",
+)
+# The console dialog's condump failure path reaches exactly one of these per
+# identity: Valve inlined Print into RichText::InsertString on three of them.
+VGUI2EXTENSION_GAMEUI_RICHTEXT_CALLEES = (
+    "CGameConsoleDialog::Print(char const*)",
+    "vgui2::RichText::InsertString(char const*)",
+)
+VGUI2EXTENSION_SERVERBROWSER_FUNCTIONS = (
+    "vgui2::Panel::Init(int, int, int, int)",
+)
+VGUI2EXTENSION_REGISTRY_LANGUAGE_GAMES = (
+    "hl-3248", "hl-3266", "hl-3329", "hl-3647", "hl-4554",
+)
+VGUI2EXTENSION_REGISTRY_LANGUAGE_READER = "Sys_GetRegKeyValueUnderRoot"
+VGUI2EXTENSION_LANGUAGE_PATCHES = (
+    "FileSystem_SetGameDirectory_V_strncpy_callsite_0",
+    "FileSystem_AddFallbackGameDir_V_strncpy_callsite_0",
+)
+VGUI2EXTENSION_MODULE_FACTORY_GAMES = (
+    "hl-6153", "hl-8684", "hl-10210", "svencoop-8948", "svencoop-10257",
+)
+VGUI2EXTENSION_MODULE_FACTORY_PATCH = "VGUIClient001_CreateInterface"
+
+
+def validate_vgui2extension(symbols, game_version, include_engine=True):
+    """Check native client UI entry coverage without requiring it on non-CS clients.
+
+    include_engine is False for the client-only snapshots, which publish neither
+    an engine module nor a gameui / serverbrowser module.
+    """
+    errors = []
+    if include_engine:
+        errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_GAMEUI_FUNCTIONS,
+                                  "function", "gameui", "VGUI2Extension")
+        errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_GAMEUI_VIRTUAL_FUNCTIONS,
+                                  "virtualFunction", "gameui", "VGUI2Extension")
+        if game_version in VGUI2EXTENSION_GAMEUI_CAREER_GAMES:
+            errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_GAMEUI_CAREER_FUNCTIONS,
+                                      "function", "gameui", "VGUI2Extension")
+        if game_version in VGUI2EXTENSION_GAMEUI_APPLYVIDSETTINGS_GAMES:
+            errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_GAMEUI_APPLYVIDSETTINGS,
+                                      "function", "gameui", "VGUI2Extension")
+        condump_callees = [name for name in VGUI2EXTENSION_GAMEUI_RICHTEXT_CALLEES
+                           if ("gameui", name) in symbols]
+        if len(condump_callees) != 1:
+            errors.append(f"'{game_version}': gameui must publish exactly one RichText "
+                          f"condump callee, found {len(condump_callees)}")
+        errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_SERVERBROWSER_FUNCTIONS,
+                                  "function", "serverbrowser", "VGUI2Extension")
+        factory_patch = VGUI2EXTENSION_MODULE_FACTORY_PATCH
+        if (game_version in VGUI2EXTENSION_MODULE_FACTORY_GAMES or
+                ("engine", factory_patch) in symbols):
+            errors += _consumer_check(symbols, game_version, (factory_patch,),
+                                      "patch", "engine", "VGUI2Extension")
+        else:
+            errors += _consumer_check(symbols, game_version, ("g_pClientFactory",),
+                                      "global", "engine", "VGUI2Extension")
+        errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_ENGINE_GLOBALS,
+                                  "global", "engine", "VGUI2Extension")
+        errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_ENGINE_FUNCTIONS,
+                                  "function", "engine", "VGUI2Extension")
+        if (game_version in VGUI2EXTENSION_REGISTRY_LANGUAGE_GAMES or
+                ("engine", VGUI2EXTENSION_REGISTRY_LANGUAGE_READER) in symbols):
+            errors += _consumer_check(symbols, game_version, (VGUI2EXTENSION_REGISTRY_LANGUAGE_READER,),
+                                      "function", "engine", "VGUI2Extension")
+        else:
+            errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_LANGUAGE_PATCHES,
+                                      "patch", "engine", "VGUI2Extension")
+    is_cs = game_version in VGUI2EXTENSION_CLIENT_GAMES
+    for name, kind in VGUI2EXTENSION_CLIENT_OPTIONAL_ENTRIES.items():
+        if is_cs or ("client", name) in symbols:
+            errors += _consumer_check(symbols, game_version, (name,), kind, "client", "VGUI2Extension")
+    if is_cs:
+        errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_CS_CLIENT_FUNCTIONS,
+                                  "function", "client", "VGUI2Extension")
+        errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_CS_CLIENT_VIRTUAL_FUNCTIONS,
+                                  "virtualFunction", "client", "VGUI2Extension")
+    if game_version in VGUI2EXTENSION_BACKGROUND_PANEL_GAMES:
+        errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_BACKGROUND_PANEL_STRUCT_MEMBERS,
+                                  "structMember", "client", "VGUI2Extension")
+        errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_BACKGROUND_PANEL_VIRTUAL_FUNCTIONS,
+                                  "virtualFunction", "client", "VGUI2Extension")
+    if game_version in VGUI2EXTENSION_CZDS_CLIENT_GAMES:
+        errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_CZDS_STRUCT_MEMBERS,
+                                  "structMember", "client", "VGUI2Extension")
+        errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_CZDS_VIRTUAL_FUNCTIONS,
+                                  "virtualFunction", "client", "VGUI2Extension")
+    if game_version in VGUI2EXTENSION_VISIBLE_MOUSE_GAMES:
+        errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_CLIENT_GLOBALS,
+                                  "global", "client", "VGUI2Extension")
+    return errors
 
 
 def validate_renderer(symbols, game_version, include_engine=True, include_client=True):
@@ -917,7 +1154,7 @@ def validate_renderer(symbols, game_version, include_engine=True, include_client
             index = 0
             while True:
                 name = f"{prefix}_{index}"
-                rec = symbols.get(name)
+                rec = symbols.get(("engine", name))
                 if rec is None:
                     if index == 0:
                         errors.append(f"'{game_version}': missing required Renderer patch '{name}'")
@@ -959,6 +1196,7 @@ def validate_renderer(symbols, game_version, include_engine=True, include_client
         return errors
     if game_version in RENDERER_SVENGINE_GAMES:
         errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_SVEN_FUNCTIONS, "function", "client")
+        errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_SVEN_PATCHES, "patch", "client")
         errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_SVEN_GLOBALS, "global", "client")
         errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_SVEN_STRUCT_MEMBERS, "structMember", "client")
         errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_SVEN_SCALARS, "scalar", "client")
@@ -1072,6 +1310,16 @@ def main():
             continue
         symbols = game_symbols[gv][1]
         all_errors.extend(validate_sccamerafix(symbols, gv))
+
+    # Native VGUI entries are required on the published CS clients; optional
+    # entries on other snapshots still need the right kind and owning module.
+    # The engine-side entries follow the engine-bearing snapshots only.
+    for gv in dict.fromkeys((*game_symbols, *VGUI2EXTENSION_CLIENT_GAMES)):
+        if gv not in game_symbols:
+            all_errors.append(f"'{gv}': snapshot not loaded (VGUI2Extension gate)")
+            continue
+        all_errors.extend(validate_vgui2extension(
+            game_symbols[gv][1], gv, include_engine=gv in RENDERER_ALL_GAMES))
 
     if all_errors:
         for e in all_errors:

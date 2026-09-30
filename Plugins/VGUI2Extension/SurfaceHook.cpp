@@ -15,6 +15,7 @@
 #include <intrin.h>
 
 extern bool g_IsNativeClientUIHDProportional;
+extern bool g_bIsPaintWorldMapBackground;
 
 extern IEngineSurface *staticSurface;
 extern IEngineSurface_HL25 *staticSurface_HL25;
@@ -22,6 +23,10 @@ extern vgui::ISurface *g_pSurface;
 extern vgui::ISurface_HL25* g_pSurface_HL25;
 
 int GetPatchedGetFontTall(int fontTall);
+
+//ISurface::GetScreenSize's vtable slot; the CZDS WorldMap override in
+//ClientVGUI.cpp keys off it through g_bIsPaintWorldMapBackground.
+static const int kSurfaceVTableIndex_GetScreenSize = 32;
 
 void VGUI1_SetCursor(vgui1_Scheme::SchemeCursor SchemeCursor);
 void VGUI1_LockCursor();
@@ -164,7 +169,7 @@ int(__fastcall *m_pfnGetCharacterWidth)(void *pthis, int, HFont font, int ch);
 void(__fastcall *m_pfnGetTextSize)(void *pthis, int, HFont font, const wchar_t *text, int &wide, int &tall);
 int(__fastcall *m_pfnGetFontAscent)(void *pthis, int, HFont font, wchar_t wch);
 HFont(__fastcall *m_pfnCreateFont)(void *pthis, int);
-void(__fastcall* m_pfnGetScreenSize)(int& wide, int& tall);
+void(__fastcall* m_pfnGetScreenSize)(void* pthis, int, int& wide, int& tall);
 void(__fastcall *m_pfnDrawSetTextColor)(void *pthis, int, int r, int g, int b, int a);
 void(__fastcall *m_pfnDrawSetTextColor2)(void *pthis, int, Color col);
 void(__fastcall *m_pfnSetAllowHTMLJavaScript)(void *pthis, int, bool state);
@@ -532,7 +537,13 @@ int CSurfaceProxy::CreateNewTextureID(bool procedural)
 
 void CSurfaceProxy::GetScreenSize(int &wide, int &tall)
 {
-	m_pfnGetScreenSize(wide, tall);
+	m_pfnGetScreenSize(this, 0, wide, tall);
+
+	//The CZDS WorldMap panels derive a 4:3 aspect from the screen height.
+	if (g_bIsPaintWorldMapBackground)
+	{
+		wide = (double)tall * 640.0 / 480.0;
+	}
 }
 
 void CSurfaceProxy::SetAsTopMost(VPANEL panel, bool state)
@@ -595,6 +606,7 @@ void CSurfaceProxy::Invalidate(VPANEL panel)
 	g_pSurface->Invalidate(panel);
 }
 
+//This is not used now.
 void CSurfaceProxy::SetCursor(HCursor cursor)
 {
 	switch (cursor)
@@ -725,12 +737,14 @@ VPANEL CSurfaceProxy::GetModalPanel(void)
 	return g_pSurface->GetModalPanel();
 }
 
+//This is not used now
 void CSurfaceProxy::UnlockCursor(void)
 {
 	VGUI1_UnlockCursor();
 	m_pfnUnlockCursor(this, 0);
 }
 
+//This is not used now
 void CSurfaceProxy::LockCursor(void)
 {
 	VGUI1_LockCursor();
@@ -1488,7 +1502,13 @@ int CSurfaceProxy_HL25::CreateNewTextureID(bool procedural)
 
 void CSurfaceProxy_HL25::GetScreenSize(int &wide, int &tall)
 {
-	m_pfnGetScreenSize(wide, tall);
+	m_pfnGetScreenSize(this, 0, wide, tall);
+
+	//The CZDS WorldMap panels derive a 4:3 aspect from the screen height.
+	if (g_bIsPaintWorldMapBackground)
+	{
+		wide = (double)tall * 640.0 / 480.0;
+	}
 }
 
 void CSurfaceProxy_HL25::SetAsTopMost(VPANEL panel, bool state)
@@ -1607,14 +1627,18 @@ VPANEL CSurfaceProxy_HL25::GetModalPanel(void)
 	return g_pSurface_HL25->GetModalPanel();
 }
 
+//This is not used now
 void CSurfaceProxy_HL25::UnlockCursor(void)
 {
 	VGUI1_UnlockCursor();
+	m_pfnUnlockCursor(this, 0);
 }
 
+//This is not used now
 void CSurfaceProxy_HL25::LockCursor(void)
 {
 	VGUI1_LockCursor();
+	m_pfnLockCursor(this, 0);
 }
 
 void CSurfaceProxy_HL25::SetTranslateExtendedKeys(bool state)
@@ -1991,6 +2015,7 @@ void Surface_InstallHooks(void)
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 20, (void *)pVFTable[20], (void **)&m_pfnDrawUnicodeCharAdd);
 		//g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 45, (void*)pVFTable[45], (void**)&m_pfnSetCursor);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 50, (void *)pVFTable[50], (void **)&m_pfnSupportsFeature);
+		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, kSurfaceVTableIndex_GetScreenSize, (void *)pVFTable[kSurfaceVTableIndex_GetScreenSize], (void **)&m_pfnGetScreenSize);
 		//g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 54, (void*)pVFTable[54], (void**)&m_pfnUnlockCursor);
 		//g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 55, (void*)pVFTable[55], (void**)&m_pfnLockCursor);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 59, (void *)pVFTable[59], (void **)&m_pfnCreateFont);
@@ -2020,6 +2045,7 @@ void Surface_InstallHooks(void)
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 20, (void*)pVFTable[20], (void**)&m_pfnDrawUnicodeCharAdd);
 		//g_pMetaHookAPI->VFTHook(g_pSurface, 0, 45, (void*)pVFTable[45], (void**)&m_pfnSetCursor);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 50, (void*)pVFTable[50], (void**)&m_pfnSupportsFeature);
+		g_pMetaHookAPI->VFTHook(g_pSurface, 0, kSurfaceVTableIndex_GetScreenSize, (void*)pVFTable[kSurfaceVTableIndex_GetScreenSize], (void**)&m_pfnGetScreenSize);
 		//g_pMetaHookAPI->VFTHook(g_pSurface, 0, 54, (void*)pVFTable[54], (void**)&m_pfnUnlockCursor);
 		//g_pMetaHookAPI->VFTHook(g_pSurface, 0, 55, (void*)pVFTable[55], (void**)&m_pfnLockCursor);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 59, (void*)pVFTable[59], (void**)&m_pfnCreateFont);
@@ -2038,5 +2064,5 @@ void Surface_InstallHooks(void)
 
 void Surface_UninstallHooks(void)
 {
-
+	//TODO unhook VFTHooks
 }

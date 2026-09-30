@@ -11,6 +11,7 @@
 
 #include <atomic>
 #include <cstdarg>
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -35,6 +36,13 @@ namespace
 	constexpr int kSnapshotContractVersion = 8;
 	constexpr int kAnalysisOutputContractVersion = 3;
 
+	// Smallest cbSize mh_gamesymbol_t callers may pass. Every published shape of
+	// the struct (API 109 onward) covers this versioned prefix through
+	// `signature`. A caller built against an older, smaller shape passes its own
+	// sizeof and receives exactly the fields that fit; fields appended later are
+	// simply not reported to it, and nothing is ever written past its buffer.
+	constexpr DWORD kGameSymbolCbSizeMin = (DWORD)offsetof(mh_gamesymbol_t, instructionOffset);
+
 	// -----------------------------------------------------------------------
 	// Internal record / module / catalog model (stable heap-owned storage).
 	// -----------------------------------------------------------------------
@@ -58,6 +66,7 @@ namespace
 
 		uint32_t scalarValue = 0;   // valid only when kind == MH_GAMESYMBOL_KIND_SCALAR
 		DWORD memberOffset = 0;     // valid only when kind == MH_GAMESYMBOL_KIND_STRUCT_MEMBER
+		DWORD vfuncIndex = 0;       // valid only when kind == MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION
 
 		bool conflicted = false;   // duplicate key with differing content
 		bool unsupportedKind = false; // kind not typed by this API version
@@ -483,24 +492,55 @@ namespace
 		return true;
 	}
 
-	// A virtual function record is an address-bearing function entry recovered
-	// from its owning vtable slot. The rva is consumed as a normal function
-	// address; vfunc_index/vtable_name are validated but not stored.
-	bool NormalizeVirtualFunction(const rapidjson::Value& payload, GameSymbolRecord& rec, std::string& error)
+	// A virtual function record is either an address-bearing function entry
+	// recovered from its owning vtable slot, or a slot-only declaration that
+	// carries no address. The rva is consumed as a normal function address and
+	// vfunc_index is stored for mh_gamesymbol_t::vfuncIndex; vtable_name is
+	// validated but not stored. A slot-only declaration is reported through
+	// outDeclarationOnly so the caller can skip storing it: it has no address to
+	// resolve, and reporting it as available would let a resolver dereference a
+	// null rva. The signature is optional and upstream publishes it under either
+	// vfunc_sig or func_sig.
+	bool NormalizeVirtualFunction(const rapidjson::Value& payload, GameSymbolRecord& rec,
+		bool& outDeclarationOnly, std::string& error)
 	{
-		const rapidjson::Value* funcRva = FindMember(payload, "func_rva");
-		const rapidjson::Value* funcSize = FindMember(payload, "func_size");
-		const rapidjson::Value* vfuncSig = FindMember(payload, "vfunc_sig");
+		outDeclarationOnly = false;
+
 		const rapidjson::Value* vfuncIndex = FindMember(payload, "vfunc_index");
 		const rapidjson::Value* vtableName = FindMember(payload, "vtable_name");
-		if (!funcRva || !funcRva->IsString() || !funcSize || !funcSize->IsString() ||
-			!vfuncSig || !vfuncSig->IsString() ||
-			!vfuncIndex || !vfuncIndex->IsInt() ||
-			!vtableName || !vtableName->IsString())
+		if (!vfuncIndex || !vfuncIndex->IsInt() ||
+			!vtableName || !vtableName->IsString() || vtableName->GetStringLength() == 0)
 		{
-			error = "virtualFunction payload is missing func_rva/func_size/vfunc_sig/vfunc_index/vtable_name";
+			error = "virtualFunction payload is missing vfunc_index/vtable_name";
 			return false;
 		}
+
+		const rapidjson::Value* funcRva = FindMember(payload, "func_rva");
+		const rapidjson::Value* funcSize = FindMember(payload, "func_size");
+		if (!funcRva && !funcSize)
+		{
+			outDeclarationOnly = true;
+			return true;
+		}
+		if (!funcRva || !funcRva->IsString() || !funcSize || !funcSize->IsString())
+		{
+			error = "virtualFunction payload is missing/invalid func_rva/func_size";
+			return false;
+		}
+
+		const rapidjson::Value* vfuncSig = FindMember(payload, "vfunc_sig");
+		if (vfuncSig && !vfuncSig->IsString())
+		{
+			error = "virtualFunction payload has a non-string vfunc_sig";
+			return false;
+		}
+		const rapidjson::Value* funcSig = FindMember(payload, "func_sig");
+		if (funcSig && !funcSig->IsString())
+		{
+			error = "virtualFunction payload has a non-string func_sig";
+			return false;
+		}
+		const rapidjson::Value* signature = vfuncSig ? vfuncSig : funcSig;
 
 		if (!ParseHexU32(funcRva->GetString(), rec.rva))
 		{
@@ -512,18 +552,22 @@ namespace
 			error = "invalid func_size";
 			return false;
 		}
-		if (!ParseSignature(vfuncSig->GetString(), rec.signatureBytes, rec.signatureMask, rec.legacyPattern, error))
+		if (signature &&
+			!ParseSignature(signature->GetString(), rec.signatureBytes, rec.signatureMask, rec.legacyPattern, error))
 			return false;
 
 		rec.kind = MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION;
-		rec.signatureText = vfuncSig->GetString();
-		rec.signatureRva = rec.rva;
+		rec.signatureText = signature ? signature->GetString() : "";
+		rec.signatureRva = signature ? rec.rva : 0;
 		rec.instructionOffset = 0;
 		rec.operandOffset = 0;
 		rec.instructionLength = 0;
 		rec.flags = 0;
+		rec.vfuncIndex = (DWORD)vfuncIndex->GetInt();
 
 		const rapidjson::Value* allowAcross = FindMember(payload, "vfunc_sig_allow_across_function_boundary");
+		if (!allowAcross || !allowAcross->IsBool())
+			allowAcross = FindMember(payload, "func_sig_allow_across_function_boundary");
 		if (allowAcross && allowAcross->IsBool() && allowAcross->GetBool())
 			rec.flags |= MH_GAMESYMBOL_FLAG_SIGNATURE_ALLOW_ACROSS_FUNCTION_BOUNDARY;
 
@@ -607,6 +651,7 @@ namespace
 			a.instructionLength == b.instructionLength &&
 			a.scalarValue == b.scalarValue &&
 			a.memberOffset == b.memberOffset &&
+			a.vfuncIndex == b.vfuncIndex &&
 			a.unsupportedKind == b.unsupportedKind;
 	}
 
@@ -852,13 +897,20 @@ namespace
 			}
 			else if (std::strcmp(kindStr, "virtualFunction") == 0)
 			{
-				if (!payload || !payload->IsObject() || !NormalizeVirtualFunction(*payload, record, error))
+				bool declarationOnly = false;
+				if (!payload || !payload->IsObject() ||
+					!NormalizeVirtualFunction(*payload, record, declarationOnly, error))
 				{
 					if (error.empty())
 						error = "virtualFunction payload must be an object";
 					AddDiagnostic("snapshot '%s': symbol '%s': %s", gameVersion, symbolName->GetString(), error.c_str());
 					continue;
 				}
+				// A slot-only declaration has no address to resolve, so it is
+				// accepted but not stored: queries must keep reporting it as not
+				// found rather than handing out a null rva.
+				if (declarationOnly)
+					continue;
 			}
 			else if (std::strcmp(kindStr, "vtable") == 0)
 			{
@@ -973,6 +1025,19 @@ namespace
 		out->instructionOffset = rec.instructionOffset;
 		out->operandOffset = rec.operandOffset;
 		out->instructionLength = rec.instructionLength;
+		out->vfuncIndex = rec.vfuncIndex;
+	}
+
+	// Copy a filled record into the caller's buffer honoring its cbSize. Only
+	// min(cbSize, sizeof(mh_gamesymbol_t)) bytes are written, so a caller built
+	// against an older, smaller shape receives every field it can hold and
+	// nothing is written past its buffer. cbSize is echoed back verbatim.
+	void FillSymbolBounded(const GameSymbolRecord& rec, uint64_t crc64, mh_gamesymbol_t* out, DWORD cbSize)
+	{
+		mh_gamesymbol_t filled = {};
+		FillSymbol(rec, crc64, &filled);
+		filled.cbSize = cbSize;
+		memcpy(out, &filled, cbSize < sizeof(mh_gamesymbol_t) ? cbSize : (DWORD)sizeof(mh_gamesymbol_t));
 	}
 
 	// -----------------------------------------------------------------------
@@ -1293,11 +1358,12 @@ namespace GameData
 			return MH_GAMESYMBOL_INVALID_ARGUMENT;
 
 		DWORD cbSize = outSymbol->cbSize;
-		if (cbSize < sizeof(mh_gamesymbol_t))
+		if (cbSize < kGameSymbolCbSizeMin)
 			return MH_GAMESYMBOL_OUTPUT_TOO_SMALL;
 
-		// Zero the output (preserving cbSize) so any failure leaves a clean struct.
-		memset(outSymbol, 0, sizeof(mh_gamesymbol_t));
+		// Zero only what the caller can hold (preserving cbSize) so any failure
+		// leaves a clean struct and nothing is written past the caller's buffer.
+		memset(outSymbol, 0, cbSize < sizeof(mh_gamesymbol_t) ? cbSize : (DWORD)sizeof(mh_gamesymbol_t));
 		outSymbol->cbSize = cbSize;
 
 		if (!g_catalog.available)
@@ -1318,7 +1384,7 @@ namespace GameData
 		if (rec.unsupportedKind)
 			return MH_GAMESYMBOL_UNSUPPORTED_KIND;
 
-		FillSymbol(rec, moduleCRC64, outSymbol);
+		FillSymbolBounded(rec, moduleCRC64, outSymbol, cbSize);
 		return MH_GAMESYMBOL_OK;
 	}
 
@@ -1514,11 +1580,12 @@ mh_gamesymbol_status_t MH_QueryGameSymbol(PVOID moduleBase, const char* symbolNa
 		return MH_GAMESYMBOL_INVALID_ARGUMENT;
 
 	DWORD cbSize = outSymbol->cbSize;
-	if (cbSize < sizeof(mh_gamesymbol_t))
+	if (cbSize < kGameSymbolCbSizeMin)
 		return MH_GAMESYMBOL_OUTPUT_TOO_SMALL;
 
-	// Zero the output (preserving cbSize) so failures leave a clean struct.
-	memset(outSymbol, 0, sizeof(mh_gamesymbol_t));
+	// Zero only what the caller can hold (preserving cbSize) so failures leave a
+	// clean struct and nothing is written past the caller's buffer.
+	memset(outSymbol, 0, cbSize < sizeof(mh_gamesymbol_t) ? cbSize : (DWORD)sizeof(mh_gamesymbol_t));
 	outSymbol->cbSize = cbSize;
 
 	uint64_t crc64 = 0;

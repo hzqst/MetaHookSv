@@ -32,7 +32,9 @@ Check **Launch Parameters**
 
 All VGUI2 elements will be proportional (scaling up base on your game resolution)
 
-The HiDpi Support is enabled by defalut if your system's dpi scaling > 100% and you are running on a non-HL25th engine. For HL25th-engine, the HiDpi is enabled by default.
+The HiDpi Support is enabled by default if your system's dpi scaling > 100% and you are running on a non-HL25th engine.
+
+For HL25th-engine, the HiDpi is enabled by default.
 
 When HiDpi Support is enabled, the following paths will be added to the FileSystem's search paths with "SKIN" tag. VGUI2 control settings will be loaded from those sources.
 
@@ -46,10 +48,14 @@ e.g. `\Sven Co-op\svencoop_hidpi` or `\Half-Life\valve_hidpi`
 
 #### Launch Parameters
 
-`-steamlang` : use Steam language as engine and VGUI2-subsystem language, ignore game language setting in Steam's game config panel. for Sven Co-op, it always uses Steam language as engine and VGUI2-subsystem language no matter if `-steamlang` is added or not.
+`-steamlang` : use Steam language as engine language and VGUI2-subsystem's language, ignore game language setting in Steam's game config panel. for Sven Co-op, it always uses Steam language as engine language and VGUI2-subsystem's language no matter if `-steamlang` is added or not.
 
-`-forcelang [language]` : force engine and VGUI2-subsystem to use [language] as engine and vgui2 language, ignore game language setting in Steam's game config panel.
+`-forcelang [language]` : force engine and VGUI2-subsystem to use [language] as engine language and VGUI2-subsystem's language, ignore game language setting in Steam's game config panel.
 
 `-high_dpi` : Enable HiDpi Support
 
 `-no_high_dpi` : Disable HiDpi Support
+
+`-clientui_use_hdp` : Enable HDProportional for VGUI2 components from ClientUI (only on HL25th client)
+
+`-clientui_no_hdp` : Disable HDProportional for VGUI2 components from ClientUI (only on HL25th client)

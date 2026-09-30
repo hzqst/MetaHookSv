@@ -302,6 +302,7 @@ $(GLEWCheckRequirements)</Command>
     <ClInclude Include="..\..\include\Interface\IVGUI2Extension.h" />
     <ClInclude Include="..\..\include\Interface\VGUI\IInput2.h" />
     <ClInclude Include="DpiManagerInternal.h" />
+    <ClInclude Include="LanguageRegistry.h" />
     <ClInclude Include="privatefuncs.h" />
     <ClInclude Include="enginedef.h" />
     <ClInclude Include="exportfuncs.h" />

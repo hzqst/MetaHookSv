@@ -2,6 +2,7 @@
 #include "exportfuncs.h"
 #include "privatefuncs.h"
 #include "DpiManagerInternal.h"
+#include "LanguageRegistry.h"
 
 //VGUI2
 #include <vgui/VGUI.h>
@@ -87,6 +88,8 @@ void *gHud = NULL;
 HWND g_MainWnd = NULL;
 WNDPROC g_MainWndProc = NULL;
 
+//No need to support custom dpi here
+
 #if 0
 
 int FileSystem_SetGameDirectory(const char *pDefaultDir, const char *pGameDir)
@@ -109,7 +112,7 @@ int FileSystem_SetGameDirectory(const char *pDefaultDir, const char *pGameDir)
 
 const char *GetBaseDirectory()
 {
-	return (const char *)(*hostparam_basedir);
+	return host_parms->basedir;
 }
 
 IBaseInterface* CreateInterfaceProxy(const char* pName, int* pReturnCode)
@@ -145,6 +148,7 @@ void HUD_Shutdown(void)
 {
 	NativeClientUI_UninstallHooks();
 	Client_UninstallHooks();
+	ClientVGUI_UninstallHooks();
 
 	gExportfuncs.HUD_Shutdown();
 }
@@ -156,6 +160,7 @@ void HUD_Frame(double time)
 	gExportfuncs.HUD_Frame(time);
 }
 
+// Purpose: Make IN_MouseEvent aware of VGUI2 mouse input capture, which is not natively supported by VGUI1 mods.
 void IN_MouseEvent(int mstate)
 {
 	if (g_iVisibleMouse && vgui::surface() && vgui::surface()->IsCursorVisible())
@@ -173,6 +178,7 @@ void IN_MouseEvent(int mstate)
 	}
 }
 
+// Purpose: Make IN_Accumulate aware of VGUI2 mouse input capture, which is not natively supported by VGUI1 mods.
 void IN_Accumulate(void)
 {
 	if (g_iVisibleMouse && vgui::surface() && vgui::surface()->IsCursorVisible())
@@ -190,6 +196,7 @@ void IN_Accumulate(void)
 	}
 }
 
+// Purpose: Make CL_CreateMove aware of VGUI2 mouse input capture, which is not natively supported by VGUI1 mods.
 void CL_CreateMove(float frametime, struct usercmd_s *cmd, int active)
 {
 	if (g_iVisibleMouse && vgui::surface() && vgui::surface()->IsCursorVisible())
@@ -300,6 +307,18 @@ void Sys_GetRegKeyValue(char *pszSubKey, char *pszElement, char *pszReturnString
 }
 
 #endif
+
+void __cdecl NewEngineSys_GetRegKeyValueUnderRoot(const char* subKey, const char* element,
+	char* output, int capacity, const char* defaultValue)
+{
+	const char* forcedLanguage = nullptr;
+	if (LanguageRegistry::IsSteamLanguage(subKey, element))
+		CommandLine()->CheckParm("-forcelang", &forcedLanguage);
+	// These engines already obtain Steam's language here, including with -steamlang.
+	LanguageRegistry::Read(gPrivateFuncs.Sys_GetRegKeyValueUnderRoot, subKey, element,
+		output, capacity, defaultValue, forcedLanguage,
+		m_szCurrentGameLanguage, sizeof(m_szCurrentGameLanguage));
+}
 
 char * NewV_strncpy(char *a1, const char *a2, size_t a3)
 {

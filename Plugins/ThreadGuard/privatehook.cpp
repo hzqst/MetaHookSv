@@ -16,15 +16,15 @@ IThreadManager* g_ThreadManager_GameUI = NULL;
 IThreadManager* g_ThreadManager_ServerBrowser = NULL;
 IThreadManager* g_ThreadManager_ServerDLL = NULL;
 
-IEngine** engine = NULL;
+IEngine** eng = NULL;
 
 void ServerDLL_WaitForShutdown(HMODULE hModule);
 void ServerBrowser_WaitForShutdown(HMODULE hModule);
 
 int GetEngineDLLState()
 {
-	if (engine)
-		return (*engine)->GetState();
+	if (eng)
+		return (*eng)->GetState();
 
 	return DLL_INACTIVE;
 }
@@ -62,7 +62,7 @@ void Engine_FillAddress(void)
 {
 	// gamedata provides the address of the engine module's global IEngine* slot,
 	// so GetEngineDLLState keeps dereferencing it exactly once.
-	engine = (decltype(engine))GamedataResolvePtr(g_EngineDLLInfo.ImageBase, "engine", MH_GAMESYMBOL_KIND_GLOBAL);
+	eng = (decltype(eng))GamedataResolvePtr(g_EngineDLLInfo.ImageBase, "eng", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Engine_InstallHook(HMODULE hModule, BlobHandle_t hBlobModule)

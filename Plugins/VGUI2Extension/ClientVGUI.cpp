@@ -19,7 +19,6 @@
 #include "DpiManagerInternal.h"
 #include "VGUI2ExtensionInternal.h"
 
-#include <capstone.h>
 #include <sstream>
 
 namespace vgui
@@ -35,15 +34,25 @@ bool g_IsNativeClientVGUI2 = false;
 bool g_IsNativeClientUIHDProportional = false;
 
 IClientVGUI* g_pClientVGUI = NULL;
-CounterStrikeViewport* g_pCounterStrikeViewport = NULL;
 
 static vgui::Panel* g_pCSBackGroundPanel = NULL;
 static vgui::Panel* g_pWorldMapPanel = NULL;
 static vgui::Panel* g_pWorldMapMissionSelectPanel = NULL;
 
+//True only for the duration of CWorldMap::PaintBackground and
+//CWorldMapMissionSelect::PaintBackground, so the ISurface::GetScreenSize override
+//in SurfaceHook.cpp stays scoped to those two CZDS panels.
+bool g_bIsPaintWorldMapBackground = false;
+
+//True only for the duration of CTeamMenu::LoadMapPage, so the RichText::SetText
+//sanitizer stays scoped to the one caller that trashes Chinese map descriptions.
+static bool g_bIsLoadMapPage = false;
+
 static hook_t* g_phook_ClientVGUI_Panel_Init = NULL;
 static hook_t* g_phook_ClientVGUI_KeyValues_LoadFromFile = NULL;
 static hook_t* g_phook_ClientVGUI_LoadControlSettings = NULL;
+static hook_t* g_phook_ClientVGUI_RichText_SetTextW = NULL;
+static hook_t* g_phook_TeamMenu_LoadMapPage = NULL;
 
 static void(__fastcall* m_pfnCClientVGUI_Initialize)(void* pthis, int, CreateInterfaceFn* factories, int count) = NULL;
 static void(__fastcall* m_pfnCClientVGUI_Start)(void* pthis, int) = NULL;
@@ -65,20 +74,10 @@ ClientVGUI inline hook
 ============================================================
 */
 
-vgui::BuildGroup_Legacy* GetLegacyBuildGroup(vgui::Panel* pWindow)
+//Valve populate SetTextW with invalid chars.
+void __fastcall ClientVGUI_RichText_SetTextW(void* pthis, int dummy, const wchar_t* text)
 {
-	auto vftable = *(PVOID**)(pWindow);
-
-	auto pfnGetBuildGroup = (vgui::BuildGroup_Legacy * (__fastcall*)(vgui::Panel * pthis, int))vftable[139];
-
-	return pfnGetBuildGroup(pWindow, 0);
-}
-
-//Fuck Valve
-#if 1
-void __fastcall ClientVGUI_RichText_SetTextW_Proxy(void* pthis, int dummy, const wchar_t* text)
-{
-	if (!strcmp(GetCurrentGameLanguage(), "schinese"))
+	if (g_bIsLoadMapPage && !strcmp(GetCurrentGameLanguage(), "schinese"))
 	{
 		std::wstringstream wss;
 
@@ -154,12 +153,23 @@ void __fastcall ClientVGUI_RichText_SetTextW_Proxy(void* pthis, int dummy, const
 
 		auto ws = wss.str();
 
-		return gPrivateFuncs.ClientVGUI_RichText_SetTextW(pthis, dummy, ws.c_str());
+		gPrivateFuncs.ClientVGUI_RichText_SetTextW(pthis, dummy, ws.c_str());
+		return;
 	}
 
 	gPrivateFuncs.ClientVGUI_RichText_SetTextW(pthis, dummy, text);
 }
-#endif
+
+void __fastcall TeamMenu_LoadMapPage(void* pthis, int dummy, const char* mapname)
+{
+	bool previous = g_bIsLoadMapPage;
+
+	g_bIsLoadMapPage = true;
+
+	gPrivateFuncs.TeamMenu_LoadMapPage(pthis, dummy, mapname);
+
+	g_bIsLoadMapPage = previous;
+}
 
 void __fastcall ClientVGUI_Panel_Init(vgui::Panel* pthis, int dummy, int x, int y, int w, int h)
 {
@@ -230,251 +240,22 @@ void __fastcall CSBuyMenu_Activate(vgui::Panel* pthis, int dummy)
 	}
 }
 
-typedef struct
-{
-	int OffsetCandidates[2];
-	int OffsetCandidatesCount;
-	bool bFoundCall22Ch;
-}VGUI2_IsCSBackGroundPanelActivate_SearchContext;
-
-bool VGUI2_IsCSBackGroundPanelActivate(PVOID Candidate, int* pOffsetBase)
-{
-	VGUI2_IsCSBackGroundPanelActivate_SearchContext ctx = { 0 };
-
-	g_pMetaHookAPI->DisasmRanges(Candidate, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (VGUI2_IsCSBackGroundPanelActivate_SearchContext*)context;
-
-		if (!ctx->bFoundCall22Ch &&
-			pinst->id == X86_INS_CALL &&
-			pinst->detail->x86.op_count == 1 &&
-			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[0].mem.base != 0 &&
-			pinst->detail->x86.operands[0].mem.disp == 0x22C)
-		{
-			ctx->bFoundCall22Ch = true;
-		}
-
-		if (pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[0].mem.base != 0 &&
-			pinst->detail->x86.operands[0].mem.disp >= 0x130 &&
-			pinst->detail->x86.operands[0].mem.disp <= 0x140 &&
-			pinst->detail->x86.operands[1].type == X86_OP_REG)
-		{
-			if (ctx->OffsetCandidatesCount < 2)
-			{
-				ctx->OffsetCandidates[ctx->OffsetCandidatesCount] = pinst->detail->x86.operands[0].mem.disp;
-				ctx->OffsetCandidatesCount++;
-			}
-		}
-
-		if (ctx->bFoundCall22Ch)
-			return TRUE;
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-		}, 0, &ctx);
-
-	if (ctx.bFoundCall22Ch && ctx.OffsetCandidatesCount >= 2)
-	{
-		(*pOffsetBase) = min(ctx.OffsetCandidates[0], ctx.OffsetCandidates[1]);
-		return true;
-	}
-
-	return false;
-}
-
-typedef struct
-{
-	bool bFoundCall80h;
-	int iFoundPush255Count;
-	void* SurfaceGetScreenSize;
-}VGUI2_IsCWorldMapPaintBackground_SearchContext;
-
-bool VGUI2_IsCWorldMapPaintBackground(PVOID Candidate, void** pSurfaceGetScreenSize)
-{
-	VGUI2_IsCWorldMapPaintBackground_SearchContext ctx = { 0 };
-
-	g_pMetaHookAPI->DisasmRanges(Candidate, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (VGUI2_IsCWorldMapPaintBackground_SearchContext*)context;
-
-		if (!ctx->bFoundCall80h &&
-			pinst->id == X86_INS_CALL &&
-			pinst->detail->x86.op_count == 1 &&
-			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[0].mem.base != 0 &&
-			pinst->detail->x86.operands[0].mem.disp == 0x80)
-		{
-			ctx->bFoundCall80h = true;
-			ctx->SurfaceGetScreenSize = address;
-		}
-
-		if (ctx->iFoundPush255Count < 4 &&
-			pinst->id == X86_INS_PUSH &&
-			pinst->detail->x86.op_count == 1 &&
-			pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-			pinst->detail->x86.operands[0].imm == 0xFF)
-		{
-			ctx->iFoundPush255Count++;
-		}
-
-		if (ctx->bFoundCall80h && ctx->iFoundPush255Count >= 4)
-			return TRUE;
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-		}, 0, &ctx);
-
-	if (ctx.bFoundCall80h && ctx.iFoundPush255Count >= 4)
-	{
-		if (pSurfaceGetScreenSize)
-			(*pSurfaceGetScreenSize) = ctx.SurfaceGetScreenSize;
-
-		return true;
-	}
-
-	return false;
-}
-
-typedef struct
-{
-	PVOID CallCandidates[4];
-	int CallCount;
-	bool bFound280h;
-	bool bFound1E0h;
-}VGUI2_IsFitToScreen_SearchContext;
-
-bool VGUI2_IsFitToScreenInternal(PVOID Candidate, VGUI2_IsFitToScreen_SearchContext* ctx)
-{
-
-	g_pMetaHookAPI->DisasmRanges(ctx->CallCandidates[1], 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (VGUI2_IsFitToScreen_SearchContext*)context;
-
-		if (!ctx->bFound280h &&
-			pinst->id == X86_INS_PUSH &&
-			pinst->detail->x86.op_count == 1 &&
-			pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-			pinst->detail->x86.operands[0].imm == 0x280)
-		{
-			ctx->bFound280h = true;
-		}
-
-		if (!ctx->bFound1E0h &&
-			pinst->id == X86_INS_PUSH &&
-			pinst->detail->x86.op_count == 1 &&
-			pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-			pinst->detail->x86.operands[0].imm == 0x1E0)
-		{
-			ctx->bFound1E0h = true;
-		}
-
-		if (ctx->bFound1E0h && ctx->bFound280h)
-			return TRUE;
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-		}, 0, ctx);
-
-	return ctx->bFound1E0h && ctx->bFound280h;
-}
-
-bool VGUI2_IsFitToScreen(PVOID Candidate)
-{
-	VGUI2_IsFitToScreen_SearchContext ctx = { 0 };
-
-	if (VGUI2_IsFitToScreenInternal(Candidate, &ctx))
-		return true;
-
-	memset(&ctx, 0, sizeof(ctx));
-
-	g_pMetaHookAPI->DisasmRanges(Candidate, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (VGUI2_IsFitToScreen_SearchContext*)context;
-
-		if (address[0] == 0xE8 && ctx->CallCount < 4)
-		{
-			ctx->CallCandidates[ctx->CallCount] = (PVOID)GetCallAddress(address);
-			ctx->CallCount++;
-		}
-
-		if (ctx->bFound1E0h && ctx->bFound280h)
-			return TRUE;
-
-		if (ctx->CallCount >= 4)
-			return TRUE;
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-		}, 0, &ctx);
-
-
-	if (ctx.CallCount == 2)
-	{
-		VGUI2_IsFitToScreenInternal(ctx.CallCandidates[1], &ctx);
-
-		if (ctx.bFound1E0h && ctx.bFound280h)
-		{
-			return true;
-		}
-	}
-
-	return false;
-}
-
 void __fastcall ClientVGUI_LoadControlSettings(vgui::Panel* pthis, int dummy, const char* controlResourceName, const char* pathID)
 {
-	if (!strcmp(controlResourceName, "Resource/UI/BuyMenu.res"))
+	//The Counter-Strike buy menu. vgui2::Frame::Activate() is only published on the
+	//CS-family client module, so this block must not run on other clients.
+	if (g_bIsCounterStrike && !strcmp(controlResourceName, "Resource/UI/BuyMenu.res"))
 	{
 		if (!gPrivateFuncs.CSBuyMenu_vftable)
 		{
 			gPrivateFuncs.CSBuyMenu_vftable = *(PVOID**)pthis;
 
-			if (gPrivateFuncs.ClientVGUI_Frame_Activate_vftable_index)
-			{
-				int index = gPrivateFuncs.ClientVGUI_Frame_Activate_vftable_index;
-				g_pMetaHookAPI->VFTHookEx(gPrivateFuncs.CSBuyMenu_vftable, index, CSBuyMenu_Activate, (void**)&gPrivateFuncs.CSBuyMenu_Activate);
-			}
-			else
-			{
-				for (int index = 159; index <= 160; ++index)
-				{
-					if (VGUI2_IsFitToScreen(gPrivateFuncs.CSBuyMenu_vftable[index]))
-					{
-						gPrivateFuncs.ClientVGUI_Frame_Activate_vftable_index = index;
-						g_pMetaHookAPI->VFTHookEx(gPrivateFuncs.CSBuyMenu_vftable, index, CSBuyMenu_Activate, (void**)&gPrivateFuncs.CSBuyMenu_Activate);
-						break;
-					}
-				}
-			}
+			//Frame::Activate's slot; CSBuyMenu keeps its own override in place, so
+			//the base slot index also addresses CSBuyMenu's vtable.
+			int index = (int)GamedataResolveVFuncIndex(g_ClientDLLInfo.ImageBase, "vgui2::Frame::Activate()");
+
+			g_pMetaHookAPI->VFTHookEx(gPrivateFuncs.CSBuyMenu_vftable, index, CSBuyMenu_Activate, (void**)&gPrivateFuncs.CSBuyMenu_Activate);
+
 			Sig_FuncNotFound(CSBuyMenu_Activate);
 		}
 	}
@@ -622,158 +403,30 @@ void __fastcall CCSBackGroundPanel_Activate(vgui::Panel* pthis, int dummy)
 
 	if (DpiManagerInternal()->IsHighDpiSupportEnabled())
 	{
-		*(int*)((PUCHAR)pthis + gPrivateFuncs.CCSBackGroundPanel_XOffsetBase) = 0;
-		*(int*)((PUCHAR)pthis + gPrivateFuncs.CCSBackGroundPanel_XOffsetBase + 4) = 0;
+		*(int*)((PUCHAR)pthis + gPrivateFuncs.CCSBackGroundPanel_m_offsetX) = 0;
+		*(int*)((PUCHAR)pthis + gPrivateFuncs.CCSBackGroundPanel_m_offsetY) = 0;
 	}
-}
-
-void __fastcall CWorldMap_PaintBackground_SurfaceGetScreenSize(vgui::ISurface* pthis, int dummy, int& screenWide, int& screenTall)
-{
-	//xScale = swide / 640.0;
-	//yScale = stall / 480.0;
-
-	//Let xScale = yScale
-	vgui::surface()->GetScreenSize(screenWide, screenTall);
-
-	screenWide = (double)screenTall * 640.0 / 480.0;
 }
 
 void __fastcall CWorldMap_PaintBackground(vgui::Panel* pthis, int dummy)
 {
+	bool previous = g_bIsPaintWorldMapBackground;
+	g_bIsPaintWorldMapBackground = true;
+
 	gPrivateFuncs.CWorldMap_PaintBackground(pthis, dummy);
-}
 
-void __fastcall CWorldMapMissionSelect_PaintBackground_SurfaceGetScreenSize(vgui::ISurface* pthis, int dummy, int& screenWide, int& screenTall)
-{
-	//xScale = swide / 640.0;
-	//yScale = stall / 480.0;
-
-	//Let xScale = yScale
-	vgui::surface()->GetScreenSize(screenWide, screenTall);
-
-	screenWide = (double)screenTall * 640.0 / 480.0;
+	g_bIsPaintWorldMapBackground = previous;
 }
 
 void __fastcall CWorldMapMissionSelect_PaintBackground(vgui::Panel* pthis, int dummy)
 {
+	bool previous = g_bIsPaintWorldMapBackground;
+	g_bIsPaintWorldMapBackground = true;
+
 	gPrivateFuncs.CWorldMapMissionSelect_PaintBackground(pthis, dummy);
+
+	g_bIsPaintWorldMapBackground = previous;
 }
-
-#if 0
-void ResizeWindowControls(vgui::Panel* pWindow, int offsetX, int offsetY)
-{
-	if (!pWindow || !GetLegacyBuildGroup(pWindow) || !GetLegacyBuildGroup(pWindow)->GetPanelList())
-		return;
-
-	CUtlVector<vgui::PHandle>* panelList = GetLegacyBuildGroup(pWindow)->GetPanelList();
-	CUtlVector<vgui::Panel*> resizedPanels;
-	CUtlVector<vgui::Panel*> movedPanels;
-
-	// Resize to account for 1.25 aspect ratio (1280x1024) screens
-	{
-		for (int i = 0; i < panelList->Size(); ++i)
-		{
-			vgui::PHandle handle = (*panelList)[i];
-
-			vgui::Panel* panel = handle.GetWithControlModuleName("ClientUI");
-
-			bool found = false;
-			for (int j = 0; j < resizedPanels.Size(); ++j)
-			{
-				if (panel == resizedPanels[j])
-					found = true;
-			}
-
-			if (!panel || found)
-			{
-				continue;
-			}
-
-			resizedPanels.AddToTail(panel); // don't move a panel more than once
-
-			if (panel != pWindow)
-			{
-
-			}
-		}
-	}
-
-	// and now re-center them.  Woohoo!
-	for (int i = 0; i < panelList->Size(); ++i)
-	{
-		vgui::PHandle handle = (*panelList)[i];
-
-		vgui::Panel* panel = handle.GetWithControlModuleName("ClientUI");
-
-		bool found = false;
-		for (int j = 0; j < movedPanels.Size(); ++j)
-		{
-			if (panel == movedPanels[j])
-				found = true;
-		}
-
-		if (!panel || found)
-		{
-			continue;
-		}
-
-		movedPanels.AddToTail(panel); // don't move a panel more than once
-
-		if (panel != pWindow)
-		{
-			int x, y;
-
-			panel->GetPos(x, y);
-			panel->SetPos(x + offsetX, y + offsetY);
-		}
-	}
-}
-
-void __fastcall CBuySubMenu_OnDisplay(vgui::Panel* pthis, int dummy)
-{
-	gPrivateFuncs.CBuySubMenu_OnDisplay(pthis, dummy);
-}
-
-#endif
-
-#if 0
-void* __fastcall CCSBackGroundPanel_ctor(vgui::Panel* pthis, int dummy, vgui::Panel* parent)
-{
-	auto r = gPrivateFuncs.CCSBackGroundPanel_ctor(pthis, dummy, parent);
-
-	if (!gPrivateFuncs.CCSBackGroundPanel_vftable)
-	{
-		gPrivateFuncs.CCSBackGroundPanel_vftable = *(decltype(gPrivateFuncs.CCSBackGroundPanel_vftable)*)pthis;
-		g_pMetaHookAPI->VFTHook(pthis, 0, 160, CCSBackGroundPanel_Activate, (void**)&gPrivateFuncs.CCSBackGroundPanel_Activate);
-	}
-
-	return r;
-}
-#endif
-
-#if 0
-
-void __fastcall ClientVGUI_BuildGroup_LoadControlSettings(vgui::BuildGroup_Legacy* pthis, int dummy, const char* controlResourceName, const char* pathID)
-{
-	if (!strcmp(controlResourceName, "Resource/UI/MOTD.res") ||
-		!strcmp(controlResourceName, "Resource/UI/TeamMenu.res") ||
-		!strcmp(controlResourceName, "Resource/UI/ClassMenu_CT.res") ||
-		!strcmp(controlResourceName, "Resource/UI/ClassMenu_TER.res"))
-	{
-		vgui::scheme()->SetForcingAlteredProportional(true);
-		gPrivateFuncs.ClientVGUI_BuildGroup_LoadControlSettings(pthis, dummy, controlResourceName, pathID);
-		vgui::scheme()->SetForcingAlteredProportional(false);
-		return;
-	}
-
-	gPrivateFuncs.ClientVGUI_BuildGroup_LoadControlSettings(pthis, dummy, controlResourceName, pathID);
-}
-
-void __fastcall ClientVGUI_BuildGroup_ApplySettings(vgui::BuildGroup_Legacy* pthis, int dummy, KeyValues* resourceData)
-{
-	gPrivateFuncs.ClientVGUI_BuildGroup_ApplySettings(pthis, dummy, resourceData);
-}
-#endif
 
 bool __fastcall ClientVGUI_KeyValues_LoadFromFile(void* pthis, int dummy, IFileSystem* pFileSystem, const char* resourceName, const char* pathId)
 {
@@ -874,109 +527,13 @@ void CClientVGUIProxy::Initialize(CreateInterfaceFn* factories, int count)
 	VGUI2ExtensionInternal()->ClientVGUI_Initialize(factories, count);
 }
 
+void ClientUIProxy_Start_FillAddress(CClientVGUIProxy* pthis, const mh_dll_info_t& RealDllInfo);
+
 void CClientVGUIProxy::Start(void)
 {
 	m_pfnCClientVGUI_Start(this, 0);
 
-	if (g_bIsCounterStrike && !g_bIsCZDS)
-	{
-		int offset_CSBackGroundPanel = 0x72C;
-
-		//if (g_bIsCZDS)
-		//	offset_CSBackGroundPanel = 0xCC;
-
-		g_pCSBackGroundPanel = *(vgui::Panel**)((PUCHAR)this + offset_CSBackGroundPanel);
-
-		gPrivateFuncs.CCSBackGroundPanel_vftable = *(PVOID**)g_pCSBackGroundPanel;
-
-		if (//The vftable must be inside client dll image.
-			!((ULONG_PTR)gPrivateFuncs.CCSBackGroundPanel_vftable > (ULONG_PTR)g_ClientDLLInfo.ImageBase &&
-				(ULONG_PTR)gPrivateFuncs.CCSBackGroundPanel_vftable < (ULONG_PTR)g_ClientDLLInfo.ImageBase + g_ClientDLLInfo.ImageSize))
-		{
-			Sig_NotFound(CCSBackGroundPanel);
-		}
-
-		for (int index = 159; index <= 160; ++index)
-		{
-			if (VGUI2_IsCSBackGroundPanelActivate(gPrivateFuncs.CCSBackGroundPanel_vftable[index], &gPrivateFuncs.CCSBackGroundPanel_XOffsetBase))
-			{
-				gPrivateFuncs.ClientVGUI_Frame_Activate_vftable_index = index;
-				g_pMetaHookAPI->VFTHook(g_pCSBackGroundPanel, 0, index, CCSBackGroundPanel_Activate, (void**)&gPrivateFuncs.CCSBackGroundPanel_Activate);
-				break;
-			}
-		}
-
-		Sig_FuncNotFound(CCSBackGroundPanel_Activate);
-	}
-
-	if (g_bIsCZDS)
-	{
-		int offset_WorldMapPanel = 0x7A8;
-
-		g_pWorldMapPanel = *(vgui::Panel**)((PUCHAR)this + offset_WorldMapPanel);
-
-		gPrivateFuncs.CWorldMap_vftable = *(PVOID**)g_pWorldMapPanel;
-
-		if (
-			!((ULONG_PTR)gPrivateFuncs.CWorldMap_vftable > (ULONG_PTR)g_ClientDLLInfo.ImageBase &&
-				(ULONG_PTR)gPrivateFuncs.CWorldMap_vftable < (ULONG_PTR)g_ClientDLLInfo.ImageBase + g_ClientDLLInfo.ImageSize))
-		{
-			Sig_NotFound("CWorldMap");
-		}
-
-		for (int index = 105; index <= 106; ++index)
-		{
-			PVOID SurfaceGetScreenSize = NULL;
-			if (VGUI2_IsCWorldMapPaintBackground(gPrivateFuncs.CWorldMap_vftable[index], &SurfaceGetScreenSize))
-			{
-				if (!SurfaceGetScreenSize)
-				{
-					Sig_NotFound("CWorldMap_PaintBackground_SurfaceGetScreenSize");
-				}
-				g_pMetaHookAPI->InlinePatchRedirectBranch(SurfaceGetScreenSize, CWorldMap_PaintBackground_SurfaceGetScreenSize, NULL);
-
-				gPrivateFuncs.CWorldMap_PaintBackground_vftable_index = index;
-				//g_pMetaHookAPI->VFTHook(g_pWorldMapPanel, 0, index, CWorldMap_PaintBackground, (void**)&gPrivateFuncs.CWorldMap_PaintBackground);
-				break;
-			}
-		}
-	}
-
-	if (g_bIsCZDS)
-	{
-		g_pWorldMapMissionSelectPanel = g_pWorldMapPanel->FindChildByName("MissionSelect");
-
-		if (!g_pWorldMapMissionSelectPanel)
-		{
-			Sig_NotFound("WorldMapMissionSelectPanel");
-		}
-
-		gPrivateFuncs.CWorldMapMissionSelect_vftable = *(PVOID**)g_pWorldMapMissionSelectPanel;
-
-		if (
-			!((ULONG_PTR)gPrivateFuncs.CWorldMapMissionSelect_vftable > (ULONG_PTR)g_ClientDLLInfo.ImageBase &&
-				(ULONG_PTR)gPrivateFuncs.CWorldMapMissionSelect_vftable < (ULONG_PTR)g_ClientDLLInfo.ImageBase + g_ClientDLLInfo.ImageSize))
-		{
-			Sig_NotFound("CWorldMapMissionSelect_vftable");
-		}
-
-		for (int index = 105; index <= 106; ++index)
-		{
-			PVOID SurfaceGetScreenSize = NULL;
-			if (VGUI2_IsCWorldMapPaintBackground(gPrivateFuncs.CWorldMapMissionSelect_vftable[index], &SurfaceGetScreenSize))
-			{
-				if (!SurfaceGetScreenSize)
-				{
-					Sig_NotFound("CWorldMapMissionSelect_PaintBackground_SurfaceGetScreenSize");
-				}
-				g_pMetaHookAPI->InlinePatchRedirectBranch(SurfaceGetScreenSize, CWorldMapMissionSelect_PaintBackground_SurfaceGetScreenSize, NULL);
-
-				gPrivateFuncs.CWorldMapMissionSelect_PaintBackground_vftable_index = index;
-				//g_pMetaHookAPI->VFTHook(g_pWorldMapMissionSelectPanel, 0, index, CWorldMapMissionSelect_PaintBackground, (void**)&gPrivateFuncs.CWorldMapMissionSelect_PaintBackground);
-				break;
-			}
-		}
-	}
+	ClientUIProxy_Start_FillAddress(this, g_ClientDLLInfo);
 
 	VGUI2ExtensionInternal()->ClientVGUI_Start();
 
@@ -1327,201 +884,103 @@ void NewClientVGUI::Shutdown(void)
 
 EXPOSE_SINGLE_INTERFACE(NewClientVGUI, IClientVGUI, CLIENTVGUI_INTERFACE_VERSION);
 
+void ClientUIProxy_Start_FillAddress(CClientVGUIProxy *pthis ,const mh_dll_info_t& RealDllInfo)
+{
+	if (g_bIsCounterStrike && !g_bIsCZDS)
+	{
+		DWORD offset_CSBackGroundPanel = GamedataResolveStructMember(g_ClientDLLInfo.ImageBase, "CounterStrikeViewport.m_pCSBackGround");
+
+		g_pCSBackGroundPanel = *(vgui::Panel**)((PUCHAR)pthis + offset_CSBackGroundPanel);
+
+		//CCSBackGroundPanel keeps its own Activate override; the field its body
+		//zeroes is published as a member offset, so no vtable walk is needed.
+		int index = (int)GamedataResolveVFuncIndex(g_ClientDLLInfo.ImageBase, "CounterStrikeViewport::CCSBackGroundPanel::Activate()");
+
+		gPrivateFuncs.CCSBackGroundPanel_m_offsetX = (int)GamedataResolveStructMember(g_ClientDLLInfo.ImageBase, "CounterStrikeViewport::CCSBackGroundPanel.m_offsetX");
+		gPrivateFuncs.CCSBackGroundPanel_m_offsetY = (int)GamedataResolveStructMember(g_ClientDLLInfo.ImageBase, "CounterStrikeViewport::CCSBackGroundPanel.m_offsetY");
+
+		g_pMetaHookAPI->VFTHook(g_pCSBackGroundPanel, 0, index, CCSBackGroundPanel_Activate, (void**)&gPrivateFuncs.CCSBackGroundPanel_Activate);
+
+		Sig_FuncNotFound(CCSBackGroundPanel_Activate);
+	}
+
+	if (g_bIsCZDS)
+	{
+		DWORD offset_WorldMapPanel = GamedataResolveStructMember(g_ClientDLLInfo.ImageBase, "CZEROViewPort.m_pWorldMapPanel");
+
+		g_pWorldMapPanel = *(vgui::Panel**)((PUCHAR)pthis + offset_WorldMapPanel);
+
+		//The handler raises g_bIsPaintWorldMapBackground around the original call, so
+		//the ISurface::GetScreenSize override applies only to this paint pass.
+		int index = (int)GamedataResolveVFuncIndex(g_ClientDLLInfo.ImageBase, "CWorldMap::PaintBackground()");
+
+		g_pMetaHookAPI->VFTHook(g_pWorldMapPanel, 0, index, CWorldMap_PaintBackground, (void**)&gPrivateFuncs.CWorldMap_PaintBackground);
+
+		Sig_FuncNotFound(CWorldMap_PaintBackground);
+	}
+
+	if (g_bIsCZDS)
+	{
+		g_pWorldMapMissionSelectPanel = g_pWorldMapPanel->FindChildByName("MissionSelect");
+
+		if (!g_pWorldMapMissionSelectPanel)
+		{
+			Sig_NotFound("WorldMapMissionSelectPanel");
+		}
+
+		int index = (int)GamedataResolveVFuncIndex(g_ClientDLLInfo.ImageBase, "CWorldMapMissionSelect::PaintBackground()");
+
+		g_pMetaHookAPI->VFTHook(g_pWorldMapMissionSelectPanel, 0, index, CWorldMapMissionSelect_PaintBackground, (void**)&gPrivateFuncs.CWorldMapMissionSelect_PaintBackground);
+
+		Sig_FuncNotFound(CWorldMapMissionSelect_PaintBackground);
+	}
+}
+
 /*
 	Purpose : Install hooks for native ClientUI interface
 */
 
-void NativeClientUI_RichText_Search(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo, PVOID Candidate, bool bIsUnicode)
+void NativeClientUI_FillAddress(const mh_dll_info_t& RealDllInfo)
 {
-	typedef struct NativeClientUI_RichText_SearchContext_s
+	gPrivateFuncs.ClientVGUI_Panel_Init = (decltype(gPrivateFuncs.ClientVGUI_Panel_Init))GamedataResolvePtrIfAvailable(
+		RealDllInfo.ImageBase, "vgui2::Panel::Init(int, int, int, int)", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.ClientVGUI_KeyValues_LoadFromFile = (decltype(gPrivateFuncs.ClientVGUI_KeyValues_LoadFromFile))GamedataResolvePtrIfAvailable(
+		RealDllInfo.ImageBase, "KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
+
+	if (g_bIsCounterStrike)
 	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-		bool bIsUnicode{};
-	}NativeClientUI_RichText_SearchContext;
-
-	NativeClientUI_RichText_SearchContext ctx = { DllInfo, RealDllInfo };
-
-	ctx.bIsUnicode = bIsUnicode;
-
-	g_pMetaHookAPI->DisasmRanges(Candidate, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (NativeClientUI_RichText_SearchContext*)context;
-
-		if ((pinst->id == X86_INS_JE) &&
-			pinst->detail->x86.op_count == 1 &&
-			pinst->detail->x86.operands[0].type == X86_OP_IMM)
-		{
-			PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
-
-			NativeClientUI_RichText_Search(ctx->DllInfo, ctx->RealDllInfo, imm, true);
-			return FALSE;
-		}
-
-		if (address[0] == 0xE8)
-		{
-			if (ctx->bIsUnicode)
-			{
-				if (!gPrivateFuncs.ClientVGUI_RichText_SetTextW)
-				{
-					auto address_RealDllBased = ConvertDllInfoSpace(address, ctx->DllInfo, ctx->RealDllInfo);
-
-					gPrivateFuncs.ClientVGUI_RichText_SetTextW = (decltype(gPrivateFuncs.ClientVGUI_RichText_SetTextW))GetCallAddress(address_RealDllBased);
-
-					g_pMetaHookAPI->InlinePatchRedirectBranch(address_RealDllBased, ClientVGUI_RichText_SetTextW_Proxy, NULL);
-				}
-			}
-			else
-			{
-				if (!gPrivateFuncs.ClientVGUI_RichText_SetTextA)
-				{
-					auto address_RealDllBased = ConvertDllInfoSpace(address, ctx->DllInfo, ctx->RealDllInfo);
-
-					gPrivateFuncs.ClientVGUI_RichText_SetTextA = (decltype(gPrivateFuncs.ClientVGUI_RichText_SetTextA))GetCallAddress(address_RealDllBased);
-				}
-			}
-			return TRUE;
-		}
-
-		if (instCount > 10)
-			return TRUE;
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-		}, 0, &ctx);
-}
-
-void NativeClientUI_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (1)
-	{
-		gPrivateFuncs.ClientVGUI_Panel_Init = (decltype(gPrivateFuncs.ClientVGUI_Panel_Init))VGUI2_FindPanelInit(DllInfo, RealDllInfo);
-		//Sig_FuncNotFound(ClientVGUI_Panel_Init);
-
-		gPrivateFuncs.ClientVGUI_KeyValues_vftable = (decltype(gPrivateFuncs.ClientVGUI_KeyValues_vftable))gPrivateFuncs.ClientVGUI_KeyValues_vftable = VGUI2_FindKeyValueVFTable(DllInfo, RealDllInfo);
-		//Sig_FuncNotFound(ClientVGUI_KeyValues_vftable);
-
-		if (gPrivateFuncs.ClientVGUI_KeyValues_vftable)
-		{
-			gPrivateFuncs.ClientVGUI_KeyValues_LoadFromFile = (decltype(gPrivateFuncs.ClientVGUI_KeyValues_LoadFromFile))gPrivateFuncs.ClientVGUI_KeyValues_vftable[2];
-		}
+		gPrivateFuncs.ClientVGUI_LoadControlSettings = (decltype(gPrivateFuncs.ClientVGUI_LoadControlSettings))GamedataResolvePtr(
+			RealDllInfo.ImageBase, "vgui2::Frame::LoadControlSettings(char const*, char const*)", MH_GAMESYMBOL_KIND_FUNCTION);
 	}
 
 	if (g_bIsCounterStrike)
 	{
-		const char sigs[] = "Resource/UI/TeamMenu.res";
-		auto TeamMenu_res_String = Search_Pattern_From_Size(DllInfo.RdataBase, DllInfo.RdataSize, sigs);
-		if (!TeamMenu_res_String)
-			TeamMenu_res_String = Search_Pattern_From_Size(DllInfo.DataBase, DllInfo.DataSize, sigs);
-		Sig_VarNotFound(TeamMenu_res_String);
-
-		char pattern[] = "\x68\x2A\x2A\x2A\x2A";
-		*(DWORD*)(pattern + 1) = (DWORD)TeamMenu_res_String;
-		auto TeamMenu_res_PushString = Search_Pattern_From_Size(DllInfo.TextBase, DllInfo.TextSize, pattern);
-		Sig_VarNotFound(TeamMenu_res_PushString);
-
-		typedef struct TeamMenu_SearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-		}TeamMenu_SearchContext;
-
-		TeamMenu_SearchContext ctx = { DllInfo , RealDllInfo };
-
-		g_pMetaHookAPI->DisasmRanges(TeamMenu_res_PushString, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (TeamMenu_SearchContext*)context;
-
-			if (address[0] == 0xE8 && instCount <= 8)
-			{
-				PVOID ClientVGUI_LoadControlSettings_VA = GetCallAddress(address);
-				gPrivateFuncs.ClientVGUI_LoadControlSettings = (decltype(gPrivateFuncs.ClientVGUI_LoadControlSettings))ConvertDllInfoSpace(ClientVGUI_LoadControlSettings_VA, ctx->DllInfo, ctx->RealDllInfo);
-
-				return TRUE;
-			}
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-
-			}, 0, &ctx);
-
-		Sig_FuncNotFound(ClientVGUI_LoadControlSettings);
-	}
-
-	if (g_bIsCounterStrike)
-	{
-		const char sigs[] = "maps/%s.txt";
-		auto MAPS_String = Search_Pattern_From_Size(DllInfo.RdataBase, DllInfo.RdataSize, sigs);
-		if (!MAPS_String)
-			MAPS_String = Search_Pattern_From_Size(DllInfo.DataBase, DllInfo.DataSize, sigs);
-		Sig_VarNotFound(MAPS_String);
-
-		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x8D";
-		*(DWORD*)(pattern + 1) = (DWORD)MAPS_String;
-		auto MAPS_PushString = Search_Pattern(pattern, DllInfo);
-		Sig_VarNotFound(MAPS_PushString);
-
-		typedef struct TeamMenu_LoadMapPage_SearchContext_s
-		{
-			PVOID InstAddress_FEFF{};
-		}TeamMenu_LoadMapPage_SearchContext;
-
-		TeamMenu_LoadMapPage_SearchContext ctx = {  };
-
-		g_pMetaHookAPI->DisasmRanges(MAPS_PushString, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (TeamMenu_LoadMapPage_SearchContext*)context;
-
-			if (pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				pinst->detail->x86.operands[1].imm == 0xFEFF)
-			{
-				ctx->InstAddress_FEFF = (decltype(ctx->InstAddress_FEFF))address;
-
-				return TRUE;
-			}
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-
-			}, 0, &ctx);
-
-		if (!ctx.InstAddress_FEFF)
-		{
-			Sig_NotFound(ctx.InstAddress_FEFF);
-		}
-
-		NativeClientUI_RichText_Search(DllInfo, RealDllInfo, ctx.InstAddress_FEFF, false);
-
-		Sig_FuncNotFound(ClientVGUI_RichText_SetTextW);
-		Sig_FuncNotFound(ClientVGUI_RichText_SetTextA);
+		gPrivateFuncs.TeamMenu_LoadMapPage = (decltype(gPrivateFuncs.TeamMenu_LoadMapPage))GamedataResolvePtr(
+			RealDllInfo.ImageBase, "CTeamMenu::LoadMapPage(char const*)", MH_GAMESYMBOL_KIND_FUNCTION);
+		gPrivateFuncs.ClientVGUI_RichText_SetTextW = (decltype(gPrivateFuncs.ClientVGUI_RichText_SetTextW))GamedataResolvePtr(
+			RealDllInfo.ImageBase, "vgui2::RichText::SetText(wchar_t const*)", MH_GAMESYMBOL_KIND_FUNCTION);
 	}
 }
 
 void NativeClientUI_InstallHooks(void)
 {
 	Install_InlineHook(ClientVGUI_LoadControlSettings);
-	Install_InlineHook(ClientVGUI_KeyValues_LoadFromFile);
-	Install_InlineHook(ClientVGUI_Panel_Init);
+	if (gPrivateFuncs.ClientVGUI_KeyValues_LoadFromFile)
+	{
+		Install_InlineHook(ClientVGUI_KeyValues_LoadFromFile);
+	}
+	if (gPrivateFuncs.ClientVGUI_Panel_Init)
+	{
+		Install_InlineHook(ClientVGUI_Panel_Init);
+	}
+	if (gPrivateFuncs.TeamMenu_LoadMapPage)
+	{
+		Install_InlineHook(TeamMenu_LoadMapPage);
+	}
+	if (gPrivateFuncs.ClientVGUI_RichText_SetTextW)
+	{
+		Install_InlineHook(ClientVGUI_RichText_SetTextW);
+	}
 }
 
 void NativeClientUI_UninstallHooks(void)
@@ -1529,6 +988,8 @@ void NativeClientUI_UninstallHooks(void)
 	Uninstall_Hook(ClientVGUI_LoadControlSettings);
 	Uninstall_Hook(ClientVGUI_KeyValues_LoadFromFile);
 	Uninstall_Hook(ClientVGUI_Panel_Init);
+	Uninstall_Hook(TeamMenu_LoadMapPage);
+	Uninstall_Hook(ClientVGUI_RichText_SetTextW);
 }
 
 bool ClientVGUI_UseVGUI1()
@@ -1559,11 +1020,6 @@ void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc)
 
 		if (g_pClientVGUI)
 		{
-			if (g_bIsCounterStrike)
-			{
-				g_pCounterStrikeViewport = (CounterStrikeViewport*)(g_pClientVGUI - 1);
-			}
-
 			PVOID* ProxyVFTable = *(PVOID**)&s_ClientVGUIProxy;
 
 			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 1, (void*)ProxyVFTable[1], (void**)&m_pfnCClientVGUI_Initialize);
@@ -1575,7 +1031,7 @@ void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc)
 			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 7, (void*)ProxyVFTable[7], (void**)&m_pfnCClientVGUI_ActivateClientUI);
 			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 8, (void*)ProxyVFTable[8], (void**)&m_pfnCClientVGUI_HideClientUI);
 
-			NativeClientUI_FillAddress(g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
+			NativeClientUI_FillAddress(g_ClientDLLInfo);
 			NativeClientUI_InstallHooks();
 
 			g_IsNativeClientVGUI2 = true;
@@ -1586,6 +1042,11 @@ void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc)
 	{
 		pExportFunc->ClientFactory = NewClientFactory;
 	}
+}
+
+void ClientVGUI_UninstallHooks()
+{
+	//TODO uninstall VFTHooks
 }
 
 PVOID VGUIClient001_CreateInterface(HINTERFACEMODULE hModule)

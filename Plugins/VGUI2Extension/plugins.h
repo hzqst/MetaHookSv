@@ -3,9 +3,9 @@
 #include <metahook.h>
 
 //VGUI2Extension resolves its gamedata-covered game-private symbols (FUNCTION/
-//GLOBAL) exclusively through the gamedata catalog, which requires the
-//ResolveGameSymbol API slot introduced by MetaHook API 109.
-static_assert(METAHOOK_API_VERSION >= 109, "VGUI2Extension resolves gamedata-covered game-private symbols from gamedata and requires MetaHook API 109");
+//GLOBAL/VIRTUAL_FUNCTION/STRUCT_MEMBER) exclusively through the gamedata catalog.
+//Reading a reported vtable slot index (mh_gamesymbol_t::vfuncIndex) requires API 115.
+static_assert(METAHOOK_API_VERSION >= 115, "VGUI2Extension consumes mh_gamesymbol_t::vfuncIndex and requires MetaHook API 115");
 
 extern IFileSystem *g_pFileSystem;
 extern IFileSystem_HL25 *g_pFileSystem_HL25;
@@ -20,7 +20,6 @@ extern HMODULE g_hClientModule;
 extern mh_dll_info_t g_EngineDLLInfo;
 extern mh_dll_info_t g_MirrorEngineDLLInfo;
 extern mh_dll_info_t g_ClientDLLInfo;
-extern mh_dll_info_t g_MirrorClientDLLInfo;
 
 extern bool g_bIsSvenCoop;
 extern bool g_bIsCounterStrike;
@@ -48,6 +47,46 @@ inline PVOID GamedataResolvePtr(PVOID moduleBase, const char* symbolName, mh_gam
 	}
 
 	return address;
+}
+
+//Native client UI hooks are optional when the binary publishes no entry.
+inline PVOID GamedataResolvePtrIfAvailable(PVOID moduleBase, const char* symbolName, mh_gamesymbol_kind_t kind)
+{
+	if (g_pMetaHookAPI->IsGameSymbolAvailable(moduleBase, symbolName) != MH_GAMESYMBOL_OK)
+		return nullptr;
+
+	return GamedataResolvePtr(moduleBase, symbolName, kind);
+}
+
+//Resolve a required structMember byte offset; a missing symbol or a kind mismatch
+//is fatal, mirroring the Sig_FuncNotFound/Sig_VarNotFound policy of the locators.
+inline DWORD GamedataResolveStructMember(PVOID moduleBase, const char* symbolName)
+{
+	uint32_t offset = 0;
+	mh_gamesymbol_status_t status = g_pMetaHookAPI->QueryGameSymbolStructMember(moduleBase, symbolName, &offset);
+
+	if (status != MH_GAMESYMBOL_OK)
+	{
+		Sys_Error("Could not resolve gamedata structMember: %s (%s)\nEngine buildnum: %d",
+			symbolName, g_pMetaHookAPI->GetGameSymbolStatusString(status), g_dwEngineBuildnum);
+	}
+
+	return offset;
+}
+
+//Resolve a required VIRTUAL_FUNCTION record's owning vtable slot.
+inline DWORD GamedataResolveVFuncIndex(PVOID moduleBase, const char* symbolName)
+{
+	mh_gamesymbol_t symbol = {};
+	symbol.cbSize = sizeof(symbol);
+
+	if (g_pMetaHookAPI->QueryGameSymbol(moduleBase, symbolName, &symbol) != MH_GAMESYMBOL_OK ||
+		symbol.kind != MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION)
+	{
+		Sys_Error("Could not resolve gamedata virtualFunction: %s\nEngine buildnum: %d", symbolName, g_dwEngineBuildnum);
+	}
+
+	return symbol.vfuncIndex;
 }
 
 #define Sig_Length(a) (sizeof(a)-1)

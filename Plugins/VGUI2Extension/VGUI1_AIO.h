@@ -139,7 +139,7 @@ public:
 class vgui1_EngineSurfaceWrapLegacy : public vgui1_SurfaceBaseLegacy
 {
 public:
-	virtual void WndProcHandler(void *hwnd, unsigned int msg, unsigned int wparam, long lparam) = 0;
+	virtual void WndProcHandler(void* hwnd, unsigned int msg, unsigned int wparam, long lparam) = 0;
 	virtual void lockCursor() = 0;
 	virtual void unlockCursor() = 0;
 	virtual void drawLine(int x1, int y1, int x2, int y2) = 0;

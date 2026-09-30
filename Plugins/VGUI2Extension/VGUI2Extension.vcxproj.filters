@@ -460,6 +460,9 @@
     <ClInclude Include="exportfuncs.h">
       <Filter>Header</Filter>
     </ClInclude>
+    <ClInclude Include="LanguageRegistry.h">
+      <Filter>Header</Filter>
+    </ClInclude>
     <ClInclude Include="message.h">
       <Filter>Header</Filter>
     </ClInclude>

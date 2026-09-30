@@ -52,7 +52,7 @@ flowchart TD
     L --> M[WaitForAliveThreadsToShutdown]
 ```
 
-Supplement: since issue #855 (2026-09-09) `Engine_FillAddress(void)` resolves `IEngine** engine` from gamedata (`ResolveGameSymbol(real base, "engine", MH_GAMESYMBOL_KIND_GLOBAL)`); the old `"Sys_InitArgv( OrigCmd )"` string anchor + disassembly scan is deleted. `GetEngineDLLState()` still dereferences the slot once to determine `DLL_CLOSE/DLL_RESTART`. See [[threadguard-privatevars]].
+Supplement: since issue #855 (2026-09-09) `Engine_FillAddress(void)` resolves `IEngine** eng` from gamedata (`GamedataResolvePtr(real base, "eng", MH_GAMESYMBOL_KIND_GLOBAL)`); the old `"Sys_InitArgv( OrigCmd )"` string anchor + disassembly scan is deleted. `GetEngineDLLState()` still dereferences the slot once to determine `DLL_CLOSE/DLL_RESTART`. **Renamed 2026-09-30:** the catalog symbol is `eng`, not `engine` (upstream's intentional naming; the plugin variable and the validator's `COMMON_REQUIRED` entry were renamed to match). See [[threadguard-privatevars]].
 
 ## Dependencies
 - **MetaHook API**: `RegisterLoadDllNotificationCallback` / `IATHook` / `BlobIATHook` / `UnHook` / `HookCmd` / `FindCmd`, and the gamedata trio `ResolveGameSymbol` / `GetModuleCRC64` / `GetGameSymbolStatusString`.
@@ -65,7 +65,7 @@ Supplement: since issue #855 (2026-09-09) `Engine_FillAddress(void)` resolves `I
 - Actual waiting for thread exit occurs only when `GetEngineDLLState()` is `DLL_CLOSE` or `DLL_RESTART`.
 - `GameUI.dll` / `ServerBrowser.dll` skip thread hooks when they depend on `steam_api.dll` and do not import `CreateThread` (they are considered to use the callback model).
 - `server.dll`-related hooks are enabled only under the `svencoop` directory (`ServerDLL_InstallHook` has an explicit gate).
-- Since #855 `Engine_FillAddress` is gamedata-only: it resolves GLOBAL `engine` with the real module base and aborts with a specific `Failed to resolve "engine"` diagnostic (symbol / buildnum / CRC64 / status) instead of the old silent-null `Sys_Error("CEngine not found")`. Mirror-space conversion, section preparation and the unused no-argument `Engine_InstallHook` / `Engine_UninstallHook` declarations were removed.
+- Since #855 `Engine_FillAddress` is gamedata-only: it resolves GLOBAL `eng` with the real module base and aborts with a specific `Could not resolve gamedata symbol: eng` diagnostic (symbol / buildnum / status) instead of the old silent-null `Sys_Error("CEngine not found")`. Mirror-space conversion, section preparation and the unused no-argument `Engine_InstallHook` / `Engine_UninstallHook` declarations were removed.
 - `ThreadManager.cpp` contains `#if 0`-disabled code related to the “closed thread” flow, indicating that only the alive-thread path is currently maintained.
 
 ## Callers (Optional)

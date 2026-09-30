@@ -100,3 +100,13 @@ typedef struct voxword
 	sfx_t *sfx;
 }
 voxword_t;
+
+typedef struct quakeparms_s
+{
+	char* basedir;
+	char* cachedir;		// for development over ISDN lines
+	int		argc;
+	const char** argv;
+	void* membase;
+	unsigned int		memsize;
+} quakeparms_t;

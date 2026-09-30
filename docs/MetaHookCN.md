@@ -305,7 +305,9 @@ API 版本 113 追加 `MH_GAMESYMBOL_KIND_VTABLE`，沿用 `ResolveGameSymbol` �
 
 API 版本 114 追加 `MH_GAMESYMBOL_KIND_STRUCT_MEMBER` 与 `QueryGameSymbolStructMember` 槽位，不移动已有槽位。
 
-插件调用前须检查所用函数或 kind 对应的 `MetaHookAPIVersion`（`QueryGameSymbolStructMember` 要求 114）。所有返回的字符串/pattern 指针都由 MetaHook 持有、进程退出前有效；请勿释放或修改。
+API 版本 115 在 `mh_gamesymbol_t` 末尾追加 `DWORD vfuncIndex`，报告 `VIRTUAL_FUNCTION` 记录所属的 vtable 槽位，不新增函数槽位。`mh_gamesymbol_t` 是版本化结构体：用更早的头编译的模块按自身较小的 `cbSize` 调用，只是拿不到新字段，因此本次追加在源码与二进制两个方向上都是兼容的。
+
+插件调用前须检查所用函数、kind 或结构体字段对应的 `MetaHookAPIVersion`（`QueryGameSymbolStructMember` 要求 114，`mh_gamesymbol_t::vfuncIndex` 要求 115）。所有返回的字符串/pattern 指针都由 MetaHook 持有、进程退出前有效；请勿释放或修改。
 
 ## 类型
 
@@ -329,7 +331,7 @@ typedef enum mh_gamesymbol_kind_e
 
 `SCALAR`（API 111）表示按 binary identity 绑定的纯 `uint32` 数值，而非地址。它不会被 `ResolveGameSymbol` 解析，其数值不得加 image base、不得解引用，请使用 `QueryGameSymbolScalar` 获取。
 
-`VIRTUAL_FUNCTION`（API 112）表示从所属 vtable 槽位恢复的函数入口（`func_rva`）。它是地址型记录，由 `ResolveGameSymbol` 按与 `FUNCTION` 相同的方式解析为 `moduleBase + rva`。
+`VIRTUAL_FUNCTION`（API 112）表示从所属 vtable 槽位恢复的函数入口（`func_rva`）。它是地址型记录，由 `ResolveGameSymbol` 按与 `FUNCTION` 相同的方式解析为 `moduleBase + rva`。其所属槽位索引由 `vfuncIndex` 报告（API 115）。
 
 `VTABLE`（API 113）表示虚函数表数组的地址。
 
@@ -369,7 +371,7 @@ typedef struct mh_pattern_s
 
 typedef struct mh_gamesymbol_s
 {
-	DWORD cbSize;              // 调用前设为 sizeof(mh_gamesymbol_t)
+	DWORD cbSize;              // 调用前设为 sizeof(mh_gamesymbol_t)，或旧形态的大小
 	mh_gamesymbol_kind_t kind;
 	DWORD flags;
 	uint64_t moduleCRC64;
@@ -382,6 +384,8 @@ typedef struct mh_gamesymbol_s
 	DWORD instructionOffset;   // 仅 global
 	DWORD operandOffset;       // 仅 global
 	DWORD instructionLength;   // 仅 global
+
+	DWORD vfuncIndex;          // 仅 virtualFunction（API 115）
 } mh_gamesymbol_t;
 ```
 
@@ -399,7 +403,7 @@ typedef struct mh_gamesymbol_s
 | `QueryGameSymbolScalar(moduleBase, name, &value)`（API 111） | 返回 scalar 记录的 `uint32` 数值；符号存在但 kind 非 scalar 时返回 `MH_GAMESYMBOL_KIND_MISMATCH`。数值按原样消费：不加 image base、不解引用。 |
 | `QueryGameSymbolStructMember(moduleBase, name, &offset)`（API 114） | 返回 structMember 记录的 `uint32` 字节偏移；kind 不符时返回 `MH_GAMESYMBOL_KIND_MISMATCH`。偏移相对于对象，不加 image base。 |
 
-`QueryGameSymbol` / `QueryGameSymbolByCRC64` 要求调用方将 `outSymbol->cbSize` 初始化为 `sizeof(mh_gamesymbol_t)`；更小会返回 `MH_GAMESYMBOL_OUTPUT_TOO_SMALL`。失败时输出字段会被清零，同时保留 `cbSize`。scalar 与 structMember 记录会返回对应 kind，地址字段为 0；数值或偏移通过各自专用接口获取。
+`QueryGameSymbol` / `QueryGameSymbolByCRC64` 通过 `cbSize` 做版本化：调用方将 `outSymbol->cbSize` 设为其编译时已知的 `sizeof(mh_gamesymbol_t)`，实现只写入 `min(cbSize, sizeof(mh_gamesymbol_t))` 字节。因此用更早、更小的形态编译的调用方仍可正常工作，并拿到它能容纳的全部字段；`cbSize` 小于版本化前缀（直到 `signature` 为止）时返回 `MH_GAMESYMBOL_OUTPUT_TOO_SMALL`。失败时输出字段会被清零，同时保留 `cbSize`。scalar 与 structMember 记录会返回对应 kind，地址字段为 0；数值或偏移通过各自专用接口获取。virtualFunction 记录在 `vfuncIndex` 中报告所属 vtable 槽位，其它 kind 恒为 0。
 
 `IsGameSymbolAvailable` 不支持通配符或数字区间语法。需要连续编号记录族（如 `Cvar_Set_to_Cvar_DirectSet_callsite_0..N`）的调用方自行拼接精确名字，先用 `IsGameSymbolAvailable` 探测存在性，仅对存在的名字调用 `ResolveGameSymbol` 取地址。
 

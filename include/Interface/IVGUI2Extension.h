@@ -112,9 +112,12 @@ class IVGUI2Extension_GameUIOptionDialogCallbacks : public IVGUI2Extension_BaseC
 {
 public:
     DEFINE_VGUI2EXTENSION_CALLBACK_SIMPLE(COptionsDialog_ctor, IGameUIOptionsDialogCtorCallbackContext* CallbackContext);
+
+    //hl-10210 has no standalone ApplyVidSettings to hook. (inlined into COptionsSubPage_OnApplyChanges)
     DEFINE_VGUI2EXTENSION_CALLBACK(COptionsSubVideo_ApplyVidSettings, void*& pPanel, bool& bForceRestart);
 
     DEFINE_VGUI2EXTENSION_CALLBACK_SIMPLE(COptionsDialogSubPage_ctor, IGameUIOptionsDialogSubPageCtorCallbackContext* CallbackContext);
+
     DEFINE_VGUI2EXTENSION_CALLBACK(COptionsSubPage_OnApplyChanges, void*& pPanel, const char *name);
 };
 
