@@ -412,6 +412,13 @@ class RequiredScalarGateTests(unittest.TestCase):
         errors = validate.validate_required(symbols, "ENGINE_GOLDSRC", "hl-8684")
         self.assertTrue(any("must belong to module 'engine'" in e for e in errors), errors)
 
+    def test_engine_slot_global_uses_the_catalog_name_eng(self):
+        # ThreadGuard resolves the engine module's IEngine* slot. Upstream renamed
+        # that global from `engine` to `eng` in its 2026-09-30 release, so the gate
+        # must follow the catalog name rather than the old spelling.
+        self.assertEqual("global", validate.COMMON_REQUIRED.get("eng"))
+        self.assertNotIn("engine", validate.COMMON_REQUIRED)
+
 
 class BulletPhysicsEngineGateTests(unittest.TestCase):
     def complete_symbols(self):
@@ -1354,6 +1361,8 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
         "vgui2::RichText::SetText(wchar_t const*)": "function",
         "vgui2::Frame::Activate()": "virtualFunction",
         "CounterStrikeViewport.m_pCSBackGround": "structMember",
+        "CounterStrikeViewport::CCSBackGroundPanel::Activate()": "virtualFunction",
+        "CounterStrikeViewport::CCSBackGroundPanel.m_offsetX": "structMember",
     }
     # The first two are only type-checked when present on non-CS clients.
     optional = ("vgui2::Panel::Init(int, int, int, int)",
@@ -1362,9 +1371,21 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
              "cstrike-8684", "cstrike-10210", "czero-8684", "czero-10210",
              "czeror-8684", "czeror-10210")
     # Condition Zero Deleted Scenes publishes no background panel: the plugin
-    # skips that block for czeror, so its member offset is not gated there.
+    # skips that block for czeror, so its entries are not gated there.
     zds_games = ("czeror-8684", "czeror-10210")
     background_panel_member = "CounterStrikeViewport.m_pCSBackGround"
+    background_panel_records = (
+        "CounterStrikeViewport.m_pCSBackGround",
+        "CounterStrikeViewport::CCSBackGroundPanel.m_offsetX",
+        "CounterStrikeViewport::CCSBackGroundPanel::Activate()",
+    )
+    # The CZDS WorldMap entries, published only by the czeror snapshots.
+    czds_records = {
+        "CZEROViewPort.m_pWorldMapPanel": "structMember",
+        "CWorldMap::PaintBackground()": "virtualFunction",
+        "CWorldMapMissionSelect::PaintBackground()": "virtualFunction",
+    }
+    czds_games = validate.VGUI2EXTENSION_CZDS_CLIENT_GAMES
     # The engine-side globals that replaced the disassembly locators. They live
     # in the engine module, which the Counter-Strike client snapshots do not
     # publish. Older engines use the separately gated registry reader; the
@@ -1406,8 +1427,11 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
     visible_mouse_global = "g_iVisibleMouse"
 
     def complete_symbols(self):
-        return {("client", name): {"kind": kind, "module": "client"}
-                for name, kind in self.records.items()}
+        symbols = {("client", name): {"kind": kind, "module": "client"}
+                   for name, kind in self.records.items()}
+        symbols.update({("client", name): {"kind": kind, "module": "client"}
+                        for name, kind in self.czds_records.items()})
+        return symbols
 
     def complete_engine_symbols(self, game_version=None):
         symbols = {("engine", name): {"kind": kind, "module": "engine"}
@@ -1527,7 +1551,7 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
     def test_missing_or_mistyped_client_entry_is_rejected(self):
         for gv in self.games:
             for name, kind in self.records.items():
-                if gv in self.zds_games and name == self.background_panel_member:
+                if gv in self.zds_games and name in self.background_panel_records:
                     continue
                 for record in (None, {"kind": "global", "module": "client"},
                                {"kind": kind, "module": "engine"}):
@@ -1543,7 +1567,61 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
         for gv in self.zds_games:
             with self.subTest(gv=gv):
                 symbols = self.complete_symbols()
-                del symbols[("client", self.background_panel_member)]
+                for name in self.background_panel_records:
+                    del symbols[("client", name)]
+                self.assertEqual([], validate.validate_vgui2extension(symbols, gv, include_engine=False))
+
+    def test_background_panel_entries_are_required_where_the_block_runs(self):
+        for name in self.background_panel_records:
+            self.assertIn(name, set(validate.VGUI2EXTENSION_BACKGROUND_PANEL_STRUCT_MEMBERS)
+                          | set(validate.VGUI2EXTENSION_BACKGROUND_PANEL_VIRTUAL_FUNCTIONS))
+        for gv in set(self.games) - set(self.zds_games):
+            with self.subTest(gv=gv):
+                self.assertEqual([], validate.validate_vgui2extension(
+                    self.complete_symbols(), gv, include_engine=False))
+
+    def test_missing_or_mistyped_background_panel_entry_is_rejected(self):
+        for gv in set(self.games) - set(self.zds_games):
+            for name in self.background_panel_records:
+                kind = self.records[name]
+                for record in (None, {"kind": "global", "module": "client"},
+                               {"kind": kind, "module": "engine"}):
+                    with self.subTest(gv=gv, name=name, record=record):
+                        symbols = self.complete_symbols()
+                        del symbols[("client", name)]
+                        if record is not None:
+                            symbols[("client", name)] = record
+                        errors = validate.validate_vgui2extension(symbols, gv, include_engine=False)
+                        self.assertTrue(any(name in e for e in errors), errors)
+
+    def test_czds_worldmap_entries_are_required_on_the_deleted_scenes_clients(self):
+        for name in self.czds_records:
+            self.assertIn(name, set(validate.VGUI2EXTENSION_CZDS_STRUCT_MEMBERS)
+                          | set(validate.VGUI2EXTENSION_CZDS_VIRTUAL_FUNCTIONS))
+        for gv in self.czds_games:
+            with self.subTest(gv=gv):
+                self.assertEqual([], validate.validate_vgui2extension(
+                    self.complete_symbols(), gv, include_engine=False))
+
+    def test_missing_or_mistyped_czds_entry_is_rejected(self):
+        for gv in self.czds_games:
+            for name, kind in self.czds_records.items():
+                for record in (None, {"kind": "global", "module": "client"},
+                               {"kind": kind, "module": "engine"}):
+                    with self.subTest(gv=gv, name=name, record=record):
+                        symbols = self.complete_symbols()
+                        del symbols[("client", name)]
+                        if record is not None:
+                            symbols[("client", name)] = record
+                        errors = validate.validate_vgui2extension(symbols, gv, include_engine=False)
+                        self.assertTrue(any(name in e for e in errors), errors)
+
+    def test_other_cs_clients_do_not_require_the_czds_entries(self):
+        for gv in set(self.games) - set(self.czds_games):
+            with self.subTest(gv=gv):
+                symbols = self.complete_symbols()
+                for name in self.czds_records:
+                    del symbols[("client", name)]
                 self.assertEqual([], validate.validate_vgui2extension(symbols, gv, include_engine=False))
 
     def test_other_clients_allow_absent_native_entries(self):

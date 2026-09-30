@@ -19,7 +19,6 @@
 #include "DpiManagerInternal.h"
 #include "VGUI2ExtensionInternal.h"
 
-#include <capstone.h>
 #include <sstream>
 
 namespace vgui
@@ -39,6 +38,11 @@ IClientVGUI* g_pClientVGUI = NULL;
 static vgui::Panel* g_pCSBackGroundPanel = NULL;
 static vgui::Panel* g_pWorldMapPanel = NULL;
 static vgui::Panel* g_pWorldMapMissionSelectPanel = NULL;
+
+//True only for the duration of CWorldMap::PaintBackground and
+//CWorldMapMissionSelect::PaintBackground, so the ISurface::GetScreenSize override
+//in SurfaceHook.cpp stays scoped to those two CZDS panels.
+bool g_bIsPaintWorldMapBackground = false;
 
 //True only for the duration of CTeamMenu::LoadMapPage, so the RichText::SetText
 //sanitizer stays scoped to the one caller that trashes Chinese map descriptions.
@@ -236,127 +240,6 @@ void __fastcall CSBuyMenu_Activate(vgui::Panel* pthis, int dummy)
 	}
 }
 
-typedef struct
-{
-	int OffsetCandidates[2];
-	int OffsetCandidatesCount;
-	bool bFoundCall22Ch;
-}VGUI2_IsCSBackGroundPanelActivate_SearchContext;
-
-bool VGUI2_IsCSBackGroundPanelActivate(PVOID Candidate, int* pOffsetBase)
-{
-	VGUI2_IsCSBackGroundPanelActivate_SearchContext ctx = { 0 };
-
-	g_pMetaHookAPI->DisasmRanges(Candidate, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (VGUI2_IsCSBackGroundPanelActivate_SearchContext*)context;
-
-		if (!ctx->bFoundCall22Ch &&
-			pinst->id == X86_INS_CALL &&
-			pinst->detail->x86.op_count == 1 &&
-			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[0].mem.base != 0 &&
-			pinst->detail->x86.operands[0].mem.disp == 0x22C)
-		{
-			ctx->bFoundCall22Ch = true;
-		}
-
-		if (pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[0].mem.base != 0 &&
-			pinst->detail->x86.operands[0].mem.disp >= 0x130 &&
-			pinst->detail->x86.operands[0].mem.disp <= 0x140 &&
-			pinst->detail->x86.operands[1].type == X86_OP_REG)
-		{
-			if (ctx->OffsetCandidatesCount < 2)
-			{
-				ctx->OffsetCandidates[ctx->OffsetCandidatesCount] = pinst->detail->x86.operands[0].mem.disp;
-				ctx->OffsetCandidatesCount++;
-			}
-		}
-
-		if (ctx->bFoundCall22Ch)
-			return TRUE;
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-		}, 0, &ctx);
-
-	if (ctx.bFoundCall22Ch && ctx.OffsetCandidatesCount >= 2)
-	{
-		(*pOffsetBase) = min(ctx.OffsetCandidates[0], ctx.OffsetCandidates[1]);
-		return true;
-	}
-
-	return false;
-}
-
-typedef struct
-{
-	bool bFoundCall80h;
-	int iFoundPush255Count;
-	void* SurfaceGetScreenSize;
-}VGUI2_IsCWorldMapPaintBackground_SearchContext;
-
-bool VGUI2_IsCWorldMapPaintBackground(PVOID Candidate, void** pSurfaceGetScreenSize)
-{
-	VGUI2_IsCWorldMapPaintBackground_SearchContext ctx = { 0 };
-
-	g_pMetaHookAPI->DisasmRanges(Candidate, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (VGUI2_IsCWorldMapPaintBackground_SearchContext*)context;
-
-		if (!ctx->bFoundCall80h &&
-			pinst->id == X86_INS_CALL &&
-			pinst->detail->x86.op_count == 1 &&
-			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[0].mem.base != 0 &&
-			pinst->detail->x86.operands[0].mem.disp == 0x80)
-		{
-			ctx->bFoundCall80h = true;
-			ctx->SurfaceGetScreenSize = address;
-		}
-
-		if (ctx->iFoundPush255Count < 4 &&
-			pinst->id == X86_INS_PUSH &&
-			pinst->detail->x86.op_count == 1 &&
-			pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-			pinst->detail->x86.operands[0].imm == 0xFF)
-		{
-			ctx->iFoundPush255Count++;
-		}
-
-		if (ctx->bFoundCall80h && ctx->iFoundPush255Count >= 4)
-			return TRUE;
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-		}, 0, &ctx);
-
-	if (ctx.bFoundCall80h && ctx.iFoundPush255Count >= 4)
-	{
-		if (pSurfaceGetScreenSize)
-			(*pSurfaceGetScreenSize) = ctx.SurfaceGetScreenSize;
-
-		return true;
-	}
-
-	return false;
-}
-
 void __fastcall ClientVGUI_LoadControlSettings(vgui::Panel* pthis, int dummy, const char* controlResourceName, const char* pathID)
 {
 	//The Counter-Strike buy menu. vgui2::Frame::Activate() is only published on the
@@ -525,36 +408,24 @@ void __fastcall CCSBackGroundPanel_Activate(vgui::Panel* pthis, int dummy)
 	}
 }
 
-void __fastcall CWorldMap_PaintBackground_SurfaceGetScreenSize(vgui::ISurface* pthis, int dummy, int& screenWide, int& screenTall)
-{
-	//xScale = swide / 640.0;
-	//yScale = stall / 480.0;
-
-	//Let xScale = yScale
-	vgui::surface()->GetScreenSize(screenWide, screenTall);
-
-	screenWide = (double)screenTall * 640.0 / 480.0;
-}
-
 void __fastcall CWorldMap_PaintBackground(vgui::Panel* pthis, int dummy)
 {
+	bool previous = g_bIsPaintWorldMapBackground;
+	g_bIsPaintWorldMapBackground = true;
+
 	gPrivateFuncs.CWorldMap_PaintBackground(pthis, dummy);
-}
 
-void __fastcall CWorldMapMissionSelect_PaintBackground_SurfaceGetScreenSize(vgui::ISurface* pthis, int dummy, int& screenWide, int& screenTall)
-{
-	//xScale = swide / 640.0;
-	//yScale = stall / 480.0;
-
-	//Let xScale = yScale
-	vgui::surface()->GetScreenSize(screenWide, screenTall);
-
-	screenWide = (double)screenTall * 640.0 / 480.0;
+	g_bIsPaintWorldMapBackground = previous;
 }
 
 void __fastcall CWorldMapMissionSelect_PaintBackground(vgui::Panel* pthis, int dummy)
 {
+	bool previous = g_bIsPaintWorldMapBackground;
+	g_bIsPaintWorldMapBackground = true;
+
 	gPrivateFuncs.CWorldMapMissionSelect_PaintBackground(pthis, dummy);
+
+	g_bIsPaintWorldMapBackground = previous;
 }
 
 bool __fastcall ClientVGUI_KeyValues_LoadFromFile(void* pthis, int dummy, IFileSystem* pFileSystem, const char* resourceName, const char* pathId)
@@ -1021,25 +892,11 @@ void ClientUIProxy_Start_FillAddress(CClientVGUIProxy *pthis ,const mh_dll_info_
 
 		g_pCSBackGroundPanel = *(vgui::Panel**)((PUCHAR)pthis + offset_CSBackGroundPanel);
 
-		gPrivateFuncs.CCSBackGroundPanel_vftable = *(PVOID**)g_pCSBackGroundPanel;
+		//CCSBackGroundPanel keeps its own Activate override; the field its body
+		//zeroes is published as a member offset, so no vtable walk is needed.
+		int index = (int)GamedataResolveVFuncIndex(g_ClientDLLInfo.ImageBase, "CounterStrikeViewport::CCSBackGroundPanel::Activate()");
 
-		if (//The vftable must be inside client dll image.
-			!((ULONG_PTR)gPrivateFuncs.CCSBackGroundPanel_vftable > (ULONG_PTR)g_ClientDLLInfo.ImageBase &&
-				(ULONG_PTR)gPrivateFuncs.CCSBackGroundPanel_vftable < (ULONG_PTR)g_ClientDLLInfo.ImageBase + g_ClientDLLInfo.ImageSize))
-		{
-			Sig_NotFound(CCSBackGroundPanel);
-		}
-
-		//Frame::Activate's slot; CCSBackGroundPanel keeps its own override in place,
-		//so the base slot index also addresses the panel's own vtable.
-		int index = (int)GamedataResolveVFuncIndex(g_ClientDLLInfo.ImageBase, "vgui2::Frame::Activate()");
-
-		//The field offset the Activate body zeroes (the only part without a gamedata
-		//record yet) is still recovered by disassembly, now from that exact slot.
-		if (!VGUI2_IsCSBackGroundPanelActivate(gPrivateFuncs.CCSBackGroundPanel_vftable[index], &gPrivateFuncs.CCSBackGroundPanel_XOffsetBase))
-		{
-			Sig_NotFound(CCSBackGroundPanel_Activate);
-		}
+		gPrivateFuncs.CCSBackGroundPanel_XOffsetBase = (int)GamedataResolveStructMember(g_ClientDLLInfo.ImageBase, "CounterStrikeViewport::CCSBackGroundPanel.m_offsetX");
 
 		g_pMetaHookAPI->VFTHook(g_pCSBackGroundPanel, 0, index, CCSBackGroundPanel_Activate, (void**)&gPrivateFuncs.CCSBackGroundPanel_Activate);
 
@@ -1048,35 +905,17 @@ void ClientUIProxy_Start_FillAddress(CClientVGUIProxy *pthis ,const mh_dll_info_
 
 	if (g_bIsCZDS)
 	{
-		int offset_WorldMapPanel = 0x7A8;
+		DWORD offset_WorldMapPanel = GamedataResolveStructMember(g_ClientDLLInfo.ImageBase, "CZEROViewPort.m_pWorldMapPanel");
 
 		g_pWorldMapPanel = *(vgui::Panel**)((PUCHAR)pthis + offset_WorldMapPanel);
 
-		gPrivateFuncs.CWorldMap_vftable = *(PVOID**)g_pWorldMapPanel;
+		//The handler raises g_bIsPaintWorldMapBackground around the original call, so
+		//the ISurface::GetScreenSize override applies only to this paint pass.
+		int index = (int)GamedataResolveVFuncIndex(g_ClientDLLInfo.ImageBase, "CWorldMap::PaintBackground()");
 
-		if (
-			!((ULONG_PTR)gPrivateFuncs.CWorldMap_vftable > (ULONG_PTR)g_ClientDLLInfo.ImageBase &&
-				(ULONG_PTR)gPrivateFuncs.CWorldMap_vftable < (ULONG_PTR)g_ClientDLLInfo.ImageBase + g_ClientDLLInfo.ImageSize))
-		{
-			Sig_NotFound("CWorldMap");
-		}
+		g_pMetaHookAPI->VFTHook(g_pWorldMapPanel, 0, index, CWorldMap_PaintBackground, (void**)&gPrivateFuncs.CWorldMap_PaintBackground);
 
-		for (int index = 105; index <= 106; ++index)
-		{
-			PVOID SurfaceGetScreenSize = NULL;
-			if (VGUI2_IsCWorldMapPaintBackground(gPrivateFuncs.CWorldMap_vftable[index], &SurfaceGetScreenSize))
-			{
-				if (!SurfaceGetScreenSize)
-				{
-					Sig_NotFound("CWorldMap_PaintBackground_SurfaceGetScreenSize");
-				}
-				g_pMetaHookAPI->InlinePatchRedirectBranch(SurfaceGetScreenSize, CWorldMap_PaintBackground_SurfaceGetScreenSize, NULL);
-
-				gPrivateFuncs.CWorldMap_PaintBackground_vftable_index = index;
-				//g_pMetaHookAPI->VFTHook(g_pWorldMapPanel, 0, index, CWorldMap_PaintBackground, (void**)&gPrivateFuncs.CWorldMap_PaintBackground);
-				break;
-			}
-		}
+		Sig_FuncNotFound(CWorldMap_PaintBackground);
 	}
 
 	if (g_bIsCZDS)
@@ -1088,31 +927,11 @@ void ClientUIProxy_Start_FillAddress(CClientVGUIProxy *pthis ,const mh_dll_info_
 			Sig_NotFound("WorldMapMissionSelectPanel");
 		}
 
-		gPrivateFuncs.CWorldMapMissionSelect_vftable = *(PVOID**)g_pWorldMapMissionSelectPanel;
+		int index = (int)GamedataResolveVFuncIndex(g_ClientDLLInfo.ImageBase, "CWorldMapMissionSelect::PaintBackground()");
 
-		if (
-			!((ULONG_PTR)gPrivateFuncs.CWorldMapMissionSelect_vftable > (ULONG_PTR)g_ClientDLLInfo.ImageBase &&
-				(ULONG_PTR)gPrivateFuncs.CWorldMapMissionSelect_vftable < (ULONG_PTR)g_ClientDLLInfo.ImageBase + g_ClientDLLInfo.ImageSize))
-		{
-			Sig_NotFound("CWorldMapMissionSelect_vftable");
-		}
+		g_pMetaHookAPI->VFTHook(g_pWorldMapMissionSelectPanel, 0, index, CWorldMapMissionSelect_PaintBackground, (void**)&gPrivateFuncs.CWorldMapMissionSelect_PaintBackground);
 
-		for (int index = 105; index <= 106; ++index)
-		{
-			PVOID SurfaceGetScreenSize = NULL;
-			if (VGUI2_IsCWorldMapPaintBackground(gPrivateFuncs.CWorldMapMissionSelect_vftable[index], &SurfaceGetScreenSize))
-			{
-				if (!SurfaceGetScreenSize)
-				{
-					Sig_NotFound("CWorldMapMissionSelect_PaintBackground_SurfaceGetScreenSize");
-				}
-				g_pMetaHookAPI->InlinePatchRedirectBranch(SurfaceGetScreenSize, CWorldMapMissionSelect_PaintBackground_SurfaceGetScreenSize, NULL);
-
-				gPrivateFuncs.CWorldMapMissionSelect_PaintBackground_vftable_index = index;
-				//g_pMetaHookAPI->VFTHook(g_pWorldMapMissionSelectPanel, 0, index, CWorldMapMissionSelect_PaintBackground, (void**)&gPrivateFuncs.CWorldMapMissionSelect_PaintBackground);
-				break;
-			}
-		}
+		Sig_FuncNotFound(CWorldMapMissionSelect_PaintBackground);
 	}
 }
 
@@ -1222,6 +1041,11 @@ void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc)
 	{
 		pExportFunc->ClientFactory = NewClientFactory;
 	}
+}
+
+void ClientVGUI_UninstallHooks()
+{
+	//TODO uninstall VFTHooks
 }
 
 PVOID VGUIClient001_CreateInterface(HINTERFACEMODULE hModule)

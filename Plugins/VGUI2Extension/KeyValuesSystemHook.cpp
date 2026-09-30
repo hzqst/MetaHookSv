@@ -91,5 +91,5 @@ void KeyValuesSystem_InstallHooks(void)
 
 void KeyValuesSystem_UninstallHooks(void)
 {
-
+	//TODO unhook VFTHooks
 }

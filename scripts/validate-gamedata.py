@@ -48,8 +48,9 @@ COMMON_REQUIRED = {
     "Host_IsSinglePlayerGame": "function",
     "DM_PlayerState": "global",
     "cl_players_model": "global",
-    # ThreadGuard (plugin resolves the engine IEngine* slot via ResolveGameSymbol)
-    "engine": "global",
+    # ThreadGuard (plugin resolves the engine IEngine* slot via ResolveGameSymbol).
+    # Upstream renamed this global from `engine` to `eng` in the 2026-09-30 release.
+    "eng": "global",
     # StudioEvents (plugin resolves the engine current-render-model slot via ResolveGameSymbol)
     "r_model": "global",
 }
@@ -951,6 +952,26 @@ VGUI2EXTENSION_CS_CLIENT_VIRTUAL_FUNCTIONS = (
 )
 VGUI2EXTENSION_BACKGROUND_PANEL_STRUCT_MEMBERS = (
     "CounterStrikeViewport.m_pCSBackGround",
+    "CounterStrikeViewport::CCSBackGroundPanel.m_offsetX",
+)
+# CCSBackGroundPanel's own Activate override; the panel's slot is published on the
+# same identities that carry the background-panel member (the ZDS client does not).
+VGUI2EXTENSION_BACKGROUND_PANEL_VIRTUAL_FUNCTIONS = (
+    "CounterStrikeViewport::CCSBackGroundPanel::Activate()",
+)
+# Condition Zero Deleted Scenes keeps its WorldMap panels; the plugin resolves the
+# panel member offset and both PaintBackground entries there. Only the czeror
+# snapshots publish these records. `vgui2::ISurface::GetScreenSize` is deliberately
+# not gated: the catalog carries it as a slot-only declaration (no func_rva), which
+# is metadata only and never enters the symbol table, so the plugin keeps the
+# interface ABI offset for the call-site scan instead of resolving it.
+VGUI2EXTENSION_CZDS_CLIENT_GAMES = BULLETPHYSICS_CZDS_CLIENT_GAMES
+VGUI2EXTENSION_CZDS_STRUCT_MEMBERS = (
+    "CZEROViewPort.m_pWorldMapPanel",
+)
+VGUI2EXTENSION_CZDS_VIRTUAL_FUNCTIONS = (
+    "CWorldMap::PaintBackground()",
+    "CWorldMapMissionSelect::PaintBackground()",
 )
 # The cursor-visibility global is resolved from the catalog on every client, but
 # only the Sven Co-op snapshots publish it so far. The Counter-Strike, Condition
@@ -1055,6 +1076,13 @@ def validate_vgui2extension(symbols, game_version, include_engine=True):
     if game_version in VGUI2EXTENSION_BACKGROUND_PANEL_GAMES:
         errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_BACKGROUND_PANEL_STRUCT_MEMBERS,
                                   "structMember", "client", "VGUI2Extension")
+        errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_BACKGROUND_PANEL_VIRTUAL_FUNCTIONS,
+                                  "virtualFunction", "client", "VGUI2Extension")
+    if game_version in VGUI2EXTENSION_CZDS_CLIENT_GAMES:
+        errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_CZDS_STRUCT_MEMBERS,
+                                  "structMember", "client", "VGUI2Extension")
+        errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_CZDS_VIRTUAL_FUNCTIONS,
+                                  "virtualFunction", "client", "VGUI2Extension")
     if game_version in VGUI2EXTENSION_VISIBLE_MOUSE_GAMES:
         errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_CLIENT_GLOBALS,
                                   "global", "client", "VGUI2Extension")

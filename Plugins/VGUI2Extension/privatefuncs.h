@@ -61,16 +61,10 @@ typedef struct
 
 	//void* (__fastcall* CCSBackGroundPanel_ctor)(void* pthis, int, void* parent);
 	void (__fastcall* CCSBackGroundPanel_Activate)(void* pthis, int dummy);
-	void** CCSBackGroundPanel_vftable;
 	int CCSBackGroundPanel_XOffsetBase;
 
-	int CWorldMap_PaintBackground_vftable_index;
-	void(__fastcall* CWorldMap_PaintBackground)(void* pthis, int dummy);
-	void** CWorldMap_vftable;
-
-	int CWorldMapMissionSelect_PaintBackground_vftable_index;
+	void (__fastcall* CWorldMap_PaintBackground)(void* pthis, int dummy);
 	void(__fastcall* CWorldMapMissionSelect_PaintBackground)(void* pthis, int dummy);
-	void** CWorldMapMissionSelect_vftable;
 
 	//void* (__fastcall* CClientMOTD_ctor)(void* pthis, int, void* parent);
 	//void (__fastcall* CClientMOTD_PerformLayout)(void* pthis, int dummy);
@@ -224,7 +218,8 @@ void GameUI_UninstallHooks(void);
 void ServerBrowser_FillAddress(void);
 void ServerBrowser_InstallHooks(void);
 void ServerBrowser_UninstallHooks(void);
-void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc); 
+void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc);
+void ClientVGUI_UninstallHooks(void);
 void NativeClientUI_UninstallHooks(void);
 void VGUI1_InstallHooks(void);
 void VGUI1_PostInstallHooks(void);

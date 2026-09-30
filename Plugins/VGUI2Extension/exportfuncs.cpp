@@ -148,6 +148,7 @@ void HUD_Shutdown(void)
 {
 	NativeClientUI_UninstallHooks();
 	Client_UninstallHooks();
+	ClientVGUI_UninstallHooks();
 
 	gExportfuncs.HUD_Shutdown();
 }
