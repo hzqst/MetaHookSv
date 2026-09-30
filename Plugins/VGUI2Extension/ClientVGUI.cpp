@@ -403,8 +403,8 @@ void __fastcall CCSBackGroundPanel_Activate(vgui::Panel* pthis, int dummy)
 
 	if (DpiManagerInternal()->IsHighDpiSupportEnabled())
 	{
-		*(int*)((PUCHAR)pthis + gPrivateFuncs.CCSBackGroundPanel_XOffsetBase) = 0;
-		*(int*)((PUCHAR)pthis + gPrivateFuncs.CCSBackGroundPanel_XOffsetBase + 4) = 0;
+		*(int*)((PUCHAR)pthis + gPrivateFuncs.CCSBackGroundPanel_m_offsetX) = 0;
+		*(int*)((PUCHAR)pthis + gPrivateFuncs.CCSBackGroundPanel_m_offsetY) = 0;
 	}
 }
 
@@ -896,7 +896,8 @@ void ClientUIProxy_Start_FillAddress(CClientVGUIProxy *pthis ,const mh_dll_info_
 		//zeroes is published as a member offset, so no vtable walk is needed.
 		int index = (int)GamedataResolveVFuncIndex(g_ClientDLLInfo.ImageBase, "CounterStrikeViewport::CCSBackGroundPanel::Activate()");
 
-		gPrivateFuncs.CCSBackGroundPanel_XOffsetBase = (int)GamedataResolveStructMember(g_ClientDLLInfo.ImageBase, "CounterStrikeViewport::CCSBackGroundPanel.m_offsetX");
+		gPrivateFuncs.CCSBackGroundPanel_m_offsetX = (int)GamedataResolveStructMember(g_ClientDLLInfo.ImageBase, "CounterStrikeViewport::CCSBackGroundPanel.m_offsetX");
+		gPrivateFuncs.CCSBackGroundPanel_m_offsetY = (int)GamedataResolveStructMember(g_ClientDLLInfo.ImageBase, "CounterStrikeViewport::CCSBackGroundPanel.m_offsetY");
 
 		g_pMetaHookAPI->VFTHook(g_pCSBackGroundPanel, 0, index, CCSBackGroundPanel_Activate, (void**)&gPrivateFuncs.CCSBackGroundPanel_Activate);
 

@@ -1014,7 +1014,40 @@ VGUI2EXTENSION_GAMEUI_FUNCTIONS = (
     "CGameConsoleDialog::CGameConsoleDialog()",
     "CCreateMultiplayerGameDialog::CCreateMultiplayerGameDialog(vgui2::Panel*)",
     "COptionsDialog::COptionsDialog(vgui2::Panel*)",
+    "COptionsSubAudio::COptionsSubAudio(vgui2::Panel*)",
+    "COptionsSubVideo::COptionsSubVideo(vgui2::Panel*)",
+    "COptionsSubMultiplayer::COptionsSubMultiplayer(vgui2::Panel*)",
     "vgui2::Panel::Init(int, int, int, int)",
+)
+# vgui2::RichText::OnThink replaced the ConsoleHistory vftable scan. Published with
+# a func_rva, so a VIRTUAL_FUNCTION record is address-bearing like a FUNCTION one.
+VGUI2EXTENSION_GAMEUI_VIRTUAL_FUNCTIONS = (
+    "vgui2::RichText::OnThink()",
+)
+# The career frames live in the shared Half-Life GameUI.dll that Condition Zero and
+# CZDS load; Sven Co-op ships its own binary and publishes none of them.
+VGUI2EXTENSION_GAMEUI_CAREER_GAMES = (
+    "cof-5936", "hl-10210", "hl-3248", "hl-3266", "hl-3329", "hl-3647",
+    "hl-4554", "hl-6153", "hl-8684",
+)
+VGUI2EXTENSION_GAMEUI_CAREER_FUNCTIONS = (
+    "CCareerProfileFrame::CCareerProfileFrame(vgui2::Panel*)",
+    "CCareerMapFrame::CCareerMapFrame(vgui2::Panel*)",
+    "CCareerBotFrame::CCareerBotFrame(vgui2::Panel*)",
+)
+# hl-10210 inlined ApplyVidSettings into the OnApplyChanges() virtual, which the
+# sub-page ctor wrapper already hooks through its vtable slot; every other GameUI
+# identity publishes the standalone function. The plugin resolves it optionally.
+VGUI2EXTENSION_GAMEUI_APPLYVIDSETTINGS_GAMES = tuple(
+    game for game in RENDERER_ALL_GAMES if game != "hl-10210")
+VGUI2EXTENSION_GAMEUI_APPLYVIDSETTINGS = (
+    "COptionsSubVideo::ApplyVidSettings(bool)",
+)
+# The console dialog's condump failure path reaches exactly one of these per
+# identity: Valve inlined Print into RichText::InsertString on three of them.
+VGUI2EXTENSION_GAMEUI_RICHTEXT_CALLEES = (
+    "CGameConsoleDialog::Print(char const*)",
+    "vgui2::RichText::InsertString(char const*)",
 )
 VGUI2EXTENSION_SERVERBROWSER_FUNCTIONS = (
     "vgui2::Panel::Init(int, int, int, int)",
@@ -1043,6 +1076,19 @@ def validate_vgui2extension(symbols, game_version, include_engine=True):
     if include_engine:
         errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_GAMEUI_FUNCTIONS,
                                   "function", "gameui", "VGUI2Extension")
+        errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_GAMEUI_VIRTUAL_FUNCTIONS,
+                                  "virtualFunction", "gameui", "VGUI2Extension")
+        if game_version in VGUI2EXTENSION_GAMEUI_CAREER_GAMES:
+            errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_GAMEUI_CAREER_FUNCTIONS,
+                                      "function", "gameui", "VGUI2Extension")
+        if game_version in VGUI2EXTENSION_GAMEUI_APPLYVIDSETTINGS_GAMES:
+            errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_GAMEUI_APPLYVIDSETTINGS,
+                                      "function", "gameui", "VGUI2Extension")
+        condump_callees = [name for name in VGUI2EXTENSION_GAMEUI_RICHTEXT_CALLEES
+                           if ("gameui", name) in symbols]
+        if len(condump_callees) != 1:
+            errors.append(f"'{game_version}': gameui must publish exactly one RichText "
+                          f"condump callee, found {len(condump_callees)}")
         errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_SERVERBROWSER_FUNCTIONS,
                                   "function", "serverbrowser", "VGUI2Extension")
         factory_patch = VGUI2EXTENSION_MODULE_FACTORY_PATCH

@@ -1409,8 +1409,31 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
         "CGameConsoleDialog::CGameConsoleDialog()": "function",
         "CCreateMultiplayerGameDialog::CCreateMultiplayerGameDialog(vgui2::Panel*)": "function",
         "COptionsDialog::COptionsDialog(vgui2::Panel*)": "function",
+        "COptionsSubAudio::COptionsSubAudio(vgui2::Panel*)": "function",
+        "COptionsSubVideo::COptionsSubVideo(vgui2::Panel*)": "function",
+        "COptionsSubMultiplayer::COptionsSubMultiplayer(vgui2::Panel*)": "function",
         "vgui2::Panel::Init(int, int, int, int)": "function",
     }
+    # vgui2::RichText::OnThink replaced the ConsoleHistory vftable scan; it is a
+    # VIRTUAL_FUNCTION record, but published with a func_rva like a function one.
+    gameui_virtual_functions = {"vgui2::RichText::OnThink()": "virtualFunction"}
+    # The career frames ship in the shared Half-Life GameUI.dll that CZ/CZDS load;
+    # Sven Co-op publishes none of them.
+    career_functions = {
+        "CCareerProfileFrame::CCareerProfileFrame(vgui2::Panel*)": "function",
+        "CCareerMapFrame::CCareerMapFrame(vgui2::Panel*)": "function",
+        "CCareerBotFrame::CCareerBotFrame(vgui2::Panel*)": "function",
+    }
+    career_games = validate.VGUI2EXTENSION_GAMEUI_CAREER_GAMES
+    # hl-10210 inlined ApplyVidSettings into OnApplyChanges(), so it publishes no
+    # standalone function and the plugin resolves it optionally.
+    applyvidsettings_games = validate.VGUI2EXTENSION_GAMEUI_APPLYVIDSETTINGS_GAMES
+    applyvidsettings = "COptionsSubVideo::ApplyVidSettings(bool)"
+    # Exactly one condump callee per identity: Valve inlined Print into
+    # RichText::InsertString on the HL25 and both Sven Co-op GameUI.dll builds.
+    insert_string = "vgui2::RichText::InsertString(char const*)"
+    print_callee = "CGameConsoleDialog::Print(char const*)"
+    insert_string_games = ("hl-10210", "svencoop-10257", "svencoop-8948")
     serverbrowser_functions = {"vgui2::Panel::Init(int, int, int, int)": "function"}
     engine_games = validate.RENDERER_ALL_GAMES
     registry_games = ("hl-3248", "hl-3266", "hl-3329", "hl-3647", "hl-4554")
@@ -1440,6 +1463,15 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
                         for name, kind in self.engine_functions.items()})
         symbols.update({("gameui", name): {"kind": kind, "module": "gameui"}
                         for name, kind in self.gameui_functions.items()})
+        symbols.update({("gameui", name): {"kind": kind, "module": "gameui"}
+                        for name, kind in self.gameui_virtual_functions.items()})
+        if game_version in self.career_games:
+            symbols.update({("gameui", name): {"kind": kind, "module": "gameui"}
+                            for name, kind in self.career_functions.items()})
+        if game_version in self.applyvidsettings_games:
+            symbols[("gameui", self.applyvidsettings)] = {"kind": "function", "module": "gameui"}
+        condump = self.insert_string if game_version in self.insert_string_games else self.print_callee
+        symbols[("gameui", condump)] = {"kind": "function", "module": "gameui"}
         symbols.update({("serverbrowser", name): {"kind": kind, "module": "serverbrowser"}
                         for name, kind in self.serverbrowser_functions.items()})
         if game_version in self.registry_games:
@@ -1547,6 +1579,77 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
                 symbols = self.complete_engine_symbols(gv)
                 symbols.pop(("client", self.visible_mouse_global), None)
                 self.assertEqual([], validate.validate_vgui2extension(symbols, gv))
+
+    def test_options_sub_page_ctors_are_required_on_every_identity(self):
+        for gv in self.engine_games:
+            for name in ("COptionsSubAudio::COptionsSubAudio(vgui2::Panel*)",
+                         "COptionsSubVideo::COptionsSubVideo(vgui2::Panel*)",
+                         "COptionsSubMultiplayer::COptionsSubMultiplayer(vgui2::Panel*)"):
+                for record in (None, {"kind": "global", "module": "gameui"},
+                               {"kind": "function", "module": "engine"}):
+                    with self.subTest(gv=gv, name=name, record=record):
+                        symbols = self.complete_engine_symbols(gv)
+                        del symbols[("gameui", name)]
+                        if record is not None:
+                            symbols[("gameui", name)] = record
+                        errors = validate.validate_vgui2extension(symbols, gv)
+                        self.assertTrue(any(name in error for error in errors), errors)
+
+    def test_richtext_onthink_is_required_as_a_virtual_function_on_every_identity(self):
+        name = "vgui2::RichText::OnThink()"
+        self.assertIn(name, validate.VGUI2EXTENSION_GAMEUI_VIRTUAL_FUNCTIONS)
+        for gv in self.engine_games:
+            for record in (None, {"kind": "function", "module": "gameui"},
+                           {"kind": "virtualFunction", "module": "engine"}):
+                with self.subTest(gv=gv, record=record):
+                    symbols = self.complete_engine_symbols(gv)
+                    del symbols[("gameui", name)]
+                    if record is not None:
+                        symbols[("gameui", name)] = record
+                    errors = validate.validate_vgui2extension(symbols, gv)
+                    self.assertTrue(any(name in error for error in errors), errors)
+
+    def test_career_frames_are_required_only_where_the_shared_hl_gameui_is_published(self):
+        for gv in self.career_games:
+            for name in self.career_functions:
+                with self.subTest(gv=gv, name=name):
+                    symbols = self.complete_engine_symbols(gv)
+                    del symbols[("gameui", name)]
+                    errors = validate.validate_vgui2extension(symbols, gv)
+                    self.assertTrue(any(name in error for error in errors), errors)
+        for gv in set(self.engine_games) - set(self.career_games):
+            with self.subTest(gv=gv):
+                symbols = self.complete_engine_symbols(gv)
+                for name in self.career_functions:
+                    symbols.pop(("gameui", name), None)
+                self.assertEqual([], validate.validate_vgui2extension(symbols, gv))
+
+    def test_applyvidsettings_is_required_only_where_it_is_standalone(self):
+        self.assertNotIn("hl-10210", self.applyvidsettings_games)
+        for gv in self.applyvidsettings_games:
+            with self.subTest(gv=gv):
+                symbols = self.complete_engine_symbols(gv)
+                del symbols[("gameui", self.applyvidsettings)]
+                errors = validate.validate_vgui2extension(symbols, gv)
+                self.assertTrue(any(self.applyvidsettings in error for error in errors), errors)
+        symbols = self.complete_engine_symbols("hl-10210")
+        symbols.pop(("gameui", self.applyvidsettings), None)
+        self.assertEqual([], validate.validate_vgui2extension(symbols, "hl-10210"))
+
+    def test_the_condump_callee_must_be_published_exactly_once(self):
+        for gv in self.engine_games:
+            with self.subTest(gv=gv, case="both"):
+                symbols = self.complete_engine_symbols(gv)
+                for name in (self.print_callee, self.insert_string):
+                    symbols[("gameui", name)] = {"kind": "function", "module": "gameui"}
+                errors = validate.validate_vgui2extension(symbols, gv)
+                self.assertTrue(any("condump" in error for error in errors), errors)
+            with self.subTest(gv=gv, case="neither"):
+                symbols = self.complete_engine_symbols(gv)
+                for name in (self.print_callee, self.insert_string):
+                    symbols.pop(("gameui", name), None)
+                errors = validate.validate_vgui2extension(symbols, gv)
+                self.assertTrue(any("condump" in error for error in errors), errors)
 
     def test_missing_or_mistyped_client_entry_is_rejected(self):
         for gv in self.games:

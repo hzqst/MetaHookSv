@@ -61,7 +61,8 @@ typedef struct
 
 	//void* (__fastcall* CCSBackGroundPanel_ctor)(void* pthis, int, void* parent);
 	void (__fastcall* CCSBackGroundPanel_Activate)(void* pthis, int dummy);
-	int CCSBackGroundPanel_XOffsetBase;
+	int CCSBackGroundPanel_m_offsetX;
+	int CCSBackGroundPanel_m_offsetY;
 
 	void (__fastcall* CWorldMap_PaintBackground)(void* pthis, int dummy);
 	void(__fastcall* CWorldMapMissionSelect_PaintBackground)(void* pthis, int dummy);
@@ -121,7 +122,6 @@ typedef struct
 	void (__fastcall* COptionsSubMultiplayer_OnApplyChanges)(void* pthis, int dummy);
 
 	void(__fastcall *COptionsSubVideo_ApplyVidSettings)(void *pthis, int dummy, bool bForceRestart);
-	void(__fastcall *COptionsSubVideo_ApplyVidSettings_HL25)(void *pthis, int dummy);
 
 	void** CTaskBar_vftable;
 	void*(__fastcall*CTaskBar_ctor)(void* pthis, int dummy, void* parent, const char* panelName);
