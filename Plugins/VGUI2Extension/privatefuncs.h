@@ -95,8 +95,6 @@ typedef struct
 	void(__fastcall* GameUI_Panel_Init)(void* pthis, int dummy, int x, int y, int w, int h);
 	void(__fastcall* GameUI_LoadControlSettings)(void* pthis, int dummy, const char* controlResourceName, const char* pathID);
 	void(__fastcall* GameUI_LoadControlSettingsAndUserConfig)(void* pthis, int dummy, const char* dialogResourceName, int dialogID);
-	void*(__fastcall* GameUI_KeyValues_ctor)(void* pthis, int dummy, const char* name);
-	void** GameUI_KeyValues_vftable;
 	bool(__fastcall* GameUI_KeyValues_LoadFromFile)(void* pthis, int dummy, IFileSystem* pFileSystem, const char* resourceName, const char* pathId);
 	void(__fastcall* GameUI_Panel_SetSize)(void* pthis, int dummy, int width, int height);
 	void** GameUI_Menu_vftable;
@@ -120,7 +118,6 @@ typedef struct
 
 	void(__fastcall *COptionsSubVideo_ApplyVidSettings)(void *pthis, int dummy, bool bForceRestart);
 
-	void** CTaskBar_vftable;
 	void*(__fastcall*CTaskBar_ctor)(void* pthis, int dummy, void* parent, const char* panelName);
 	void(__fastcall* CTaskBar_OnCommand)(void* pthis, int dummy, const char* command);
 	void(__fastcall* CTaskBar_CreateGameMenu)(void* pthis, int dummy);
@@ -133,8 +130,6 @@ typedef struct
 	void* (__fastcall *GameUI_PropertySheet_HasHotkey)(void* pthis, int dummy, wchar_t key);
 	void* (__fastcall *GameUI_FocusNavGroup_GetCurrentFocus)(void* pthis, int dummy);
 
-	void(__fastcall* GameUI_RichText_Print)(void* pthis, int dummy, const char* msg);
-	void (__fastcall* GameUI_RichText_InsertStringA)(void* pthis, int dummy, const char* msg);
 	void(__fastcall* GameUI_RichText_InsertStringW)(void* pthis, int dummy, const wchar_t* msg);
 	void(__fastcall* GameUI_RichText_InsertChar)(void* pthis, int dummy, wchar_t ch);
 	void (__fastcall* GameUI_RichText_OnThink)(void* pthis, int dummy);//virtual 0x158

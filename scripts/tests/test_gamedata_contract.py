@@ -291,6 +291,28 @@ class SnapshotContractTests(unittest.TestCase):
                 (bad, errors),
             )
 
+    def test_accepts_function_without_signature(self):
+        # Upstream omits func_sig when no unique pattern exists (e.g. hl-10210's
+        # CTaskbar ctor); the resolver consumes only the rva.
+        record = function_record()
+        del record["payload"]["func_sig"]
+        doc = make_snapshot([record])
+        errors, _, symbols = validate.validate_snapshot(doc, "hl-8684")
+        self.assertEqual([], errors, errors)
+        self.assertEqual(
+            {"kind": "function", "rva": 0x1000, "size": 0x10, "module": "engine"},
+            symbols[("engine", "R_NewMap")],
+        )
+
+    def test_rejects_function_malformed_or_non_string_signature(self):
+        for bad, message in (("zz", "malformed signature"), (1234, "non-string func_sig")):
+            record = function_record()
+            record["payload"]["func_sig"] = bad
+            doc = make_snapshot([record])
+            errors, _, symbols = validate.validate_snapshot(doc, "hl-8684")
+            self.assertTrue(any(message in e for e in errors), (bad, errors))
+            self.assertNotIn(("engine", "R_NewMap"), symbols)
+
     def test_accepts_vtable_record(self):
         doc = make_snapshot([vtable_record()])
         errors, _, symbols = validate.validate_snapshot(doc, "hl-8684")
@@ -1353,6 +1375,11 @@ class SCCameraFixGateTests(unittest.TestCase):
 
 
 class VGUI2ExtensionGateTests(unittest.TestCase):
+    # KeyValues::LoadFromFile is published with and without its vgui2:: namespace
+    # (GoldSrc_VibeSignatures issue #316); either alias satisfies the gates.
+    keyvalues_namespaced = "vgui2::KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)"
+    keyvalues_plain = "KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)"
+    keyvalues_namespaced_games = ("hl-3248", "hl-3266", "hl-3329")
     records = {
         "vgui2::Panel::Init(int, int, int, int)": "function",
         "KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)": "virtualFunction",
@@ -1409,6 +1436,8 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
     # engine-bearing snapshots.
     gameui_functions = {
         "CGameConsoleDialog::CGameConsoleDialog()": "function",
+        "CBasePanel::CBasePanel()": "function",
+        "CTaskbar::CTaskbar(vgui2::Panel*, char const*)": "function",
         "CCreateMultiplayerGameDialog::CCreateMultiplayerGameDialog(vgui2::Panel*)": "function",
         "COptionsDialog::COptionsDialog(vgui2::Panel*)": "function",
         "COptionsSubAudio::COptionsSubAudio(vgui2::Panel*)": "function",
@@ -1416,9 +1445,13 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
         "COptionsSubMultiplayer::COptionsSubMultiplayer(vgui2::Panel*)": "function",
         "vgui2::Panel::Init(int, int, int, int)": "function",
     }
-    # vgui2::RichText::OnThink replaced the ConsoleHistory vftable scan; it is a
-    # VIRTUAL_FUNCTION record, but published with a func_rva like a function one.
-    gameui_virtual_functions = {"vgui2::RichText::OnThink()": "virtualFunction"}
+    # vgui2::RichText::OnThink replaced the ConsoleHistory vftable scan and
+    # CTaskbar::OnCommand the taskbar vftable slot read; they are VIRTUAL_FUNCTION
+    # records, but published with a func_rva like a function one.
+    gameui_virtual_functions = {
+        "vgui2::RichText::OnThink()": "virtualFunction",
+        "CTaskbar::OnCommand(char const*)": "virtualFunction",
+    }
     # The career frames ship in the shared Half-Life GameUI.dll that CZ/CZDS load;
     # Sven Co-op publishes none of them.
     career_functions = {
@@ -1431,11 +1464,16 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
     # standalone function and the plugin resolves it optionally.
     applyvidsettings_games = validate.VGUI2EXTENSION_GAMEUI_APPLYVIDSETTINGS_GAMES
     applyvidsettings = "COptionsSubVideo::ApplyVidSettings(bool)"
-    # Exactly one condump callee per identity: Valve inlined Print into
-    # RichText::InsertString on the HL25 and both Sven Co-op GameUI.dll builds.
-    insert_string = "vgui2::RichText::InsertString(char const*)"
-    print_callee = "CGameConsoleDialog::Print(char const*)"
-    insert_string_games = ("hl-10210", "svencoop-10257", "svencoop-8948")
+    # The plugin hooks the host of the RichText carriage-return filter: InsertChar,
+    # or InsertString(wchar_t const*) on hl-10210, where Valve inlined InsertChar.
+    insert_char = "vgui2::RichText::InsertChar(wchar_t)"
+    insert_string_w = "vgui2::RichText::InsertString(wchar_t const*)"
+    insert_string_w_games = ("hl-10210",)
+    richtext_patch = "vgui2::RichText carriage-return filter branch"
+    # The condump failure-path callees the retired InsertChar walk started from.
+    # The catalog publishes both on some identities; neither is gated any more.
+    condump_callees = ("CGameConsoleDialog::Print(char const*)",
+                       "vgui2::RichText::InsertString(char const*)")
     serverbrowser_functions = {"vgui2::Panel::Init(int, int, int, int)": "function"}
     engine_games = validate.RENDERER_ALL_GAMES
     registry_games = ("hl-3248", "hl-3266", "hl-3329", "hl-3647", "hl-4554")
@@ -1472,8 +1510,12 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
                             for name, kind in self.career_functions.items()})
         if game_version in self.applyvidsettings_games:
             symbols[("gameui", self.applyvidsettings)] = {"kind": "function", "module": "gameui"}
-        condump = self.insert_string if game_version in self.insert_string_games else self.print_callee
-        symbols[("gameui", condump)] = {"kind": "function", "module": "gameui"}
+        richtext_host = self.insert_string_w if game_version in self.insert_string_w_games else self.insert_char
+        symbols[("gameui", richtext_host)] = {"kind": "function", "module": "gameui"}
+        symbols[("gameui", self.richtext_patch)] = {"kind": "patch", "module": "gameui"}
+        keyvalues = (self.keyvalues_namespaced if game_version in self.keyvalues_namespaced_games
+                     else self.keyvalues_plain)
+        symbols[("gameui", keyvalues)] = {"kind": "virtualFunction", "module": "gameui"}
         symbols.update({("serverbrowser", name): {"kind": kind, "module": "serverbrowser"}
                         for name, kind in self.serverbrowser_functions.items()})
         if game_version in self.registry_games:
@@ -1638,20 +1680,84 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
         symbols.pop(("gameui", self.applyvidsettings), None)
         self.assertEqual([], validate.validate_vgui2extension(symbols, "hl-10210"))
 
-    def test_the_condump_callee_must_be_published_exactly_once(self):
+    def test_condump_callees_are_not_gated(self):
         for gv in self.engine_games:
-            with self.subTest(gv=gv, case="both"):
+            with self.subTest(gv=gv):
                 symbols = self.complete_engine_symbols(gv)
-                for name in (self.print_callee, self.insert_string):
+                for name in self.condump_callees:
                     symbols[("gameui", name)] = {"kind": "function", "module": "gameui"}
-                errors = validate.validate_vgui2extension(symbols, gv)
-                self.assertTrue(any("condump" in error for error in errors), errors)
-            with self.subTest(gv=gv, case="neither"):
+                self.assertEqual([], validate.validate_vgui2extension(symbols, gv))
+
+    def test_richtext_insertchar_is_required_except_where_it_is_inlined(self):
+        self.assertEqual(tuple(gv for gv in self.engine_games if gv not in self.insert_string_w_games),
+                         validate.VGUI2EXTENSION_GAMEUI_INSERTCHAR_GAMES)
+        for gv in self.engine_games:
+            name = self.insert_string_w if gv in self.insert_string_w_games else self.insert_char
+            for record in (None, {"kind": "global", "module": "gameui"},
+                           {"kind": "function", "module": "engine"}):
+                with self.subTest(gv=gv, record=record):
+                    symbols = self.complete_engine_symbols(gv)
+                    del symbols[("gameui", name)]
+                    if record is not None:
+                        symbols[("gameui", name)] = record
+                    errors = validate.validate_vgui2extension(symbols, gv)
+                    self.assertTrue(any(name in error for error in errors), errors)
+
+    def test_richtext_insertstring_w_is_not_required_where_insertchar_is_published(self):
+        for gv in self.engine_games:
+            with self.subTest(gv=gv):
                 symbols = self.complete_engine_symbols(gv)
-                for name in (self.print_callee, self.insert_string):
-                    symbols.pop(("gameui", name), None)
+                symbols.pop(("gameui", self.insert_string_w), None)
+                symbols[("gameui", self.insert_char)] = {"kind": "function", "module": "gameui"}
+                self.assertEqual([], validate.validate_vgui2extension(symbols, gv))
+
+    def test_richtext_carriage_return_patch_is_required_on_every_identity(self):
+        for gv in self.engine_games:
+            for record in (None, {"kind": "function", "module": "gameui"},
+                           {"kind": "patch", "module": "engine"}):
+                with self.subTest(gv=gv, record=record):
+                    symbols = self.complete_engine_symbols(gv)
+                    del symbols[("gameui", self.richtext_patch)]
+                    if record is not None:
+                        symbols[("gameui", self.richtext_patch)] = record
+                    errors = validate.validate_vgui2extension(symbols, gv)
+                    self.assertTrue(any(self.richtext_patch in error for error in errors), errors)
+
+    def test_gameui_keyvalues_accepts_either_alias(self):
+        for gv in self.engine_games:
+            for name in (self.keyvalues_namespaced, self.keyvalues_plain):
+                with self.subTest(gv=gv, name=name):
+                    symbols = self.complete_engine_symbols(gv)
+                    symbols.pop(("gameui", self.keyvalues_namespaced), None)
+                    symbols.pop(("gameui", self.keyvalues_plain), None)
+                    symbols[("gameui", name)] = {"kind": "virtualFunction", "module": "gameui"}
+                    self.assertEqual([], validate.validate_vgui2extension(symbols, gv))
+
+    def test_gameui_keyvalues_is_required_and_type_checked(self):
+        for gv in self.engine_games:
+            with self.subTest(gv=gv, case="missing"):
+                symbols = self.complete_engine_symbols(gv)
+                symbols.pop(("gameui", self.keyvalues_namespaced), None)
+                symbols.pop(("gameui", self.keyvalues_plain), None)
                 errors = validate.validate_vgui2extension(symbols, gv)
-                self.assertTrue(any("condump" in error for error in errors), errors)
+                self.assertTrue(any(self.keyvalues_namespaced in error and self.keyvalues_plain in error
+                                    for error in errors), errors)
+            for name in (self.keyvalues_namespaced, self.keyvalues_plain):
+                with self.subTest(gv=gv, case="mistyped", name=name):
+                    symbols = self.complete_engine_symbols(gv)
+                    symbols.pop(("gameui", self.keyvalues_namespaced), None)
+                    symbols.pop(("gameui", self.keyvalues_plain), None)
+                    symbols[("gameui", name)] = {"kind": "function", "module": "gameui"}
+                    errors = validate.validate_vgui2extension(symbols, gv)
+                    self.assertTrue(any(name in error for error in errors), errors)
+
+    def test_cs_client_keyvalues_accepts_the_namespaced_alias(self):
+        for gv in self.games:
+            with self.subTest(gv=gv):
+                symbols = self.complete_symbols()
+                del symbols[("client", self.keyvalues_plain)]
+                symbols[("client", self.keyvalues_namespaced)] = {"kind": "virtualFunction", "module": "client"}
+                self.assertEqual([], validate.validate_vgui2extension(symbols, gv, include_engine=False))
 
     def test_missing_or_mistyped_client_entry_is_rejected(self):
         for gv in self.games:
@@ -1751,7 +1857,7 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
                 self.assertEqual([], validate.validate_vgui2extension(symbols, gv, include_engine=False))
 
     def test_optional_entries_are_type_checked_when_present(self):
-        for name in self.optional:
+        for name in self.optional + (self.keyvalues_namespaced,):
             with self.subTest(name=name):
                 symbols = {("client", name): {"kind": "global", "module": "client"}}
                 errors = validate.validate_vgui2extension(symbols, "svencoop-10257", include_engine=False)

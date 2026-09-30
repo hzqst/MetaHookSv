@@ -58,6 +58,23 @@ inline PVOID GamedataResolvePtrIfAvailable(PVOID moduleBase, const char* symbolN
 	return GamedataResolvePtr(moduleBase, symbolName, kind);
 }
 
+//GoldSrc_VibeSignatures publishes KeyValues with its vgui2:: namespace on some module identities
+//and without it on the others (GoldSrc_VibeSignatures issue #316); accept either name until the
+//catalog settles on vgui2::KeyValues.
+inline PVOID GamedataResolveKeyValuesLoadFromFileIfAvailable(PVOID moduleBase)
+{
+	auto address = GamedataResolvePtrIfAvailable(moduleBase,
+		"vgui2::KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
+
+	if (!address)
+	{
+		address = GamedataResolvePtrIfAvailable(moduleBase,
+			"KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
+	}
+
+	return address;
+}
+
 //Resolve a required structMember byte offset; a missing symbol or a kind mismatch
 //is fatal, mirroring the Sig_FuncNotFound/Sig_VarNotFound policy of the locators.
 inline DWORD GamedataResolveStructMember(PVOID moduleBase, const char* symbolName)

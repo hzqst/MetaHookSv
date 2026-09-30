@@ -1535,17 +1535,6 @@ public:
 		m_pszPanelName = panelName;
 	}
 
-	void InstallHooks()
-	{
-		if (!gPrivateFuncs.CTaskBar_OnCommand)
-		{
-			gPrivateFuncs.CTaskBar_vftable = *(PVOID**)m_pTaskBar;
-			gPrivateFuncs.CTaskBar_OnCommand = (decltype(gPrivateFuncs.CTaskBar_OnCommand))gPrivateFuncs.CTaskBar_vftable[348 / 4]; //TODO: gamedata
-
-			Install_InlineHook(CTaskBar_OnCommand);
-		}
-	}
-
 	void* GetTaskBar() const override
 	{
 		return m_pTaskBar;
@@ -1571,8 +1560,6 @@ void* __fastcall CTaskBar_ctor(void* pthis, int dummy, void* parent, const char*
 	auto result = gPrivateFuncs.CTaskBar_ctor(pthis, dummy, parent, panelName);
 
 	CGameUITaskBarCtorCallbackContext CallbackContext((vgui::Panel*)pthis, (vgui::Panel*)parent, panelName);
-
-	CallbackContext.InstallHooks();
 
 	VGUI2ExtensionInternal()->GameUI_CTaskBar_ctor(&CallbackContext);
 
@@ -2675,247 +2662,45 @@ void GameUI_FillAddress_ConsoleHistory(const mh_dll_info_t& RealDllInfo)
 
 void GameUI_FillAddress_RichText(const mh_dll_info_t& RealDllInfo)
 {
-	//The console dialog's condump failure path calls CGameConsoleDialog::Print where
-	//that is a standalone function, and vgui2::RichText::InsertString where Valve
-	//inlined Print into it. Every identity publishes exactly one of the two.
-	gPrivateFuncs.GameUI_RichText_InsertStringA = (decltype(gPrivateFuncs.GameUI_RichText_InsertStringA))
-		GamedataResolvePtrIfAvailable(RealDllInfo.ImageBase, "vgui2::RichText::InsertString(char const*)", MH_GAMESYMBOL_KIND_FUNCTION);
+	//Hook whichever function hosts the carriage-return filter branch: the standalone
+	//RichText::InsertChar, or RichText::InsertString(wchar_t const*) on hl-10210, where
+	//Valve inlined InsertChar into it and the catalog publishes no InsertChar.
+	gPrivateFuncs.GameUI_RichText_InsertChar = (decltype(gPrivateFuncs.GameUI_RichText_InsertChar))
+		GamedataResolvePtrIfAvailable(RealDllInfo.ImageBase, "vgui2::RichText::InsertChar(wchar_t)", MH_GAMESYMBOL_KIND_FUNCTION);
 
-	if (!gPrivateFuncs.GameUI_RichText_InsertStringA)
+	if (!gPrivateFuncs.GameUI_RichText_InsertChar)
 	{
-		gPrivateFuncs.GameUI_RichText_Print = (decltype(gPrivateFuncs.GameUI_RichText_Print))
-			GamedataResolvePtr(RealDllInfo.ImageBase, "CGameConsoleDialog::Print(char const*)", MH_GAMESYMBOL_KIND_FUNCTION);
+		gPrivateFuncs.GameUI_RichText_InsertStringW = (decltype(gPrivateFuncs.GameUI_RichText_InsertStringW))
+			GamedataResolvePtr(RealDllInfo.ImageBase, "vgui2::RichText::InsertString(wchar_t const*)", MH_GAMESYMBOL_KIND_FUNCTION);
 	}
 }
 
-void GameUI_PatchAddress_RichText_InsertChar(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void GameUI_PatchAddress_RichText_InsertChar(const mh_dll_info_t& RealDllInfo)
 {
-	PVOID RecursiveWalkBase = ConvertDllInfoSpace(
-		(gPrivateFuncs.GameUI_RichText_Print) ? gPrivateFuncs.GameUI_RichText_Print : gPrivateFuncs.GameUI_RichText_InsertStringA,
-		RealDllInfo,
-		DllInfo
-	);
+	//The patch is the Jcc right after the compare against 0Dh that takes the native '\r' early-out.
+	//The catalog only locates the branch, so the rewrite is chosen from its encoding here;
+	//the InsertChar / InsertStringW hooks filter carriage returns themselves.
+	auto address = (PUCHAR)GamedataResolvePtr(RealDllInfo.ImageBase, "vgui2::RichText carriage-return filter branch", MH_GAMESYMBOL_KIND_PATCH);
 
-	typedef struct RichText_Print_SearchContext_s
+	if (address[0] == 0x74)
 	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-		PVOID base{};
-		size_t max_insts{};
-		int max_depth{};
-		std::set<PVOID> code{};
-		std::set<PVOID> branches{};
-		std::vector<walk_context_t> walks{};
-
-		PVOID FunctionBeginCandidate{};
-		int FunctionBeginCandidateDepth{};
-		PVOID Found0xDCandidate{};
-		int Found0xDCandidateInstCount{};
-		bool Is0xDCandidatePatched{};
-	}RichText_Print_SearchContext;
-
-	RichText_Print_SearchContext ctx = { DllInfo, RealDllInfo };
-
-	ctx.base = RecursiveWalkBase;
-	ctx.max_insts = 1000;
-	ctx.max_depth = 16;
-	ctx.walks.emplace_back(ctx.base, 0x1000, 0);
-
-	while (ctx.walks.size())
-	{
-		auto walk = ctx.walks[ctx.walks.size() - 1];
-		ctx.walks.pop_back();
-
-		g_pMetaHookAPI->DisasmRanges(walk.address, walk.len, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (RichText_Print_SearchContext*)context;
-
-			if (ctx->code.size() > ctx->max_insts)
-				return TRUE;
-
-			if (ctx->code.find(address) != ctx->code.end())
-				return TRUE;
-
-			ctx->code.emplace(address);
-
-			/*
-			Engine: 3266
-.text:1006BE4D 0F BE 45 08                                         movsx   eax, byte ptr [ebp+arg_0]
-.text:1006BE51 83 F8 0D                                            cmp     eax, 0Dh
-.text:1006BE54 75 02                                               jnz     short loc_1006BE58 label_work
-.text:1006BE56 EB 67                                               jmp     short loc_1006BEBF label_exit
-				*/
-
-				/*
-				Engine: 4554, 6153
-.text:100573B0 8A 44 24 04                                         mov     al, byte ptr [esp+arg_0]
-.text:100573B4 55                                                  push    ebp
-.text:100573B5 3C 0D                                               cmp     al, 0Dh
-.text:100573B7 8B E9                                               mov     ebp, ecx
-.text:100573B9 0F 84 8C 00 00 00                                   jz      loc_1005744B label_exit
-				*/
-
-				/*
-				Engine: SvEngine
-.text:10047463 80 7D 08 0D                                         cmp     [ebp+arg_0], 0Dh
-
-.text:1004746A 74 3C                                               jz      short loc_100474A8 label_exit
-				*/
-
-				/*
-				Engine: 9920
-.text:1005D664 0F B7 C1                                            movzx   eax, cx
-.text:1005D667 89 45 08                                            mov     [ebp+arg_0], eax
-.text:1005D66A 80 F9 0D                                            cmp     cl, 0Dh
-.text:1005D66D 74 3B                                               jz      short loc_1005D6AA label_exit
-				*/
-
-			if (instCount == 1)
-			{
-				ctx->FunctionBeginCandidate = address;
-				ctx->FunctionBeginCandidateDepth = depth;
-			}
-
-			if (!ctx->Found0xDCandidate &&
-				instCount < 25 &&
-				depth == ctx->FunctionBeginCandidateDepth &&
-				pinst->id == X86_INS_CMP &&
-				pinst->detail->x86.op_count == 2 &&
-				(pinst->detail->x86.operands[0].type == X86_OP_REG || pinst->detail->x86.operands[0].type == X86_OP_MEM) &&
-				pinst->detail->x86.operands[1].imm == 0x0D)
-			{
-				ctx->Found0xDCandidate = address;
-				ctx->Found0xDCandidateInstCount = instCount;
-
-				typedef struct RichText_InsertChar_SearchContext_s
-				{
-					const mh_dll_info_t& DllInfo;
-					const mh_dll_info_t& RealDllInfo;
-					bool IsFetchWord{};
-				}RichText_InsertChar_SearchContext;
-
-				RichText_InsertChar_SearchContext ctx2 = { ctx->DllInfo, ctx->RealDllInfo };
-
-				g_pMetaHookAPI->DisasmRanges(ctx->FunctionBeginCandidate, address - ctx->FunctionBeginCandidate, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-					auto pinst = (cs_insn*)inst;
-					auto ctx = (RichText_InsertChar_SearchContext*)context;
-
-					//66 8B 06                                            mov     ax, [esi]
-					//0F B7 07                                            movzx   eax, word ptr [edi]
-					//66 8B 08                                            mov     cx, [eax]
-
-					if ((pinst->id == X86_INS_MOV || pinst->id == X86_INS_MOVZX) &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_REG &&
-						pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-						(pinst->detail->x86.operands[0].size == 2 || pinst->detail->x86.operands[1].size == 2) &&
-						pinst->detail->x86.operands[1].mem.base != 0 &&
-						pinst->detail->x86.operands[1].mem.disp == 0 &&
-						pinst->detail->x86.operands[1].mem.index == 0 &&
-						pinst->detail->x86.operands[1].mem.scale == 1)
-					{
-						ctx->IsFetchWord = true;
-					}
-
-					if (address[0] == 0xCC)
-						return TRUE;
-
-					if (pinst->id == X86_INS_RET)
-						return TRUE;
-
-					return FALSE;
-
-					}, 0, &ctx2);
-
-				if (ctx2.IsFetchWord)
-				{
-					gPrivateFuncs.GameUI_RichText_InsertStringW = (decltype(gPrivateFuncs.GameUI_RichText_InsertStringW))
-						ConvertDllInfoSpace(ctx->FunctionBeginCandidate, ctx->DllInfo, ctx->RealDllInfo);
-				}
-				else
-				{
-					gPrivateFuncs.GameUI_RichText_InsertChar = (decltype(gPrivateFuncs.GameUI_RichText_InsertChar))
-						ConvertDllInfoSpace(ctx->FunctionBeginCandidate, ctx->DllInfo, ctx->RealDllInfo);
-				}
-			}
-
-			if (!ctx->Is0xDCandidatePatched &&
-				ctx->Found0xDCandidateInstCount > 0 &&
-				instCount > ctx->Found0xDCandidateInstCount &&
-				instCount < ctx->Found0xDCandidateInstCount + 5 &&
-				(pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS) &&
-				pinst->detail->x86.op_count == 1 &&
-				pinst->detail->x86.operands[0].type == X86_OP_IMM)
-			{
-				if (pinst->id == X86_INS_JE)
-				{
-					auto address_RealDllBased = ConvertDllInfoSpace(address, ctx->DllInfo, ctx->RealDllInfo);
-					g_pMetaHookAPI->WriteNOP(address_RealDllBased, instLen);
-					ctx->Is0xDCandidatePatched = true;
-				}
-				else if (pinst->id == X86_INS_JNE)
-				{
-					if (instLen == 2)
-					{
-						//redirect jmp short
-						auto address_RealDllBased = ConvertDllInfoSpace(address, ctx->DllInfo, ctx->RealDllInfo);
-						g_pMetaHookAPI->WriteBYTE(address_RealDllBased, 0xEB);
-						ctx->Is0xDCandidatePatched = true;
-					}
-					else if (instLen == 5)
-					{
-						//redirect jmp
-						auto address_RealDllBased = ConvertDllInfoSpace(address, ctx->DllInfo, ctx->RealDllInfo);
-						g_pMetaHookAPI->WriteBYTE(address_RealDllBased, 0xE9);
-						ctx->Is0xDCandidatePatched = true;
-					}
-				}
-			}
-
-			if (ctx->Is0xDCandidatePatched)
-				return TRUE;
-
-			if ((pinst->id == X86_INS_CALL || pinst->id == X86_INS_JMP || (pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS)) &&
-				pinst->detail->x86.op_count == 1 &&
-				pinst->detail->x86.operands[0].type == X86_OP_IMM)
-			{
-				PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
-				if (imm >= (PUCHAR)ctx->DllInfo.TextBase && imm < (PUCHAR)ctx->DllInfo.TextBase + ctx->DllInfo.TextSize)
-				{
-					auto foundbranch = ctx->branches.find(imm);
-					if (foundbranch == ctx->branches.end())
-					{
-						ctx->branches.emplace(imm);
-						if (depth + 1 < ctx->max_depth)
-							ctx->walks.emplace_back(imm, 0x1000, depth + 1);
-					}
-				}
-
-				if (pinst->id == X86_INS_JMP)
-					return TRUE;
-			}
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-
-			}, walk.depth, &ctx);
+		//jz short label_exit
+		g_pMetaHookAPI->WriteNOP(address, 2);
 	}
-
-	if (!ctx.Is0xDCandidatePatched)
+	else if (address[0] == 0x0F && address[1] == 0x84)
 	{
-		Sys_Error("Failed to patch GameUI!RichText_InsertChar.");
+		//jz label_exit
+		g_pMetaHookAPI->WriteNOP(address, 6);
 	}
-
-	if (!gPrivateFuncs.GameUI_RichText_InsertChar && !gPrivateFuncs.GameUI_RichText_InsertStringW)
+	else if (address[0] == 0x75)
 	{
-		Sys_Error("Failed to locate GameUI!RichText_InsertChar or RichText_InsertStringW.");
+		//jnz short label_work, followed by jmp short label_exit
+		g_pMetaHookAPI->WriteBYTE(address, 0xEB);
+	}
+	else
+	{
+		Sys_Error("Failed to patch GameUI!RichText_InsertChar: unexpected branch opcode %02X %02X.\nEngine buildnum: %d",
+			address[0], address[1], g_dwEngineBuildnum);
 	}
 }
 
@@ -3034,305 +2819,27 @@ void GameUI_PatchAddress_MessageBox_ApplySchemeSettings(const mh_dll_info_t& Dll
 	}
 }
 
-void GameUI_FillAddress_CBasePanel(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void GameUI_FillAddress_CBasePanel(const mh_dll_info_t& RealDllInfo)
 {
-	const char sigs1[] = "Resource/gameui_%language%.txt";
-	const char sigs2[] = "resource/gameui_%language%.txt";
-
-	auto GameUI_String = Search_Pattern_From_Size(DllInfo.RdataBase, DllInfo.RdataSize, sigs1);
-	if (!GameUI_String)
-	{
-		GameUI_String = Search_Pattern_From_Size(DllInfo.DataBase, DllInfo.DataSize, sigs1);
-	}
-	if (!GameUI_String)
-	{
-		GameUI_String = Search_Pattern_From_Size(DllInfo.RdataBase, DllInfo.RdataSize, sigs2);
-		if (!GameUI_String)
-		{
-			GameUI_String = Search_Pattern_From_Size(DllInfo.DataBase, DllInfo.DataSize, sigs2);
-		}
-	}
-	Sig_VarNotFound(GameUI_String);
-
-	char pattern[] = "\x68\x2A\x2A\x2A\x2A";
-	*(DWORD*)(pattern + 1) = (DWORD)GameUI_String;
-
-	auto GameUI_PushString = Search_Pattern(pattern, DllInfo);
-	Sig_VarNotFound(GameUI_PushString);
-
-	typedef struct CGameUIInitializeSearchContext_s
-	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-		PVOID OperatorNewAddress{};
-	} CGameUIInitializeSearchContext;
-
-	CGameUIInitializeSearchContext ctx = { DllInfo, RealDllInfo };
-
-	g_pMetaHookAPI->DisasmRanges(GameUI_PushString, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (CGameUIInitializeSearchContext*)context;
-
-		if (pinst->id == X86_INS_PUSH &&
-			pinst->detail->x86.op_count == 1 &&
-			pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-			pinst->detail->x86.operands[0].imm >= 0x90 && pinst->detail->x86.operands[0].imm <= 0x100)
-		{
-			auto nextaddr = address + instLen;
-
-			if (nextaddr[0] == 0xE8)
-			{
-				ctx->OperatorNewAddress = nextaddr;
-			}
-		}
-		else if (ctx->OperatorNewAddress && address > ctx->OperatorNewAddress && address[0] == 0xE8)
-		{
-			PVOID callTarget = GetCallAddress(address);
-
-			gPrivateFuncs.CBasePanel_ctor = (decltype(gPrivateFuncs.CBasePanel_ctor))
-				ConvertDllInfoSpace(callTarget, ctx->DllInfo, ctx->RealDllInfo);
-
-			return TRUE;
-		}
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-	}, 0, &ctx);
-
-	Sig_FuncNotFound(CBasePanel_ctor);
+	gPrivateFuncs.CBasePanel_ctor = (decltype(gPrivateFuncs.CBasePanel_ctor))
+		GamedataResolvePtr(RealDllInfo.ImageBase, "CBasePanel::CBasePanel()", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
-void GameUI_FillAddress_CTaskBar(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void GameUI_FillAddress_CTaskBar(const mh_dll_info_t& RealDllInfo)
 {
-	const char sigs1[] = "GameMenuButton\0";
-	auto GameMenuButton_String = Search_Pattern_From_Size(DllInfo.RdataBase, DllInfo.RdataSize, sigs1);
-	if (!GameMenuButton_String)
-		GameMenuButton_String = Search_Pattern_From_Size(DllInfo.DataBase, DllInfo.DataSize, sigs1);
-
-	Sig_VarNotFound(GameMenuButton_String);
-
-	char pattern[] = "\x74\x2A\x68\x2A\x2A\x2A\x2A";
-	*(DWORD*)(pattern + 3) = (DWORD)GameMenuButton_String;
-
-	auto GameMenuButton_PushString = Search_Pattern(pattern, DllInfo);
-	Sig_VarNotFound(GameMenuButton_PushString);
-
-	PVOID CTaskBar_ctor_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(GameMenuButton_PushString, 0x350, [](PUCHAR Candidate) {
-
-		if (Candidate[0] == 0x55 &&
-			Candidate[1] == 0x8B &&
-			Candidate[2] == 0xEC &&
-			Candidate[3] == 0x83 &&
-			Candidate[4] == 0xEC)
-			return TRUE;
-
-		if (Candidate[0] == 0x53 &&
-			Candidate[1] == 0x8B &&
-			Candidate[2] == 0xDC &&
-			Candidate[3] == 0x83 &&
-			Candidate[4] == 0xEC)
-			return TRUE;
-
-		//8B 44 24 04                                         mov     eax, [esp+arg_0]
-		if (Candidate[0] == 0x8B &&
-			Candidate[1] == 0x44 &&
-			Candidate[2] == 0x24)
-		{
-			//.text:1002AD81 83 C8 FF                                            or      eax, 0FFFFFFFFh
-			if (Search_Pattern_From_Size(Candidate, 0x100, "\x83\xC8\xFF"))
-			{
-				return TRUE;
-			}
-		}
-		return FALSE;
-	});
-	
+	//hl-10210 publishes the ctor without a func_sig; the resolver only consumes its rva.
 	gPrivateFuncs.CTaskBar_ctor = (decltype(gPrivateFuncs.CTaskBar_ctor))
-		ConvertDllInfoSpace(CTaskBar_ctor_VA, DllInfo, RealDllInfo);
+		GamedataResolvePtr(RealDllInfo.ImageBase, "CTaskbar::CTaskbar(vgui2::Panel*, char const*)", MH_GAMESYMBOL_KIND_FUNCTION);
 
-	Sig_FuncNotFound(CTaskBar_ctor);
+	gPrivateFuncs.CTaskBar_OnCommand = (decltype(gPrivateFuncs.CTaskBar_OnCommand))
+		GamedataResolvePtr(RealDllInfo.ImageBase, "CTaskbar::OnCommand(char const*)", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 }
 
-void GameUI_FillAddress_CTaskBarKeyValues(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void GameUI_FillAddress_KeyValues(const mh_dll_info_t& RealDllInfo)
 {
-	PVOID CTaskBar_ctor_VA = ConvertDllInfoSpace(gPrivateFuncs.CTaskBar_ctor, RealDllInfo, DllInfo);
+	gPrivateFuncs.GameUI_KeyValues_LoadFromFile = (decltype(gPrivateFuncs.GameUI_KeyValues_LoadFromFile))
+		GamedataResolveKeyValuesLoadFromFileIfAvailable(RealDllInfo.ImageBase);
 
-	if (!CTaskBar_ctor_VA)
-	{
-		Sig_NotFound(CTaskBar_ctor_VA);
-	}
-
-	typedef struct CTaskBarCtorSearchContext_s
-	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-	} CTaskBarCtorSearchContext;
-
-	CTaskBarCtorSearchContext ctx = { DllInfo, RealDllInfo };
-
-	g_pMetaHookAPI->DisasmRanges(CTaskBar_ctor_VA, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (CTaskBarCtorSearchContext*)context;
-
-		if (!gPrivateFuncs.CTaskBar_vftable)
-		{
-			if (pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.disp == 0 &&
-				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				((PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->DllInfo.RdataBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.RdataBase + ctx->DllInfo.RdataSize))
-			{
-				auto candidate = (PVOID*)pinst->detail->x86.operands[1].imm;
-
-				if (candidate[0] >= (PUCHAR)ctx->DllInfo.TextBase && candidate[0] < (PUCHAR)ctx->DllInfo.TextBase + ctx->DllInfo.TextSize)
-				{
-					gPrivateFuncs.CTaskBar_vftable = (decltype(gPrivateFuncs.CTaskBar_vftable))ConvertDllInfoSpace(candidate, ctx->DllInfo, ctx->RealDllInfo);
-					gPrivateFuncs.CTaskBar_OnCommand = (decltype(gPrivateFuncs.CTaskBar_OnCommand))GetVFunctionFromVFTable(gPrivateFuncs.CTaskBar_vftable, 348 / 4, ctx->DllInfo, ctx->RealDllInfo, ctx->RealDllInfo);
-				}
-			}
-		}
-
-		if (address[0] == 0xE8)
-		{
-			PVOID call_candidate = (decltype(call_candidate))GetCallAddress(address);
-
-			typedef struct CTaskBarCtor_SearchContext2_s
-			{
-				const mh_dll_info_t& DllInfo;
-				const mh_dll_info_t& RealDllInfo;
-
-				bool bHasPush18h{};
-				bool bHasPushGameMenu{};
-				int instCount_PushGameMenu{};
-			} CTaskBarCtor_SearchContext2;
-
-			CTaskBarCtor_SearchContext2 ctx2 = { ctx->DllInfo, ctx->RealDllInfo };
-
-			g_pMetaHookAPI->DisasmRanges(call_candidate, 0x350, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-				auto pinst = (cs_insn*)inst;
-				auto ctx2 = (CTaskBarCtor_SearchContext2*)context;
-
-				if (!ctx2->bHasPush18h &&
-					pinst->id == X86_INS_PUSH &&
-					pinst->detail->x86.op_count == 1 &&
-					pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-					pinst->detail->x86.operands[0].imm == 0x18)
-				{
-					ctx2->bHasPush18h = true;
-				}
-
-				if (ctx2->bHasPush18h &&
-					pinst->id == X86_INS_PUSH &&
-					pinst->detail->x86.op_count == 1 &&
-					pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-					(
-						((PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)ctx2->DllInfo.DataBase &&
-							(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx2->DllInfo.DataBase + ctx2->DllInfo.DataSize) ||
-						((PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)ctx2->DllInfo.RdataBase &&
-							(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx2->DllInfo.RdataBase + ctx2->DllInfo.RdataSize)
-						))
-				{
-					auto pString = (PCHAR)pinst->detail->x86.operands[0].imm;
-
-					if (!memcmp(pString, "GameMenu\0", sizeof("GameMenu\0") - 1))
-					{
-						ctx2->bHasPushGameMenu = true;
-						ctx2->instCount_PushGameMenu = instCount;
-					}
-				}
-
-				if (!gPrivateFuncs.GameUI_KeyValues_ctor)
-				{
-					if (address[0] == 0xE8)
-					{
-						if (ctx2->bHasPushGameMenu && instCount > ctx2->instCount_PushGameMenu && instCount < ctx2->instCount_PushGameMenu + 5)
-						{
-							PVOID GameUI_KeyValues_ctor_VA = GetCallAddress(address);
-
-							gPrivateFuncs.GameUI_KeyValues_ctor = (decltype(gPrivateFuncs.GameUI_KeyValues_ctor))ConvertDllInfoSpace(GameUI_KeyValues_ctor_VA, ctx2->DllInfo, ctx2->RealDllInfo);
-
-							g_pMetaHookAPI->DisasmRanges(GameUI_KeyValues_ctor_VA, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-								auto pinst = (cs_insn*)inst;
-								auto ctx2 = (CTaskBarCtor_SearchContext2*)context;
-
-								if (!gPrivateFuncs.GameUI_KeyValues_vftable)
-								{
-									if (pinst->id == X86_INS_MOV &&
-										pinst->detail->x86.op_count == 2 &&
-										pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-										pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-										((PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx2->DllInfo.RdataBase &&
-											(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx2->DllInfo.RdataBase + ctx2->DllInfo.RdataSize))
-									{
-										auto candidate_vftable = (PVOID*)pinst->detail->x86.operands[1].imm;
-
-										if (candidate_vftable[0] >= (PUCHAR)ctx2->DllInfo.TextBase && candidate_vftable[0] < (PUCHAR)ctx2->DllInfo.TextBase + ctx2->DllInfo.TextSize)
-										{
-											gPrivateFuncs.GameUI_KeyValues_vftable = (decltype(gPrivateFuncs.GameUI_KeyValues_vftable))
-												ConvertDllInfoSpace(candidate_vftable, ctx2->DllInfo, ctx2->RealDllInfo);
-
-											gPrivateFuncs.GameUI_KeyValues_LoadFromFile = (decltype(gPrivateFuncs.GameUI_KeyValues_LoadFromFile))
-												GetVFunctionFromVFTable(candidate_vftable, 2, ctx2->DllInfo, ctx2->RealDllInfo, ctx2->RealDllInfo);
-										}
-									}
-								}
-
-								if (gPrivateFuncs.GameUI_KeyValues_vftable &&
-									gPrivateFuncs.GameUI_KeyValues_LoadFromFile)
-									return TRUE;
-
-								if (address[0] == 0xCC)
-									return TRUE;
-
-								if (pinst->id == X86_INS_RET)
-									return TRUE;
-
-								return FALSE;
-
-								}, 0, ctx2);
-						}
-					}
-				}
-
-				if (gPrivateFuncs.GameUI_KeyValues_ctor &&
-					gPrivateFuncs.GameUI_KeyValues_vftable &&
-					gPrivateFuncs.GameUI_KeyValues_LoadFromFile)
-					return TRUE;
-
-				if (address[0] == 0xCC)
-					return TRUE;
-
-				if (pinst->id == X86_INS_RET)
-					return TRUE;
-
-				return FALSE;
-
-			}, 0, &ctx2);
-		}
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-	}, 0, &ctx);
-
-	Sig_FuncNotFound(GameUI_KeyValues_ctor);
 	Sig_FuncNotFound(GameUI_KeyValues_LoadFromFile);
 }
 
@@ -3368,7 +2875,7 @@ void GameUI_FillAddress(void)
 
 	GameUI_FillAddress_RichText(g_GameUIDllInfo);
 
-	GameUI_PatchAddress_RichText_InsertChar(g_GameUIDllInfo, g_GameUIDllInfo);
+	GameUI_PatchAddress_RichText_InsertChar(g_GameUIDllInfo);
 
 	GameUI_FillAddress_ConsoleEntry(g_GameUIDllInfo, g_GameUIDllInfo);
 
@@ -3380,11 +2887,11 @@ void GameUI_FillAddress(void)
 
 	GameUI_PatchAddress_MessageBox_ApplySchemeSettings(g_GameUIDllInfo, g_GameUIDllInfo);
 
-	GameUI_FillAddress_CBasePanel(g_GameUIDllInfo, g_GameUIDllInfo);
+	GameUI_FillAddress_CBasePanel(g_GameUIDllInfo);
 
-	GameUI_FillAddress_CTaskBar(g_GameUIDllInfo, g_GameUIDllInfo);
+	GameUI_FillAddress_CTaskBar(g_GameUIDllInfo);
 
-	GameUI_FillAddress_CTaskBarKeyValues(g_GameUIDllInfo, g_GameUIDllInfo);
+	GameUI_FillAddress_KeyValues(g_GameUIDllInfo);
 
 	gPrivateFuncs.GameUI_Panel_Init = (decltype(gPrivateFuncs.GameUI_Panel_Init))
 		GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "vgui2::Panel::Init(int, int, int, int)", MH_GAMESYMBOL_KIND_FUNCTION);

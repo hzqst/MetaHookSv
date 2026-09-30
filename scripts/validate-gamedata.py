@@ -495,11 +495,16 @@ def validate_snapshot(doc, game_version):
             p = payload if isinstance(payload, dict) else {}
             rva = parse_hex_u32(p.get("func_rva"))
             size = parse_hex_u32(p.get("func_size"))
-            sig = p.get("func_sig")
-            if rva is None or size is None or not isinstance(sig, str):
-                errors.append(f"'{game_version}': function '{name}' missing/invalid func_rva/func_size/func_sig")
+            if rva is None or size is None:
+                errors.append(f"'{game_version}': function '{name}' missing/invalid func_rva/func_size")
                 continue
-            if not validate_signature(sig):
+            # The signature is optional (upstream omits it when no unique
+            # pattern exists), but a present one must be a well-formed string.
+            sig = p.get("func_sig")
+            if sig is not None and not isinstance(sig, str):
+                errors.append(f"'{game_version}': function '{name}' has a non-string func_sig")
+                continue
+            if sig is not None and not validate_signature(sig):
                 errors.append(f"'{game_version}': function '{name}' has a malformed signature")
                 continue
             rec = {"kind": "function", "rva": rva, "size": size, "module": mod}
@@ -940,8 +945,14 @@ VGUI2EXTENSION_BACKGROUND_PANEL_GAMES = tuple(
     gv for gv in VGUI2EXTENSION_CLIENT_GAMES if not gv.startswith("czeror-"))
 VGUI2EXTENSION_CLIENT_OPTIONAL_ENTRIES = {
     "vgui2::Panel::Init(int, int, int, int)": "function",
-    "KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)": "virtualFunction",
 }
+# KeyValues::LoadFromFile is published as vgui2::KeyValues on some identities and
+# without the namespace on the others (GoldSrc_VibeSignatures issue #316); the
+# plugin resolves whichever name is present, so either alias satisfies a gate.
+VGUI2EXTENSION_KEYVALUES_LOADFROMFILE_ALIASES = (
+    "vgui2::KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)",
+    "KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)",
+)
 VGUI2EXTENSION_CS_CLIENT_FUNCTIONS = (
     "vgui2::Frame::LoadControlSettings(char const*, char const*)",
     "CTeamMenu::LoadMapPage(char const*)",
@@ -1008,11 +1019,15 @@ VGUI2EXTENSION_ENGINE_FUNCTIONS = (
 # GameUI.dll and ServerBrowser.dll are loaded from the same module identities as
 # the engine snapshots: the Counter-Strike / Condition Zero clients ship the hl
 # GameUI.dll and ServerBrowser.dll, so their entries resolve against these
-# records too. The three dialog constructors and vgui2::Panel::Init replaced the
-# string-anchored reverse-search locators in GameUI.cpp; ServerBrowser only
-# publishes Panel::Init. Both modules are published on every engine identity.
+# records too. The dialog, base panel and taskbar constructors and
+# vgui2::Panel::Init replaced the string-anchored reverse-search locators in
+# GameUI.cpp; ServerBrowser only publishes Panel::Init. Both modules are
+# published on every engine identity. hl-10210 publishes the CTaskbar ctor
+# without a func_sig, which the resolver does not need.
 VGUI2EXTENSION_GAMEUI_FUNCTIONS = (
     "CGameConsoleDialog::CGameConsoleDialog()",
+    "CBasePanel::CBasePanel()",
+    "CTaskbar::CTaskbar(vgui2::Panel*, char const*)",
     "CCreateMultiplayerGameDialog::CCreateMultiplayerGameDialog(vgui2::Panel*)",
     "COptionsDialog::COptionsDialog(vgui2::Panel*)",
     "COptionsSubAudio::COptionsSubAudio(vgui2::Panel*)",
@@ -1020,10 +1035,12 @@ VGUI2EXTENSION_GAMEUI_FUNCTIONS = (
     "COptionsSubMultiplayer::COptionsSubMultiplayer(vgui2::Panel*)",
     "vgui2::Panel::Init(int, int, int, int)",
 )
-# vgui2::RichText::OnThink replaced the ConsoleHistory vftable scan. Published with
-# a func_rva, so a VIRTUAL_FUNCTION record is address-bearing like a FUNCTION one.
+# vgui2::RichText::OnThink replaced the ConsoleHistory vftable scan and
+# CTaskbar::OnCommand the taskbar vftable slot read. Published with a func_rva,
+# so a VIRTUAL_FUNCTION record is address-bearing like a FUNCTION one.
 VGUI2EXTENSION_GAMEUI_VIRTUAL_FUNCTIONS = (
     "vgui2::RichText::OnThink()",
+    "CTaskbar::OnCommand(char const*)",
 )
 # The career frames live in the shared Half-Life GameUI.dll that Condition Zero and
 # CZDS load; Sven Co-op ships its own binary and publishes none of them.
@@ -1044,11 +1061,16 @@ VGUI2EXTENSION_GAMEUI_APPLYVIDSETTINGS_GAMES = tuple(
 VGUI2EXTENSION_GAMEUI_APPLYVIDSETTINGS = (
     "COptionsSubVideo::ApplyVidSettings(bool)",
 )
-# The console dialog's condump failure path reaches exactly one of these per
-# identity: Valve inlined Print into RichText::InsertString on three of them.
-VGUI2EXTENSION_GAMEUI_RICHTEXT_CALLEES = (
-    "CGameConsoleDialog::Print(char const*)",
-    "vgui2::RichText::InsertString(char const*)",
+# The plugin hooks the function hosting the RichText carriage-return filter:
+# the standalone InsertChar, or InsertString(wchar_t const*) on hl-10210, where
+# Valve inlined InsertChar into it. The filter branch itself is patched on every
+# identity.
+VGUI2EXTENSION_GAMEUI_INSERTCHAR_GAMES = tuple(
+    game for game in RENDERER_ALL_GAMES if game != "hl-10210")
+VGUI2EXTENSION_GAMEUI_INSERTCHAR = "vgui2::RichText::InsertChar(wchar_t)"
+VGUI2EXTENSION_GAMEUI_INSERTSTRINGW = "vgui2::RichText::InsertString(wchar_t const*)"
+VGUI2EXTENSION_GAMEUI_RICHTEXT_PATCHES = (
+    "vgui2::RichText carriage-return filter branch",
 )
 VGUI2EXTENSION_SERVERBROWSER_FUNCTIONS = (
     "vgui2::Panel::Init(int, int, int, int)",
@@ -1065,6 +1087,19 @@ VGUI2EXTENSION_MODULE_FACTORY_GAMES = (
     "hl-6153", "hl-8684", "hl-10210", "svencoop-8948", "svencoop-10257",
 )
 VGUI2EXTENSION_MODULE_FACTORY_PATCH = "VGUIClient001_CreateInterface"
+
+
+def _keyvalues_loadfromfile_check(symbols, game_version, module):
+    """Gate KeyValues::LoadFromFile under whichever published alias is present."""
+    for name in VGUI2EXTENSION_KEYVALUES_LOADFROMFILE_ALIASES:
+        if (module, name) in symbols:
+            return _consumer_check(symbols, game_version, (name,), "virtualFunction", module, "VGUI2Extension")
+    aliases = " or ".join(f"'{name}'" for name in VGUI2EXTENSION_KEYVALUES_LOADFROMFILE_ALIASES)
+    return [f"'{game_version}': missing VGUI2Extension {module} virtualFunction {aliases}"]
+
+
+def _publishes_keyvalues_loadfromfile(symbols, module):
+    return any((module, name) in symbols for name in VGUI2EXTENSION_KEYVALUES_LOADFROMFILE_ALIASES)
 
 
 def validate_vgui2extension(symbols, game_version, include_engine=True):
@@ -1085,11 +1120,16 @@ def validate_vgui2extension(symbols, game_version, include_engine=True):
         if game_version in VGUI2EXTENSION_GAMEUI_APPLYVIDSETTINGS_GAMES:
             errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_GAMEUI_APPLYVIDSETTINGS,
                                       "function", "gameui", "VGUI2Extension")
-        condump_callees = [name for name in VGUI2EXTENSION_GAMEUI_RICHTEXT_CALLEES
-                           if ("gameui", name) in symbols]
-        if len(condump_callees) != 1:
-            errors.append(f"'{game_version}': gameui must publish exactly one RichText "
-                          f"condump callee, found {len(condump_callees)}")
+        if (game_version in VGUI2EXTENSION_GAMEUI_INSERTCHAR_GAMES or
+                ("gameui", VGUI2EXTENSION_GAMEUI_INSERTCHAR) in symbols):
+            errors += _consumer_check(symbols, game_version, (VGUI2EXTENSION_GAMEUI_INSERTCHAR,),
+                                      "function", "gameui", "VGUI2Extension")
+        else:
+            errors += _consumer_check(symbols, game_version, (VGUI2EXTENSION_GAMEUI_INSERTSTRINGW,),
+                                      "function", "gameui", "VGUI2Extension")
+        errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_GAMEUI_RICHTEXT_PATCHES,
+                                  "patch", "gameui", "VGUI2Extension")
+        errors += _keyvalues_loadfromfile_check(symbols, game_version, "gameui")
         errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_SERVERBROWSER_FUNCTIONS,
                                   "function", "serverbrowser", "VGUI2Extension")
         factory_patch = VGUI2EXTENSION_MODULE_FACTORY_PATCH
@@ -1115,6 +1155,8 @@ def validate_vgui2extension(symbols, game_version, include_engine=True):
     for name, kind in VGUI2EXTENSION_CLIENT_OPTIONAL_ENTRIES.items():
         if is_cs or ("client", name) in symbols:
             errors += _consumer_check(symbols, game_version, (name,), kind, "client", "VGUI2Extension")
+    if is_cs or _publishes_keyvalues_loadfromfile(symbols, "client"):
+        errors += _keyvalues_loadfromfile_check(symbols, game_version, "client")
     if is_cs:
         errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_CS_CLIENT_FUNCTIONS,
                                   "function", "client", "VGUI2Extension")
