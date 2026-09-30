@@ -89,8 +89,8 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	EngineSurface_FillAddress(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
 	Engine_InstallHooks();
-
 	BaseUI_InstallHooks();
+	VGUI1_InstallHooks();
 
 	DpiManagerInternal()->InitEngine();
 
@@ -120,7 +120,6 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	ClientVGUI_InstallHooks(pExportFunc);
 	Client_FillAddress(g_ClientDLLInfo);
 	Client_InstallHooks();
-	VGUI1_InstallHooks();
 	InitWindowStuffs();
 
 	DpiManagerInternal()->InitClient();
@@ -129,7 +128,6 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 void IPluginsV4::ExitGame(int iResult)
 {
 	VGUI1_Shutdown();
-
 	BaseUI_UninstallHooks();
 	Engine_UninstallHooks();
 }
