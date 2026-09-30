@@ -7,6 +7,7 @@ CFontAmalgam::CFontAmalgam(void)
 	m_Fonts.EnsureCapacity(4);
 	m_iMaxHeight = 0;
 	m_iMaxWidth = 0;
+	m_szName[0] = 0;
 }
 
 CFontAmalgam::~CFontAmalgam(void)

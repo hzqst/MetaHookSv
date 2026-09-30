@@ -16,6 +16,7 @@ CFontManager::CFontManager(void)
 	m_FontAmalgams.EnsureCapacity(100);
 	m_FontAmalgams.AddToTail();
 	m_Win32Fonts.EnsureCapacity(100);
+	m_szLanguage[0] = 0;
 }
 
 CFontManager::~CFontManager(void)
