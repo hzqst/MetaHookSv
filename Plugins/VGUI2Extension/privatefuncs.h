@@ -203,7 +203,6 @@ PVOID VGUIClient001_CreateInterface(HINTERFACEMODULE hModule);
 
 void* Sys_GetMainWindow();
 
-PVOID VGUI2_FindPanelInit(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 PVOID *VGUI2_FindKeyValueVFTable(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 PVOID* VGUI2_FindMenuVFTable(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 

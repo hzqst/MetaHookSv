@@ -983,6 +983,21 @@ VGUI2EXTENSION_ENGINE_GLOBALS = (
 VGUI2EXTENSION_ENGINE_FUNCTIONS = (
     "vgui2::Panel::Init(int, int, int, int)",
 )
+# GameUI.dll and ServerBrowser.dll are loaded from the same module identities as
+# the engine snapshots: the Counter-Strike / Condition Zero clients ship the hl
+# GameUI.dll and ServerBrowser.dll, so their entries resolve against these
+# records too. The three dialog constructors and vgui2::Panel::Init replaced the
+# string-anchored reverse-search locators in GameUI.cpp; ServerBrowser only
+# publishes Panel::Init. Both modules are published on every engine identity.
+VGUI2EXTENSION_GAMEUI_FUNCTIONS = (
+    "CGameConsoleDialog::CGameConsoleDialog()",
+    "CCreateMultiplayerGameDialog::CCreateMultiplayerGameDialog(vgui2::Panel*)",
+    "COptionsDialog::COptionsDialog(vgui2::Panel*)",
+    "vgui2::Panel::Init(int, int, int, int)",
+)
+VGUI2EXTENSION_SERVERBROWSER_FUNCTIONS = (
+    "vgui2::Panel::Init(int, int, int, int)",
+)
 VGUI2EXTENSION_REGISTRY_LANGUAGE_GAMES = (
     "hl-3248", "hl-3266", "hl-3329", "hl-3647", "hl-4554",
 )
@@ -998,9 +1013,17 @@ VGUI2EXTENSION_MODULE_FACTORY_PATCH = "VGUIClient001_CreateInterface"
 
 
 def validate_vgui2extension(symbols, game_version, include_engine=True):
-    """Check native client UI entry coverage without requiring it on non-CS clients."""
+    """Check native client UI entry coverage without requiring it on non-CS clients.
+
+    include_engine is False for the client-only snapshots, which publish neither
+    an engine module nor a gameui / serverbrowser module.
+    """
     errors = []
     if include_engine:
+        errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_GAMEUI_FUNCTIONS,
+                                  "function", "gameui", "VGUI2Extension")
+        errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_SERVERBROWSER_FUNCTIONS,
+                                  "function", "serverbrowser", "VGUI2Extension")
         factory_patch = VGUI2EXTENSION_MODULE_FACTORY_PATCH
         if (game_version in VGUI2EXTENSION_MODULE_FACTORY_GAMES or
                 ("engine", factory_patch) in symbols):

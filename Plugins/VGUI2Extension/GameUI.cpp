@@ -2594,130 +2594,22 @@ End of hook proxy
 ======================================================================
 */
 
-void GameUI_FillAddress_GameConsoleDialog(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void GameUI_FillAddress_GameConsoleDialog(const mh_dll_info_t& RealDllInfo)
 {
-	const char sigs[] = "#GameUI_Console\0";
-	auto GameUI_Console_String = Search_Pattern_From_Size(DllInfo.RdataBase, DllInfo.RdataSize, sigs);
-	if (!GameUI_Console_String)
-		GameUI_Console_String = Search_Pattern_From_Size(DllInfo.DataBase, DllInfo.DataSize, sigs);
-	Sig_VarNotFound(GameUI_Console_String);
-
-	char pattern[] = "\x6A\x01\x68\x2A\x2A\x2A\x2A";
-	*(DWORD*)(pattern + 3) = (DWORD)GameUI_Console_String;
-	auto GameUI_Console_PushString = Search_Pattern(pattern, DllInfo);
-	Sig_VarNotFound(GameUI_Console_PushString);
-
-	PVOID CGameConsoleDialog_ctor_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(GameUI_Console_PushString, 0x450, [](PUCHAR Candidate) {
-
-		if (Candidate[0] == 0x55 &&
-			Candidate[1] == 0x8B &&
-			Candidate[2] == 0xEC)
-			return TRUE;
-
-		//.text:10027EC0 53                                                  push    ebx
-		//.text : 10027EC1 8B DC                                               mov     ebx, esp
-		if (Candidate[0] == 0x53 &&
-			Candidate[1] == 0x8B &&
-			Candidate[2] == 0xDC)
-			return TRUE;
-
-		//.text:10033D30 81 EC 00 08 00 00                                   sub     esp, 800h
-		if (Candidate[0] == 0x81 &&
-			Candidate[1] == 0xEC &&
-			Candidate[4] == 0x00 &&
-			Candidate[5] == 0x00)
-		{
-			return TRUE;
-		}
-		return FALSE;
-		});
-
-	gPrivateFuncs.CGameConsoleDialog_ctor = (decltype(gPrivateFuncs.CGameConsoleDialog_ctor))ConvertDllInfoSpace(CGameConsoleDialog_ctor_VA, DllInfo, RealDllInfo);
-
-	Sig_FuncNotFound(CGameConsoleDialog_ctor);
+	gPrivateFuncs.CGameConsoleDialog_ctor = (decltype(gPrivateFuncs.CGameConsoleDialog_ctor))
+		GamedataResolvePtr(RealDllInfo.ImageBase, "CGameConsoleDialog::CGameConsoleDialog()", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
-void GameUI_FillAddress_CreateMultiplayerGameDialog(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void GameUI_FillAddress_CreateMultiplayerGameDialog(const mh_dll_info_t& RealDllInfo)
 {
-	const char sigs1[] = "CreateMultiplayerGameDialog\0";
-	auto CreateMultiplayerGameDialog_String = Search_Pattern_From_Size(DllInfo.RdataBase, DllInfo.RdataSize, sigs1);
-	if (!CreateMultiplayerGameDialog_String)
-		CreateMultiplayerGameDialog_String = Search_Pattern_From_Size(DllInfo.DataBase, DllInfo.DataSize, sigs1);
-	Sig_VarNotFound(CreateMultiplayerGameDialog_String);
-
-	char pattern[] = "\x68\x2A\x2A\x2A\x2A";
-	*(DWORD*)(pattern + 1) = (DWORD)CreateMultiplayerGameDialog_String;
-	auto CreateMultiplayerGameDialog_PushString = Search_Pattern(pattern, DllInfo);
-	Sig_VarNotFound(CreateMultiplayerGameDialog_PushString);
-
-	PVOID CCreateMultiplayerGameDialog_ctor_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(CreateMultiplayerGameDialog_PushString, 0x120, [](PUCHAR Candidate) {
-
-		if (Candidate[0] == 0x55 &&
-			Candidate[1] == 0x8B &&
-			Candidate[2] == 0xEC)
-			return TRUE;
-
-		//8B 44 24 04                                         mov     eax, [esp+arg_0]
-		if (Candidate[0] == 0x8B &&
-			Candidate[1] == 0x44 &&
-			Candidate[2] == 0x24)
-		{
-			//.text:1001B472 68 CC 01 00 00                                      push    1CCh
-			//text : 1001B477 68 5C 01 00 00                                     push    15Ch
-			if (Search_Pattern_From_Size(Candidate, 0x30, "\x68\xCC\x01\x00\x00\x68\x5C\x01\x00\x00"))
-			{
-				return TRUE;
-			}
-		}
-		return FALSE;
-		});
-
-	gPrivateFuncs.CCreateMultiplayerGameDialog_ctor = (decltype(gPrivateFuncs.CCreateMultiplayerGameDialog_ctor))ConvertDllInfoSpace(CCreateMultiplayerGameDialog_ctor_VA, DllInfo, RealDllInfo);
-
-	Sig_FuncNotFound(CCreateMultiplayerGameDialog_ctor);
+	gPrivateFuncs.CCreateMultiplayerGameDialog_ctor = (decltype(gPrivateFuncs.CCreateMultiplayerGameDialog_ctor))
+		GamedataResolvePtr(RealDllInfo.ImageBase, "CCreateMultiplayerGameDialog::CCreateMultiplayerGameDialog(vgui2::Panel*)", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
-void GameUI_FillAddress_COptionsDialog(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void GameUI_FillAddress_COptionsDialog(const mh_dll_info_t& RealDllInfo)
 {
-	const char sigs1[] = "#GameUI_Options";
-	auto GameUI_Options_String = Search_Pattern_From_Size(DllInfo.RdataBase, DllInfo.RdataSize, sigs1);
-	if (!GameUI_Options_String)
-		GameUI_Options_String = Search_Pattern_From_Size(DllInfo.DataBase, DllInfo.DataSize, sigs1);
-	Sig_VarNotFound(GameUI_Options_String);
-
-	char pattern[] = "\x6A\x01\x68\x2A\x2A\x2A\x2A";
-	*(DWORD*)(pattern + 3) = (DWORD)GameUI_Options_String;
-	auto GameUI_Options_Call = Search_Pattern(pattern, DllInfo);
-	Sig_VarNotFound(GameUI_Options_Call);
-
 	gPrivateFuncs.COptionsDialog_ctor = (decltype(gPrivateFuncs.COptionsDialog_ctor))
-		g_pMetaHookAPI->ReverseSearchFunctionBeginEx(GameUI_Options_Call, 0x300, [](PUCHAR Candidate) {
-		//.text : 10016CB0 55                                                  push    ebp
-		//.text : 10016CB1 8B EC                                               mov     ebp, esp
-		//.text : 10016CB3 6A FF
-		if (Candidate[0] == 0x55 &&
-			Candidate[1] == 0x8B &&
-			Candidate[2] == 0xEC &&
-			Candidate[3] == 0x6A &&
-			Candidate[4] == 0xFF)
-			return TRUE;
-
-		//8B 44 24 04                                         mov     eax, [esp+arg_0]
-		if (Candidate[0] == 0x8B &&
-			Candidate[1] == 0x44 &&
-			Candidate[2] == 0x24)
-		{
-			//.text : 100377D2 68 96 01 00 00                                      push    196h
-			//.text : 100377D7 68 00 02 00 00                                      push    200h
-			if (g_pMetaHookAPI->SearchPattern(Candidate, 0x30, "\x68\x96\x01\x00\x00\x68\x00\x02\x00\x00", sizeof("\x68\x96\x01\x00\x00\x68\x00\x02\x00\x00") - 1))
-			{
-				return TRUE;
-			}
-		}
-		return FALSE;
-			});
-
-	Sig_FuncNotFound(COptionsDialog_ctor);
+		GamedataResolvePtr(RealDllInfo.ImageBase, "COptionsDialog::COptionsDialog(vgui2::Panel*)", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 #if 0
@@ -4091,11 +3983,11 @@ void GameUI_FillAddress(void)
 		return;
 	}
 
-	GameUI_FillAddress_GameConsoleDialog(g_GameUIDllInfo, g_GameUIDllInfo);
+	GameUI_FillAddress_GameConsoleDialog(g_GameUIDllInfo);
 
-	GameUI_FillAddress_CreateMultiplayerGameDialog(g_GameUIDllInfo, g_GameUIDllInfo);
+	GameUI_FillAddress_CreateMultiplayerGameDialog(g_GameUIDllInfo);
 
-	GameUI_FillAddress_COptionsDialog(g_GameUIDllInfo, g_GameUIDllInfo);
+	GameUI_FillAddress_COptionsDialog(g_GameUIDllInfo);
 
 	//GameUI_FillAddress_QueryBox(g_GameUIDllInfo, g_GameUIDllInfo);
 
@@ -4133,8 +4025,8 @@ void GameUI_FillAddress(void)
 
 	GameUI_FillAddress_CTaskBarKeyValues(g_GameUIDllInfo, g_GameUIDllInfo);
 
-	gPrivateFuncs.GameUI_Panel_Init = (decltype(gPrivateFuncs.GameUI_Panel_Init))VGUI2_FindPanelInit(g_GameUIDllInfo, g_GameUIDllInfo);
-	Sig_FuncNotFound(GameUI_Panel_Init);
+	gPrivateFuncs.GameUI_Panel_Init = (decltype(gPrivateFuncs.GameUI_Panel_Init))
+		GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "vgui2::Panel::Init(int, int, int, int)", MH_GAMESYMBOL_KIND_FUNCTION);
 
 	gPrivateFuncs.GameUI_Menu_vftable = (decltype(gPrivateFuncs.GameUI_Menu_vftable))VGUI2_FindMenuVFTable(g_GameUIDllInfo, g_GameUIDllInfo);
 	Sig_FuncNotFound(GameUI_Menu_vftable);
@@ -4610,10 +4502,10 @@ void ServerBrowser_FillAddress_KeyValues(const mh_dll_info_t& DllInfo, const mh_
 
 }
 
-void ServerBrowser_FillAddress_PanelInit(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void ServerBrowser_FillAddress_PanelInit(void)
 {
-	gPrivateFuncs.ServerBrowser_Panel_Init = (decltype(gPrivateFuncs.ServerBrowser_Panel_Init))VGUI2_FindPanelInit(g_ServerBrowserDllInfo, g_ServerBrowserDllInfo);
-	Sig_FuncNotFound(ServerBrowser_Panel_Init);
+	gPrivateFuncs.ServerBrowser_Panel_Init = (decltype(gPrivateFuncs.ServerBrowser_Panel_Init))
+		GamedataResolvePtr(g_ServerBrowserDllInfo.ImageBase, "vgui2::Panel::Init(int, int, int, int)", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void ServerBrowser_FillAddress(void)
@@ -4630,7 +4522,7 @@ void ServerBrowser_FillAddress(void)
 
 	ServerBrowser_FillAddress_KeyValues(g_ServerBrowserDllInfo, g_ServerBrowserDllInfo);
 
-	ServerBrowser_FillAddress_PanelInit(g_ServerBrowserDllInfo, g_ServerBrowserDllInfo);
+	ServerBrowser_FillAddress_PanelInit();
 }
 
 void ServerBrowser_InstallHooks(void)

@@ -1380,6 +1380,17 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
     }
     # The engine's vgui2 panel init replaced the shared VGUI2_FindPanelInit walk.
     engine_functions = {"vgui2::Panel::Init(int, int, int, int)": "function"}
+    # The GameUI.dll / ServerBrowser.dll entries that replaced the string-anchored
+    # reverse-search locators. Both modules are published on every engine
+    # identity, and the CS/CZ clients ship the hl binaries, so they follow the
+    # engine-bearing snapshots.
+    gameui_functions = {
+        "CGameConsoleDialog::CGameConsoleDialog()": "function",
+        "CCreateMultiplayerGameDialog::CCreateMultiplayerGameDialog(vgui2::Panel*)": "function",
+        "COptionsDialog::COptionsDialog(vgui2::Panel*)": "function",
+        "vgui2::Panel::Init(int, int, int, int)": "function",
+    }
+    serverbrowser_functions = {"vgui2::Panel::Init(int, int, int, int)": "function"}
     engine_games = validate.RENDERER_ALL_GAMES
     registry_games = ("hl-3248", "hl-3266", "hl-3329", "hl-3647", "hl-4554")
     registry_reader = "Sys_GetRegKeyValueUnderRoot"
@@ -1403,6 +1414,10 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
                    for name, kind in self.engine_records.items()}
         symbols.update({("engine", name): {"kind": kind, "module": "engine"}
                         for name, kind in self.engine_functions.items()})
+        symbols.update({("gameui", name): {"kind": kind, "module": "gameui"}
+                        for name, kind in self.gameui_functions.items()})
+        symbols.update({("serverbrowser", name): {"kind": kind, "module": "serverbrowser"}
+                        for name, kind in self.serverbrowser_functions.items()})
         if game_version in self.registry_games:
             symbols[("engine", self.registry_reader)] = {"kind": "function", "module": "engine"}
         else:
@@ -1582,6 +1597,48 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
                             symbols[("engine", name)] = record
                         errors = validate.validate_vgui2extension(symbols, gv)
                         self.assertTrue(any(name in e for e in errors), errors)
+
+    def test_gameui_entries_are_required_on_engine_snapshots(self):
+        for name in self.gameui_functions:
+            self.assertIn(name, validate.VGUI2EXTENSION_GAMEUI_FUNCTIONS)
+        for gv in self.engine_games:
+            with self.subTest(gv=gv):
+                self.assertEqual([], validate.validate_vgui2extension(
+                    self.complete_engine_symbols(gv), gv))
+
+    def test_missing_or_mistyped_gameui_entry_is_rejected(self):
+        for gv in self.engine_games:
+            for name, kind in self.gameui_functions.items():
+                for record in (None, {"kind": "global", "module": "gameui"},
+                               {"kind": kind, "module": "serverbrowser"}):
+                    with self.subTest(gv=gv, name=name, record=record):
+                        symbols = self.complete_engine_symbols(gv)
+                        del symbols[("gameui", name)]
+                        if record is not None:
+                            symbols[("gameui", name)] = record
+                        errors = validate.validate_vgui2extension(symbols, gv)
+                        self.assertTrue(any(name in e for e in errors), errors)
+
+    def test_missing_or_mistyped_serverbrowser_entry_is_rejected(self):
+        for gv in self.engine_games:
+            for name, kind in self.serverbrowser_functions.items():
+                for record in (None, {"kind": "global", "module": "serverbrowser"},
+                               {"kind": kind, "module": "gameui"}):
+                    with self.subTest(gv=gv, name=name, record=record):
+                        symbols = self.complete_engine_symbols(gv)
+                        del symbols[("serverbrowser", name)]
+                        if record is not None:
+                            symbols[("serverbrowser", name)] = record
+                        errors = validate.validate_vgui2extension(symbols, gv)
+                        self.assertTrue(any(name in e for e in errors), errors)
+
+    def test_client_only_snapshots_are_not_gameui_gated(self):
+        # cstrike / czero / czeror publish no gameui or serverbrowser module of
+        # their own, so the caller's include_engine is False for them.
+        for gv in validate.VGUI2EXTENSION_CLIENT_GAMES:
+            with self.subTest(gv=gv):
+                self.assertEqual([], validate.validate_vgui2extension(
+                    self.complete_symbols(), gv, include_engine=False))
 
     def test_client_only_snapshots_are_not_engine_gated(self):
         # These snapshots publish no engine module, so the caller's include_engine
