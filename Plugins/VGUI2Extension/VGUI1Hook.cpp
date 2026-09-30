@@ -176,7 +176,8 @@ public:
 	void popMakeCurrent(void* panel) override {}
 	void applyChanges() override {}
 	void WndProcHandler(void* hwnd, unsigned int msg, unsigned int wparam, long lparam) override {
-		//VGUI1 SDL event handler, TODO: non-SDL version?
+
+		//VGUI1 non-SDL win32 event handler
 
 		if (!ClientVGUI_NativeClientHasVGUI1())
 		{
@@ -263,6 +264,8 @@ public:
 	void popMakeCurrent(void* panel) override {}
 	void applyChanges() override {}
 	void AppHandler(void* pevent, void* userData) override {
+
+		//VGUI1 SDL2 event handler
 
 		if (!ClientVGUI_NativeClientHasVGUI1())
 		{

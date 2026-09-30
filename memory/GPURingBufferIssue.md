@@ -1,4 +1,10 @@
-# GPU Ring Buffer Issue Notes
+---
+title: GPURingBufferIssue
+type: note
+permalink: metahooksv/gpuring-buffer-issue
+---
+
+# GPU Ring Buffer Issue Notes (已修复)
 
 本文记录 `CPMBRingBuffer` 当前实现中已确认或高度可疑的 4 个问题。重点背景是：TriAPI、HUD rect draw 等路径通过 PMB ring buffer 上传临时顶点/索引数据；一旦 `Allocate()` 持续失败，调用方会跳过绘制，表现为 TriAPI / HUD 相关内容消失。
 
@@ -179,3 +185,6 @@ HUD rect draw 使用同一套 `IPMBRingBuffer` 实现：
 3. 处理 `glFenceSync()` 失败路径，不允许静默丢失 frame record。
 4. 修复析构时的 `GL_DeleteBuffer(m_GLBufferTarget)` 参数错误。
 
+## Related
+
+- [[Renderer]] - `CPMBRingBuffer` 属于 Renderer 插件的 PMB 上传路径
