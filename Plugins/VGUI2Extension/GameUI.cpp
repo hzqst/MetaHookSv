@@ -2919,364 +2919,44 @@ void GameUI_PatchAddress_RichText_InsertChar(const mh_dll_info_t& DllInfo, const
 	}
 }
 
-void GameUI_FillAddress_ConsoleEntry(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void GameUI_FillAddress_ConsoleEntry(const mh_dll_info_t&, const mh_dll_info_t&)
 {
-	const char sigs1[] = "ConsoleEntry\0";
-	auto ConsoleEntry_String = Search_Pattern_From_Size(DllInfo.RdataBase, DllInfo.RdataSize, sigs1);
-	if (!ConsoleEntry_String)
-		ConsoleEntry_String = Search_Pattern_From_Size(DllInfo.DataBase, DllInfo.DataSize, sigs1);
-	Sig_VarNotFound(ConsoleEntry_String);
-
-	char pattern[] = "\x68\x2A\x2A\x2A\x2A";
-	*(DWORD*)(pattern + 1) = (DWORD)ConsoleEntry_String;
-	auto ConsoleEntry_PushString = Search_Pattern(pattern, DllInfo);
-	Sig_VarNotFound(ConsoleEntry_PushString);
-
-	typedef struct ConsoleEntrySearchContext_s
-	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-
-		PVOID* ConsoleEntry_vftable{};
-	} ConsoleEntrySearchContext;
-
-	ConsoleEntrySearchContext ctx = { DllInfo, RealDllInfo };
-
-	g_pMetaHookAPI->DisasmRanges(ConsoleEntry_PushString, 0x60, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (ConsoleEntrySearchContext*)context;
-
-		if (pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-			((PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->DllInfo.RdataBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.RdataBase + ctx->DllInfo.RdataSize))
-		{
-			auto candidate = (PVOID*)pinst->detail->x86.operands[1].imm;
-			if (candidate[0] >= (PUCHAR)ctx->DllInfo.TextBase && candidate[0] < (PUCHAR)ctx->DllInfo.TextBase + ctx->DllInfo.TextSize)
-			{
-				ctx->ConsoleEntry_vftable = candidate;
-			}
-		}
-
-		if (ctx->ConsoleEntry_vftable)
-			return TRUE;
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-		}, 0, &ctx);
-
-	Sig_VarNotFound(ctx.ConsoleEntry_vftable);
-
+	//All three are TextEntry virtuals reached through the TabCatchingTextEntry
+	//vtable. Resolving them by name removes the previous vftable scan, which
+	//accepted the first .rdata pointer whose head landed in .text without
+	//verifying it belonged to TabCatchingTextEntry.
 	gPrivateFuncs.GameUI_TextEntry_OnKeyCodeTyped = (decltype(gPrivateFuncs.GameUI_TextEntry_OnKeyCodeTyped))
-		GetVFunctionFromVFTable(ctx.ConsoleEntry_vftable, 0x194 / 4, DllInfo, RealDllInfo, RealDllInfo);//TODO: need to move to gamedata
-
-	//gPrivateFuncs.GameUI_TextEntry_InsertChar = (decltype(gPrivateFuncs.GameUI_TextEntry_InsertChar))
-	// GetVFunctionFromVFTable(ctx.ConsoleEntry_vftable, 0x250 / 4, DllInfo, RealDllInfo, RealDllInfo);//TODO: need to move to gamedata
+		GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "TabCatchingTextEntry::OnKeyCodeTyped(vgui2::KeyCode)", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 
 	gPrivateFuncs.GameUI_TextEntry_LayoutVerticalScrollBarSlider = (decltype(gPrivateFuncs.GameUI_TextEntry_LayoutVerticalScrollBarSlider))
-		GetVFunctionFromVFTable(ctx.ConsoleEntry_vftable, 0x2C0 / 4, DllInfo, RealDllInfo, RealDllInfo);//TODO: need to move to gamedata
+		GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "vgui2::TextEntry::LayoutVerticalScrollBarSlider()", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 
 	gPrivateFuncs.GameUI_TextEntry_GetStartDrawIndex = (decltype(gPrivateFuncs.GameUI_TextEntry_GetStartDrawIndex))
-		GetVFunctionFromVFTable(ctx.ConsoleEntry_vftable, 0x2F8 / 4, DllInfo, RealDllInfo, RealDllInfo);//TODO: need to move to gamedata
+		GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "vgui2::TextEntry::GetStartDrawIndex(int&)", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 }
 
-void GameUI_FillAddress_Sheet(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void GameUI_FillAddress_Sheet(const mh_dll_info_t&, const mh_dll_info_t&)
 {
-	PVOID Sheet_PushString = NULL;
-
-	const char sigs[] = "Sheet\0";
-	auto PropertySheet_String = Search_Pattern_From_Size(DllInfo.RdataBase, DllInfo.RdataSize, sigs);
-
-	if (PropertySheet_String)
-	{
-		//We got string in .rdata section
-		PUCHAR SearchBegin = (PUCHAR)DllInfo.RdataBase;
-		PUCHAR SearchLimit = (PUCHAR)DllInfo.RdataBase + DllInfo.RdataSize;
-		while (SearchBegin < SearchLimit)
-		{
-			PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, sigs);
-			if (pFound)
-			{
-				char pattern[] = "\x74\x2A\x68\x2A\x2A\x2A\x2A";
-
-				*(DWORD*)(pattern + 3) = (DWORD)pFound;
-
-				Sheet_PushString = Search_Pattern(pattern, DllInfo);
-
-				if (Sheet_PushString)
-				{
-					break;
-				}
-
-				SearchBegin = pFound + Sig_Length(pattern);
-			}
-			else
-			{
-				break;
-			}
-		}
-	}
-	else
-	{
-		//We got string in .data section
-		PropertySheet_String = Search_Pattern_From_Size(DllInfo.DataBase, DllInfo.DataSize, sigs);
-		if (PropertySheet_String)
-		{
-			PUCHAR SearchBegin = (PUCHAR)DllInfo.DataBase;
-			PUCHAR SearchLimit = (PUCHAR)DllInfo.DataBase + DllInfo.DataSize;
-			while (SearchBegin < SearchLimit)
-			{
-				PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, sigs);
-				if (pFound)
-				{
-					char pattern[] = "\x74\x2A\x68\x2A\x2A\x2A\x2A";
-
-					*(DWORD*)(pattern + 3) = (DWORD)pFound;
-
-					Sheet_PushString = Search_Pattern(pattern, DllInfo);
-
-					if (Sheet_PushString)
-					{
-						break;
-					}
-
-					SearchBegin = pFound + Sig_Length(sigs);
-				}
-				else
-				{
-					break;
-				}
-			}
-		}
-	}
-
-	Sig_VarNotFound(Sheet_PushString);
-
-	typedef struct SheetCtor_SearchContext_s
-	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-		int instCount_Sheet_ctor{};
-	}SheetCtor_SearchContext;
-
-	SheetCtor_SearchContext ctx = { DllInfo, RealDllInfo };
-
-	g_pMetaHookAPI->DisasmRanges(Sheet_PushString, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (SheetCtor_SearchContext*)context;
-
-		if (!gPrivateFuncs.GameUI_Sheet_ctor && address[0] == 0xE8 && instCount <= 8)
-		{
-			PVOID GameUI_Sheet_ctor_VA = GetCallAddress(address);
-
-			gPrivateFuncs.GameUI_Sheet_ctor = (decltype(gPrivateFuncs.GameUI_Sheet_ctor))
-				ConvertDllInfoSpace(GameUI_Sheet_ctor_VA, ctx->DllInfo, ctx->RealDllInfo);
-
-			ctx->instCount_Sheet_ctor = instCount;
-		}
-
-		if (!gPrivateFuncs.offset_propertySheet && instCount > ctx->instCount_Sheet_ctor && instCount < ctx->instCount_Sheet_ctor + 10)
-		{
-			if (pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base != 0 &&
-				pinst->detail->x86.operands[0].mem.disp >= 260 &&
-				pinst->detail->x86.operands[0].mem.disp <= 280 &&
-				pinst->detail->x86.operands[1].type == X86_OP_REG)
-			{
-				gPrivateFuncs.offset_propertySheet = (decltype(gPrivateFuncs.offset_propertySheet))pinst->detail->x86.operands[0].mem.disp;
-			}
-		}
-
-		if (gPrivateFuncs.GameUI_Sheet_ctor && gPrivateFuncs.offset_propertySheet)
-			return TRUE;
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-		}, 0, &ctx);
-
-	Sig_FuncNotFound(GameUI_Sheet_ctor);//TODO: need to move to gamedata
-	Sig_FuncNotFound(offset_propertySheet);//TODO: need to move to gamedata
+	gPrivateFuncs.offset_propertySheet = (decltype(gPrivateFuncs.offset_propertySheet))
+		GamedataResolveStructMember(g_GameUIDllInfo.ImageBase, "vgui2::PropertyDialog._propertySheet");
 }
 
-void GameUI_FillAddress_PropertySheet(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void GameUI_FillAddress_PropertySheet(const mh_dll_info_t&, const mh_dll_info_t&)
 {
-	PVOID GameUI_Sheet_ctor_VA = ConvertDllInfoSpace(gPrivateFuncs.GameUI_Sheet_ctor, RealDllInfo, DllInfo);
-
-	typedef struct SheetSearchContext_s
-	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-
-	}SheetSearchContext;
-
-	SheetSearchContext ctx = { DllInfo, RealDllInfo };
-
-	g_pMetaHookAPI->DisasmRanges(GameUI_Sheet_ctor_VA, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (SheetSearchContext*)context;
-
-		if (!gPrivateFuncs.GameUI_Sheet_vftable)
-		{
-			if (pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				((PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->DllInfo.RdataBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.RdataBase + ctx->DllInfo.RdataSize))
-			{
-				auto candidate = (PVOID*)pinst->detail->x86.operands[1].imm;
-				if (candidate[0] >= (PUCHAR)ctx->DllInfo.TextBase && candidate[0] < (PUCHAR)ctx->DllInfo.TextBase + ctx->DllInfo.TextSize)
-				{
-					gPrivateFuncs.GameUI_Sheet_vftable = (decltype(gPrivateFuncs.GameUI_Sheet_vftable))ConvertDllInfoSpace(candidate, ctx->DllInfo, ctx->RealDllInfo);
-				}
-			}
-		}
-
-		if (gPrivateFuncs.GameUI_Sheet_vftable)
-			return TRUE;
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-		}, 0, &ctx);
-
-	Sig_FuncNotFound(GameUI_Sheet_vftable);
-
 	gPrivateFuncs.GameUI_PropertySheet_HasHotkey = (decltype(gPrivateFuncs.GameUI_PropertySheet_HasHotkey))
-		GetVFunctionFromVFTable(gPrivateFuncs.GameUI_Sheet_vftable, 73, DllInfo, RealDllInfo, RealDllInfo);
+		GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "vgui2::PropertySheet::HasHotkey(wchar_t)", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 
 	gPrivateFuncs.GameUI_PropertySheet_PerformLayout = (decltype(gPrivateFuncs.GameUI_PropertySheet_PerformLayout))
-		GetVFunctionFromVFTable(gPrivateFuncs.GameUI_Sheet_vftable, 111, DllInfo, RealDllInfo, RealDllInfo);
-
-	Sig_FuncNotFound(GameUI_PropertySheet_HasHotkey);
-	Sig_FuncNotFound(GameUI_PropertySheet_PerformLayout);
+		GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "vgui2::PropertySheet::PerformLayout()", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 }
 
-void GameUI_FillAddress_MessageBox(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void GameUI_FillAddress_MessageBox(const mh_dll_info_t&, const mh_dll_info_t&)
 {
-	const char sigs1[] = "MessageBoxText";
-	auto MessageBoxText_String = g_pMetaHookAPI->SearchPattern(DllInfo.RdataBase, DllInfo.RdataSize, sigs1, sizeof(sigs1) - 1);
-	if (!MessageBoxText_String)
-	{
-		MessageBoxText_String = g_pMetaHookAPI->SearchPattern(DllInfo.DataBase, DllInfo.DataSize, sigs1, sizeof(sigs1) - 1);
-	}
-	Sig_VarNotFound(MessageBoxText_String);
-	char pattern[] = "\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A";
-	*(DWORD*)(pattern + 1) = (DWORD)MessageBoxText_String;
-	auto MessageBoxText_PushString = g_pMetaHookAPI->SearchPattern(DllInfo.TextBase, DllInfo.TextSize, pattern, sizeof(pattern) - 1);
-	Sig_VarNotFound(MessageBoxText_PushString);
-
-	{
-		typedef struct MessageBoxText_SearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-		}MessageBoxText_SearchContext;
-
-		MessageBoxText_SearchContext ctx = { DllInfo , RealDllInfo };
-
-		g_pMetaHookAPI->DisasmRanges(MessageBoxText_PushString, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (MessageBoxText_SearchContext*)context;
-
-			if (address[0] == 0xE8 && instCount <= 8)
-			{
-				PVOID MessageBox_ctor_VA = GetCallAddress(address);
-				gPrivateFuncs.MessageBox_ctor = (decltype(gPrivateFuncs.MessageBox_ctor))ConvertDllInfoSpace(MessageBox_ctor_VA, ctx->DllInfo, ctx->RealDllInfo);
-
-				return TRUE;
-			}
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-
-			}, 0, &ctx);
-
-		Sig_FuncNotFound(MessageBox_ctor);
-	}
-
-	{
-		typedef struct MessageBoxSearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-		} MessageBoxSearchContext;
-
-		MessageBoxSearchContext ctx = { DllInfo, RealDllInfo };
-
-		g_pMetaHookAPI->DisasmRanges(ConvertDllInfoSpace(gPrivateFuncs.MessageBox_ctor, RealDllInfo, DllInfo), 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (MessageBoxSearchContext*)context;
-
-			if (!gPrivateFuncs.MessageBox_vftable)
-			{
-				if (pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[0].mem.disp == 0 &&
-					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-					((PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->DllInfo.RdataBase &&
-						(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.RdataBase + ctx->DllInfo.RdataSize))
-				{
-					auto candidate = (PVOID*)pinst->detail->x86.operands[1].imm;
-					if (candidate[0] >= (PUCHAR)ctx->DllInfo.TextBase && candidate[0] < (PUCHAR)ctx->DllInfo.TextBase + ctx->DllInfo.TextSize)
-					{
-						gPrivateFuncs.MessageBox_vftable = (decltype(gPrivateFuncs.MessageBox_vftable))ConvertDllInfoSpace(candidate, ctx->DllInfo, ctx->RealDllInfo);
-					}
-				}
-			}
-
-			if (gPrivateFuncs.MessageBox_vftable)
-				return TRUE;
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-
-			}, 0, &ctx);
-
-		Sig_FuncNotFound(MessageBox_vftable);
-	}
+	gPrivateFuncs.MessageBox_ctor = (decltype(gPrivateFuncs.MessageBox_ctor))
+		GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "vgui2::MessageBox::MessageBox(char const*, char const*, vgui2::Panel*)", MH_GAMESYMBOL_KIND_FUNCTION);
 
 	gPrivateFuncs.MessageBox_ApplySchemeSettings = (decltype(gPrivateFuncs.MessageBox_ApplySchemeSettings))
-		GetVFunctionFromVFTable(gPrivateFuncs.MessageBox_vftable, 0x13C / 4, DllInfo, RealDllInfo, RealDllInfo);
-
-	Sig_FuncNotFound(MessageBox_ApplySchemeSettings);
+		GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "vgui2::MessageBox::ApplySchemeSettings(vgui2::IScheme*)", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 }
 
 void GameUI_PatchAddress_MessageBox_ApplySchemeSettings(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
