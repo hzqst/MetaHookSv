@@ -14,6 +14,17 @@
 
 * Note that since [BugFixedHL](https://github.com/tmp64/BugfixedHL-Rebased) uses a different VGUI2 component layout, it's not gonna be working with `VGUI2Extension.dll`
 
+GameUI private-symbol resolution requires a gamedata catalog containing the records from
+GoldSrc_VibeSignatures PR #317. These include the PropertySheet methods and `_activePage`,
+FocusNavGroup `GetCurrentFocus` and `_currentFocus`, the three options pages' `OnApplyChanges`,
+and `CBasePanel::ApplySchemeSettings`. ServerBrowser also requires its KeyValues
+`LoadFromFile` record. Update gamedata together with the plugin; older catalogs cannot
+resolve these required symbols. PropertySheet virtual calls still dispatch through the
+current object, using the slot queried from gamedata.
+
+The Menu locator and PropertySheet `_pageTabs` legacy array layout still need upstream
+coverage and are not part of this migration.
+
 ## Features
 
 ### VGUI2 modding framework

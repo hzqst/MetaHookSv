@@ -816,7 +816,7 @@ void __fastcall COptionsSubVideo_ApplyVidSettings(vgui::Panel* pthis, int dummy,
 //Fix GameUI_FocusNavGroup_GetCurrentFocus crash with nullptr access.
 void* __fastcall GameUI_FocusNavGroup_GetCurrentFocus(void* pthis, int dummy)
 {
-	vgui::VPanelHandle* _currentFocus = (vgui::VPanelHandle*)((PUCHAR)pthis + 12); //TODO: gamedata?
+	vgui::VPanelHandle* _currentFocus = (vgui::VPanelHandle*)((PUCHAR)pthis + gPrivateFuncs.offset_currentFocus);
 
 	auto vpanel = _currentFocus->Get();
 
@@ -857,23 +857,19 @@ public:
 
 void __fastcall GameUI_PropertySheet_PerformLayout(vgui::Panel* pthis, int dummy)
 {
-	int offset_activePage = 144; //TODO: gamedata
-
-	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		offset_activePage = 148; //TODO: gamedata
-	}
+	int offset_activePage = gPrivateFuncs.offset_activePage;
 
 	gPrivateFuncs.GameUI_PropertySheet_PerformLayout(pthis, dummy);
 
-	PVOID* _propertySheet_vftable = *(PVOID**)pthis;
-
-	void(__fastcall * pfnChangeActiveTab)(vgui::Panel * pthis, int dummy, int index) =
-		(decltype(pfnChangeActiveTab))_propertySheet_vftable[149];
-
+	//TODO: gamedata for _pageTabs; _activePage alone does not describe the array layout.
 	auto pPropertySheet = (CPropertySheet_Legacy*)((PUCHAR)pthis + offset_activePage - offsetof(CPropertySheet_Legacy, _activePage));
 
 #if 0
+	PVOID* _propertySheet_vftable = *(PVOID**)pthis;
+
+	void(__fastcall * pfnChangeActiveTab)(vgui::Panel * pthis, int dummy, int index) =
+		(decltype(pfnChangeActiveTab))_propertySheet_vftable[GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "vgui2::PropertySheet::ChangeActiveTab(int)")];
+
 	if (!pPropertySheet->_activePage)
 	{
 		// first page becomes the active page
@@ -969,16 +965,7 @@ void __fastcall GameUI_PropertySheet_PerformLayout(vgui::Panel* pthis, int dummy
 
 void* __fastcall GameUI_PropertySheet_HasHotkey(void* pthis, int dummy, wchar_t key)
 {
-	int offset_activePage = 144; //TODO: gamedata
-
-	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		offset_activePage = 148; //TODO: gamedata
-	}
-
-	auto pPropertySheet = (CPropertySheet_Legacy*)((PUCHAR)pthis + offset_activePage - offsetof(CPropertySheet_Legacy, _activePage));
-
-	auto _activePage = pPropertySheet->_activePage;
+	auto _activePage = *(vgui::Panel**)((PUCHAR)pthis + gPrivateFuncs.offset_activePage);
 
 	if (!_activePage)
 		return 0;
@@ -1025,31 +1012,13 @@ public:
 	{
 		if (!gPrivateFuncs.GameUI_FocusNavGroup_GetCurrentFocus)
 		{
-			PVOID* COptionsDialog_vftable = *(PVOID**)m_pDialog;
-			void* (__fastcall * pfnGetFocusNavGroup)(vgui::Panel * pthis, int dummy) = (decltype(pfnGetFocusNavGroup))COptionsDialog_vftable[612 / 4]; //TODO: gamedata
-
-			auto FocusNavGroup = pfnGetFocusNavGroup(m_pDialog, 0);
-			PVOID* FocusNavGroup_vftable = *(PVOID**)FocusNavGroup;
-
-			gPrivateFuncs.GameUI_FocusNavGroup_GetCurrentFocus = (decltype(gPrivateFuncs.GameUI_FocusNavGroup_GetCurrentFocus))FocusNavGroup_vftable[7]; //TODO: gamedata
+			gPrivateFuncs.offset_currentFocus = GamedataResolveStructMember(g_GameUIDllInfo.ImageBase, "vgui2::FocusNavGroup._currentFocus");
+			gPrivateFuncs.GameUI_FocusNavGroup_GetCurrentFocus = (decltype(gPrivateFuncs.GameUI_FocusNavGroup_GetCurrentFocus))
+				GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "vgui2::FocusNavGroup::GetCurrentFocus()", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 			Install_InlineHook(GameUI_FocusNavGroup_GetCurrentFocus);
 		}
 
-		if (!gPrivateFuncs.GameUI_PropertySheet_HasHotkey)
-		{
-			PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
-
-			gPrivateFuncs.GameUI_PropertySheet_HasHotkey = (decltype(gPrivateFuncs.GameUI_PropertySheet_HasHotkey))_propertySheet_vftable[73]; //TODO: gamedata
-			Install_InlineHook(GameUI_PropertySheet_HasHotkey);
-		}
-
-		if (!gPrivateFuncs.GameUI_PropertySheet_PerformLayout)
-		{
-			PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
-
-			gPrivateFuncs.GameUI_PropertySheet_PerformLayout = (decltype(gPrivateFuncs.GameUI_PropertySheet_PerformLayout))_propertySheet_vftable[111]; //TODO: gamedata
-			Install_InlineHook(GameUI_PropertySheet_PerformLayout);
-		}
+		//PropertySheet hooks are resolved and installed by GameUI_InstallHooks.
 	}
 
 	void* GetDialog() const override
@@ -1067,7 +1036,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		void(__fastcall * pfnAddPage)(vgui::Panel * pthis, int dummy, vgui::Panel * panel, const char* title) =
-			(decltype(pfnAddPage))_propertySheet_vftable[134]; //TODO: gamedata
+			(decltype(pfnAddPage))_propertySheet_vftable[GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "vgui2::PropertySheet::AddPage(vgui2::Panel*, char const*)")];
 
 		pfnAddPage(m_pPropertySheet, 0, (vgui::Panel*)panel, title);
 	}
@@ -1077,7 +1046,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		void(__fastcall * pfnSetActivePage)(vgui::Panel * pthis, int dummy, vgui::Panel * panel) =
-			(decltype(pfnSetActivePage))_propertySheet_vftable[135]; //TODO: gamedata
+			(decltype(pfnSetActivePage))_propertySheet_vftable[GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "vgui2::PropertySheet::SetActivePage(vgui2::Panel*)")];
 
 		pfnSetActivePage(m_pPropertySheet, 0, (vgui::Panel*)panel);
 	}
@@ -1087,7 +1056,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		void(__fastcall * pfnSetTabWidth)(vgui::Panel * pthis, int dummy, int width) =
-			(decltype(pfnSetTabWidth))_propertySheet_vftable[136]; //TODO: gamedata
+			(decltype(pfnSetTabWidth))_propertySheet_vftable[GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "vgui2::PropertySheet::SetTabWidth(int)")];
 
 		pfnSetTabWidth(m_pPropertySheet, 0, width);
 	}
@@ -1097,7 +1066,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		void* (__fastcall * pfnGetActivePage)(vgui::Panel * pthis, int dummy) =
-			(decltype(pfnGetActivePage))_propertySheet_vftable[137]; //TODO: gamedata
+			(decltype(pfnGetActivePage))_propertySheet_vftable[GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "vgui2::PropertySheet::GetActivePage()")];
 
 		return pfnGetActivePage(m_pPropertySheet, 0);
 	}
@@ -1107,7 +1076,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		void(__fastcall * pfnResetAllData)(vgui::Panel * pthis, int dummy) =
-			(decltype(pfnResetAllData))_propertySheet_vftable[138]; //TODO: gamedata
+			(decltype(pfnResetAllData))_propertySheet_vftable[GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "vgui2::PropertySheet::ResetAllData()")];
 
 		pfnResetAllData(m_pPropertySheet, 0);
 	}
@@ -1117,7 +1086,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		void(__fastcall * pfnApplyChanges)(vgui::Panel * pthis, int dummy) =
-			(decltype(pfnApplyChanges))_propertySheet_vftable[139]; //TODO: gamedata
+			(decltype(pfnApplyChanges))_propertySheet_vftable[GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "vgui2::PropertySheet::ApplyChanges()")];
 
 		pfnApplyChanges(m_pPropertySheet, 0);
 	}
@@ -1127,7 +1096,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		void* (__fastcall * pfnGetPage)(vgui::Panel * pthis, int dummy, int i) =
-			(decltype(pfnGetPage))_propertySheet_vftable[140]; //TODO: gamedata
+			(decltype(pfnGetPage))_propertySheet_vftable[GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "vgui2::PropertySheet::GetPage(int)")];
 
 		return pfnGetPage(m_pPropertySheet, 0, i);
 	}
@@ -1137,7 +1106,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		void(__fastcall * pfnDeletePage)(vgui::Panel * pthis, int dummy, void* panel) =
-			(decltype(pfnDeletePage))_propertySheet_vftable[141]; //TODO: gamedata
+			(decltype(pfnDeletePage))_propertySheet_vftable[GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "vgui2::PropertySheet::DeletePage(vgui2::Panel*)")];
 
 		pfnDeletePage(m_pPropertySheet, 0, panel);
 	}
@@ -1147,7 +1116,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		void* (__fastcall * pfnGetActiveTab)(vgui::Panel * pthis, int dummy) =
-			(decltype(pfnGetActiveTab))_propertySheet_vftable[142]; //TODO: gamedata
+			(decltype(pfnGetActiveTab))_propertySheet_vftable[GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "vgui2::PropertySheet::GetActiveTab()")];
 
 		return pfnGetActiveTab(m_pPropertySheet, 0);
 	}
@@ -1157,7 +1126,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		void(__fastcall * pfnGetActiveTabTitle)(vgui::Panel * pthis, int dummy, char* textOut, int bufferLen) =
-			(decltype(pfnGetActiveTabTitle))_propertySheet_vftable[143]; //TODO: gamedata
+			(decltype(pfnGetActiveTabTitle))_propertySheet_vftable[GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "vgui2::PropertySheet::GetActiveTabTitle(char*, int)")];
 
 		pfnGetActiveTabTitle(m_pPropertySheet, 0, textOut, bufferLen);
 	}
@@ -1167,7 +1136,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		bool(__fastcall * pfnGetTabTitle)(vgui::Panel * pthis, int dummy, int i, char* textOut, int bufferLen) =
-			(decltype(pfnGetTabTitle))_propertySheet_vftable[144]; //TODO: gamedata
+			(decltype(pfnGetTabTitle))_propertySheet_vftable[GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "vgui2::PropertySheet::GetTabTitle(int, char*, int)")];
 
 		return pfnGetTabTitle(m_pPropertySheet, 0, i, textOut, bufferLen);
 	}
@@ -1177,7 +1146,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		int(__fastcall * pfnGetActivePageNum)(vgui::Panel * pthis, int dummy) =
-			(decltype(pfnGetActivePageNum))_propertySheet_vftable[145]; //TODO: gamedata
+			(decltype(pfnGetActivePageNum))_propertySheet_vftable[GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "vgui2::PropertySheet::GetActivePageNum()")];
 
 		return pfnGetActivePageNum(m_pPropertySheet, 0);
 	}
@@ -1187,7 +1156,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		int(__fastcall * pfnGetGetNumPages)(vgui::Panel * pthis, int dummy) =
-			(decltype(pfnGetGetNumPages))_propertySheet_vftable[146]; //TODO: gamedata
+			(decltype(pfnGetGetNumPages))_propertySheet_vftable[GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "vgui2::PropertySheet::GetNumPages()")];
 
 		return pfnGetGetNumPages(m_pPropertySheet, 0);
 	}
@@ -1197,7 +1166,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		void(__fastcall * pfnDisablePage)(vgui::Panel * pthis, int dummy, const char* title) =
-			(decltype(pfnDisablePage))_propertySheet_vftable[147]; //TODO: gamedata
+			(decltype(pfnDisablePage))_propertySheet_vftable[GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "vgui2::PropertySheet::DisablePage(char const*)")];
 
 		pfnDisablePage(m_pPropertySheet, 0, title);
 	}
@@ -1207,7 +1176,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		void(__fastcall * pfnEnablePage)(vgui::Panel * pthis, int dummy, const char* title) =
-			(decltype(pfnEnablePage))_propertySheet_vftable[148]; //TODO: gamedata
+			(decltype(pfnEnablePage))_propertySheet_vftable[GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "vgui2::PropertySheet::EnablePage(char const*)")];
 
 		pfnEnablePage(m_pPropertySheet, 0, title);
 	}
@@ -1217,7 +1186,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		void(__fastcall * pfnChangeActiveTab)(vgui::Panel * pthis, int dummy, int index) =
-			(decltype(pfnChangeActiveTab))_propertySheet_vftable[149]; //TODO: gamedata
+			(decltype(pfnChangeActiveTab))_propertySheet_vftable[GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "vgui2::PropertySheet::ChangeActiveTab(int)")];
 
 		pfnChangeActiveTab(m_pPropertySheet, 0, index);
 	}
@@ -1320,9 +1289,8 @@ public:
 	{
 		if (!gPrivateFuncs.COptionsSubVideo_OnApplyChanges)
 		{
-			PVOID* COptionsSubVideo_vftable = *(PVOID**)m_pPage;
-
-			gPrivateFuncs.COptionsSubVideo_OnApplyChanges = (decltype(gPrivateFuncs.COptionsSubVideo_OnApplyChanges))COptionsSubVideo_vftable[636 / 4]; //TODO: gamedata
+			gPrivateFuncs.COptionsSubVideo_OnApplyChanges = (decltype(gPrivateFuncs.COptionsSubVideo_OnApplyChanges))
+				GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "COptionsSubVideo::OnApplyChanges()", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 			Install_InlineHook(COptionsSubVideo_OnApplyChanges);
 		}
 	}
@@ -1387,9 +1355,8 @@ public:
 	{
 		if (!gPrivateFuncs.COptionsSubAudio_OnApplyChanges)
 		{
-			PVOID* COptionsSubAudio_vftable = *(PVOID**)m_pPage;
-
-			gPrivateFuncs.COptionsSubAudio_OnApplyChanges = (decltype(gPrivateFuncs.COptionsSubAudio_OnApplyChanges))COptionsSubAudio_vftable[636 / 4]; //TODO: gamedata
+			gPrivateFuncs.COptionsSubAudio_OnApplyChanges = (decltype(gPrivateFuncs.COptionsSubAudio_OnApplyChanges))
+				GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "COptionsSubAudio::OnApplyChanges()", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 			Install_InlineHook(COptionsSubAudio_OnApplyChanges);
 		}
 	}
@@ -1454,9 +1421,8 @@ public:
 	{
 		if (!gPrivateFuncs.COptionsSubMultiplayer_OnApplyChanges)
 		{
-			PVOID* COptionsSubMultiplayer_vftable = *(PVOID**)m_pPage;
-
-			gPrivateFuncs.COptionsSubMultiplayer_OnApplyChanges = (decltype(gPrivateFuncs.COptionsSubMultiplayer_OnApplyChanges))COptionsSubMultiplayer_vftable[636 / 4]; //TODO: gamedata
+			gPrivateFuncs.COptionsSubMultiplayer_OnApplyChanges = (decltype(gPrivateFuncs.COptionsSubMultiplayer_OnApplyChanges))
+				GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "COptionsSubMultiplayer::OnApplyChanges()", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 			Install_InlineHook(COptionsSubMultiplayer_OnApplyChanges);
 		}
 	}
@@ -1616,10 +1582,10 @@ public:
 
 	void InstallHooks()
 	{
-		if (!gPrivateFuncs.CBasePanel_vftable)
+		if (!gPrivateFuncs.CBasePanel_ApplySchemeSettings)
 		{
-			gPrivateFuncs.CBasePanel_vftable = *(PVOID**)m_pBasePanel;
-			gPrivateFuncs.CBasePanel_ApplySchemeSettings = (decltype(gPrivateFuncs.CBasePanel_ApplySchemeSettings))gPrivateFuncs.CBasePanel_vftable[0x13C / 4]; //TODO: gamedata
+			gPrivateFuncs.CBasePanel_ApplySchemeSettings = (decltype(gPrivateFuncs.CBasePanel_ApplySchemeSettings))
+				GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "CBasePanel::ApplySchemeSettings(vgui2::IScheme*)", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 
 			Install_InlineHook(CBasePanel_ApplySchemeSettings);
 		}
@@ -2743,6 +2709,8 @@ void GameUI_FillAddress_Sheet(const mh_dll_info_t&, const mh_dll_info_t&)
 
 void GameUI_FillAddress_PropertySheet(const mh_dll_info_t&, const mh_dll_info_t&)
 {
+	gPrivateFuncs.offset_activePage = GamedataResolveStructMember(g_GameUIDllInfo.ImageBase, "vgui2::PropertySheet._activePage");
+
 	gPrivateFuncs.GameUI_PropertySheet_HasHotkey = (decltype(gPrivateFuncs.GameUI_PropertySheet_HasHotkey))
 		GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "vgui2::PropertySheet::HasHotkey(wchar_t)", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 
@@ -3374,16 +3342,8 @@ void ServerBrowser_PatchAddress_ServerBrowserDialog(const mh_dll_info_t& DllInfo
 
 void ServerBrowser_FillAddress_KeyValues(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	gPrivateFuncs.ServerBrowser_KeyValues_vftable = VGUI2_FindKeyValueVFTable(g_ServerBrowserDllInfo, g_ServerBrowserDllInfo); //TODO: gamedata?
-	Sig_FuncNotFound(ServerBrowser_KeyValues_vftable);
-
 	gPrivateFuncs.ServerBrowser_KeyValues_LoadFromFile = (decltype(gPrivateFuncs.ServerBrowser_KeyValues_LoadFromFile))
-		GetVFunctionFromVFTable(
-			gPrivateFuncs.ServerBrowser_KeyValues_vftable,
-			2, //TODO: gamedata?
-			g_ServerBrowserDllInfo,
-			g_ServerBrowserDllInfo,
-			g_ServerBrowserDllInfo);
+		GamedataResolveKeyValuesLoadFromFileIfAvailable(RealDllInfo.ImageBase);
 	Sig_FuncNotFound(ServerBrowser_KeyValues_LoadFromFile);
 }
 

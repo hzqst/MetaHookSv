@@ -88,7 +88,6 @@ typedef struct
 	//void (__fastcall* CBaseGamesPage_OnButtonToggled)(void* pthis, int dummy, void* a2, int state);
 	void(__fastcall* ServerBrowser_Panel_SetSize)(void* pthis, int dummy, int width, int height);
 	void(__fastcall* ServerBrowser_Panel_SetMinimumSize)(void* pthis, int dummy, int width, int height);
-	void ** ServerBrowser_KeyValues_vftable;
 	bool(__fastcall* ServerBrowser_KeyValues_LoadFromFile)(void* pthis, int dummy, IFileSystem* pFileSystem, const char* resourceName, const char* pathId);
 	//void* (__fastcall* CServerBrowserDialog_ctor)(void* pthis, int dummy, void* parent);
 	//GameUI
@@ -101,6 +100,8 @@ typedef struct
 	void(__fastcall* GameUI_Menu_MakeItemsVisibleInScrollRange)(void* pthis, int dummy);
 	int offset_ScrollBar;
 	int offset_propertySheet;
+	int offset_activePage;
+	int offset_currentFocus;
 	void *(__fastcall*MessageBox_ctor)(void* pthis, int dummy, const char *title, const char *text, void *parent);
 	void (__fastcall*MessageBox_ApplySchemeSettings)(void* pthis, int dummy, void *pScheme);
 	void *(__fastcall*CCreateMultiplayerGameDialog_ctor)(void* pthis, int dummy, void* parent);
@@ -124,7 +125,6 @@ typedef struct
 
 	void* (__fastcall* CBasePanel_ctor)(void* pthis, int dummy);
 	void(__fastcall* CBasePanel_ApplySchemeSettings)(void* pthis, int dummy, void* pScheme);
-	void** CBasePanel_vftable;
 
 	void(__fastcall* GameUI_PropertySheet_PerformLayout)(void* pthis, int dummy);
 	void* (__fastcall *GameUI_PropertySheet_HasHotkey)(void* pthis, int dummy, wchar_t key);
