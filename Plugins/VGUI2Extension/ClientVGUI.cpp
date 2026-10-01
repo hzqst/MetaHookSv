@@ -177,14 +177,8 @@ void __fastcall ClientVGUI_Panel_Init(vgui::Panel* pthis, int dummy, int x, int 
 
 	if (DpiManagerInternal()->IsHighDpiSupportEnabled())
 	{
-#if 1
 		auto pPanel = (vgui::IClientPanel*)pthis;
 		pPanel->SetProportional(true);
-#else
-		PVOID* PanelVFTable = *(PVOID**)pthis;
-		void(__fastcall * pfnSetProportional)(vgui::Panel * pthis, int dummy, bool state) = (decltype(pfnSetProportional))PanelVFTable[113]; //TODO: 113 should be ported to gamedata?
-		pfnSetProportional(pthis, 0, true);
-#endif
 	}
 }
 

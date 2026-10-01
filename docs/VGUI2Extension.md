@@ -22,8 +22,12 @@ and `CBasePanel::ApplySchemeSettings`. ServerBrowser also requires its KeyValues
 resolve these required symbols. PropertySheet virtual calls still dispatch through the
 current object, using the slot queried from gamedata.
 
-The Menu locator and PropertySheet `_pageTabs` legacy array layout still need upstream
-coverage and are not part of this migration.
+Menu resolution additionally requires the records from GoldSrc_VibeSignatures PR #318:
+`vgui2::Menu.m_pScroller` and `vgui2::Menu::MakeItemsVisibleInScrollRange()`.
+The method is resolved directly, without an intermediate Menu vtable or a slot scan,
+and has no explicit arguments in the target GameUI binaries.
+The Menu hook still relies on the Legacy/HL25 layout of members adjacent to `m_pScroller`;
+PropertySheet `_pageTabs` also retains its legacy array layout dependency.
 
 ## Features
 

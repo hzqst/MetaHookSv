@@ -96,7 +96,6 @@ typedef struct
 	void(__fastcall* GameUI_LoadControlSettingsAndUserConfig)(void* pthis, int dummy, const char* dialogResourceName, int dialogID);
 	bool(__fastcall* GameUI_KeyValues_LoadFromFile)(void* pthis, int dummy, IFileSystem* pFileSystem, const char* resourceName, const char* pathId);
 	void(__fastcall* GameUI_Panel_SetSize)(void* pthis, int dummy, int width, int height);
-	void** GameUI_Menu_vftable;
 	void(__fastcall* GameUI_Menu_MakeItemsVisibleInScrollRange)(void* pthis, int dummy);
 	int offset_ScrollBar;
 	int offset_propertySheet;
@@ -190,7 +189,6 @@ PVOID VGUIClient001_CreateInterface(HINTERFACEMODULE hModule);
 void* Sys_GetMainWindow();
 
 PVOID *VGUI2_FindKeyValueVFTable(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
-PVOID* VGUI2_FindMenuVFTable(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 
 void Client_FillAddress(const mh_dll_info_t& RealDllInfo);
 void Client_InstallHooks(void);

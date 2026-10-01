@@ -111,71 +111,6 @@ int GetPatchedGetFontTall(int fontTall)
 	return fontTall;
 }
 
-bool VGUI2_IsMenuMakeItemsVisibleInScrollRange(PVOID Candidate, int* poffset_ScrollBar)
-{
-	typedef struct VGUI2_IsMenuMakeItemsVisibleInScrollRange_SearchContext_s
-	{
-		int offset_ScrollBar{};
-		bool bFoundCall21Ch{};
-	}VGUI2_IsMenuMakeItemsVisibleInScrollRange_SearchContext;
-
-	VGUI2_IsMenuMakeItemsVisibleInScrollRange_SearchContext ctx = {  };
-
-	g_pMetaHookAPI->DisasmRanges(Candidate, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (VGUI2_IsMenuMakeItemsVisibleInScrollRange_SearchContext*)context;
-
-		if (!ctx->offset_ScrollBar &&
-			pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[0].reg &&
-			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[1].mem.base &&
-			pinst->detail->x86.operands[1].mem.base != X86_REG_ESP &&
-			pinst->detail->x86.operands[1].mem.base != X86_REG_EBP &&
-			pinst->detail->x86.operands[1].mem.disp >= 0x80 &&
-			pinst->detail->x86.operands[1].mem.disp <= 0x90)
-		{
-			ctx->offset_ScrollBar = pinst->detail->x86.operands[1].mem.disp;
-		}
-
-		//call  [exx+21Ch]
-		if (!ctx->bFoundCall21Ch &&
-			pinst->id == X86_INS_CALL &&
-			pinst->detail->x86.op_count == 1 &&
-			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[0].mem.base &&
-			pinst->detail->x86.operands[0].mem.base != X86_REG_ESP &&
-			pinst->detail->x86.operands[0].mem.base != X86_REG_EBP &&
-			pinst->detail->x86.operands[0].mem.disp == 0x21C)
-		{
-			ctx->bFoundCall21Ch = true;
-			return TRUE;
-		}
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-		}, 0, &ctx);
-
-	if (ctx.bFoundCall21Ch)
-	{
-		if (poffset_ScrollBar)
-			(*poffset_ScrollBar) = ctx.offset_ScrollBar;
-
-		return TRUE;
-	}
-
-	return FALSE;
-}
-
 bool VGUI2_IsPanelSetSize(PVOID Candidate)
 {
 	typedef struct VGUI2_IsPanelSetSize_SearchContext_s
@@ -472,14 +407,8 @@ void __fastcall ServerBrowser_Panel_Init(vgui::Panel* pthis, int dummy, int x, i
 
 	if (DpiManagerInternal()->IsHighDpiSupportEnabled())
 	{
-#if 1
 		auto pPanel = (vgui::IClientPanel*)pthis;
 		pPanel->SetProportional(true);
-#else
-		PVOID* PanelVFTable = *(PVOID**)pthis;
-		void(__fastcall * pfnSetProportional)(vgui::Panel * pthis, int dummy, bool state) = (decltype(pfnSetProportional))PanelVFTable[113]; //TODO: 113 should be ported to gamedata?
-		pfnSetProportional(pthis, 0, true);
-#endif
 	}
 }
 
@@ -630,14 +559,8 @@ void __fastcall GameUI_Panel_Init(vgui::Panel* pthis, int dummy, int x, int y, i
 
 	if (DpiManagerInternal()->IsHighDpiSupportEnabled())
 	{
-#if 1
 		auto pPanel = (vgui::IClientPanel*)pthis;
 		pPanel->SetProportional(true);
-#else
-		PVOID* PanelVFTable = *(PVOID**)pthis;
-		void(__fastcall * pfnSetProportional)(vgui::Panel * pthis, int dummy, bool state) = (decltype(pfnSetProportional))PanelVFTable[113]; //TODO: 113 should be ported to gamedata?
-		pfnSetProportional(pthis, 0, true);
-#endif
 	}
 }
 
@@ -863,80 +786,6 @@ void __fastcall GameUI_PropertySheet_PerformLayout(vgui::Panel* pthis, int dummy
 
 	//TODO: gamedata for _pageTabs; _activePage alone does not describe the array layout.
 	auto pPropertySheet = (CPropertySheet_Legacy*)((PUCHAR)pthis + offset_activePage - offsetof(CPropertySheet_Legacy, _activePage));
-
-#if 0
-	PVOID* _propertySheet_vftable = *(PVOID**)pthis;
-
-	void(__fastcall * pfnChangeActiveTab)(vgui::Panel * pthis, int dummy, int index) =
-		(decltype(pfnChangeActiveTab))_propertySheet_vftable[GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "vgui2::PropertySheet::ChangeActiveTab(int)")];
-
-	if (!pPropertySheet->_activePage)
-	{
-		// first page becomes the active page
-		pfnChangeActiveTab(pthis, 0, 0);
-
-		if (pPropertySheet->_activePage)
-			pPropertySheet->_activePage->RequestFocus(0);
-	}
-
-	int x, y, wide, tall;
-	pthis->GetBounds(x, y, wide, tall);
-	if (pPropertySheet->_activePage)
-	{
-		if (pPropertySheet->_showTabs)
-		{
-			pPropertySheet->_activePage->SetBounds(
-				0,
-				vgui::scheme()->GetProportionalScaledValue(28),
-				wide,
-				tall - vgui::scheme()->GetProportionalScaledValue(28));
-		}
-		else
-		{
-			pPropertySheet->_activePage->SetBounds(0, 0, wide, tall);
-		}
-		pPropertySheet->_activePage->InvalidateLayout();
-	}
-
-	int limit = pPropertySheet->_pageTabs.GetCount();
-
-	int xtab = 0;
-
-	// draw the visible tabs
-	if (pPropertySheet->_showTabs)
-	{
-		for (int i = 0; i < limit; i++)
-		{
-			int width, tall;
-
-			pPropertySheet->_pageTabs[i]->GetSize(width, tall);
-			if (pPropertySheet->_pageTabs[i] == pPropertySheet->_activeTab)
-			{
-				// active tab is taller
-				pPropertySheet->_activeTab->SetBounds(xtab,
-					vgui::scheme()->GetProportionalScaledValue(2),
-					width,
-					vgui::scheme()->GetProportionalScaledValue(27));
-			}
-			else
-			{
-				pPropertySheet->_pageTabs[i]->SetBounds(xtab,
-					vgui::scheme()->GetProportionalScaledValue(4),
-					width,
-					vgui::scheme()->GetProportionalScaledValue(25));
-			}
-			pPropertySheet->_pageTabs[i]->SetVisible(true);
-			xtab += (width + vgui::scheme()->GetProportionalScaledValue(1));
-		}
-	}
-	else
-	{
-		for (int i = 0; i < limit; i++)
-		{
-			pPropertySheet->_pageTabs[i]->SetVisible(false);
-		}
-	}
-#endif
 
 	int xtab = 0;
 	int limit = pPropertySheet->_pageTabs.GetCount();
@@ -2877,23 +2726,10 @@ void GameUI_FillAddress(void)
 	gPrivateFuncs.GameUI_Panel_Init = (decltype(gPrivateFuncs.GameUI_Panel_Init))
 		GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "vgui2::Panel::Init(int, int, int, int)", MH_GAMESYMBOL_KIND_FUNCTION);
 
-	gPrivateFuncs.GameUI_Menu_vftable = (decltype(gPrivateFuncs.GameUI_Menu_vftable))VGUI2_FindMenuVFTable(g_GameUIDllInfo, g_GameUIDllInfo);//TODO: gamedata?
-	Sig_FuncNotFound(GameUI_Menu_vftable);
-
-	for (int index = 175; index < 182; ++index)
-	{
-		int offset_ScrollBar = 0;
-		if (VGUI2_IsMenuMakeItemsVisibleInScrollRange(gPrivateFuncs.GameUI_Menu_vftable[index], &offset_ScrollBar))
-		{
-			gPrivateFuncs.offset_ScrollBar = offset_ScrollBar; //TODO: gamedata?
-			gPrivateFuncs.GameUI_Menu_MakeItemsVisibleInScrollRange =
-				(decltype(gPrivateFuncs.GameUI_Menu_MakeItemsVisibleInScrollRange))
-				gPrivateFuncs.GameUI_Menu_vftable[index];
-			break;
-		}
-	}
-
-	Sig_FuncNotFound(GameUI_Menu_MakeItemsVisibleInScrollRange);
+	gPrivateFuncs.offset_ScrollBar = GamedataResolveStructMember(g_GameUIDllInfo.ImageBase, "vgui2::Menu.m_pScroller");
+	//The target GameUI method has no explicit arguments, unlike the newer SDK overload.
+	gPrivateFuncs.GameUI_Menu_MakeItemsVisibleInScrollRange = (decltype(gPrivateFuncs.GameUI_Menu_MakeItemsVisibleInScrollRange))
+		GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "vgui2::Menu::MakeItemsVisibleInScrollRange()", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 }
 
 bool GameUI_HasExclusiveInput()
