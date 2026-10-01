@@ -2857,8 +2857,6 @@ void GameUI_FillAddress(void)
 
 	GameUI_FillAddress_COptionsDialog(g_GameUIDllInfo);
 
-	//GameUI_FillAddress_QueryBox(g_GameUIDllInfo, g_GameUIDllInfo);
-
 	GameUI_FillAddress_CCareerProfileFrame(g_GameUIDllInfo);
 
 	GameUI_FillAddress_CCareerMapFrame(g_GameUIDllInfo);
