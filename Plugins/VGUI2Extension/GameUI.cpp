@@ -4,6 +4,7 @@
 #include <IGameConsole.h>
 #include <vgui/VGUI.h>
 #include <vgui/IPanel.h>
+#include <vgui/IClientPanel.h>
 #include <vgui_controls/Panel.h>
 #include <vgui_controls/Menu.h>
 #include <capstone.h>
@@ -385,7 +386,9 @@ ServerBrowser inline hook
 
 void __fastcall ServerBrowser_Panel_SetSize(vgui::Panel* pthis, int dummy, int width, int height)
 {
-	if (pthis->IsProportional())
+	auto pPanel = (vgui::IClientPanel*)pthis;
+
+	if (pPanel->IsProportional())
 	{
 		width = g_pVGuiSchemeManager2->GetProportionalScaledValue(width);
 		height = g_pVGuiSchemeManager2->GetProportionalScaledValue(height);
@@ -396,7 +399,9 @@ void __fastcall ServerBrowser_Panel_SetSize(vgui::Panel* pthis, int dummy, int w
 
 void __fastcall ServerBrowser_Panel_SetMinimumSize(vgui::Panel* pthis, int dummy, int width, int height)
 {
-	if (pthis->IsProportional())
+	auto pPanel = (vgui::IClientPanel*)pthis;
+
+	if (pPanel->IsProportional())
 	{
 		width = g_pVGuiSchemeManager2->GetProportionalScaledValue(width);
 		height = g_pVGuiSchemeManager2->GetProportionalScaledValue(height);
@@ -467,9 +472,14 @@ void __fastcall ServerBrowser_Panel_Init(vgui::Panel* pthis, int dummy, int x, i
 
 	if (DpiManagerInternal()->IsHighDpiSupportEnabled())
 	{
+#if 1
+		auto pPanel = (vgui::IClientPanel*)pthis;
+		pPanel->SetProportional(true);
+#else
 		PVOID* PanelVFTable = *(PVOID**)pthis;
 		void(__fastcall * pfnSetProportional)(vgui::Panel * pthis, int dummy, bool state) = (decltype(pfnSetProportional))PanelVFTable[113]; //TODO: 113 should be ported to gamedata?
 		pfnSetProportional(pthis, 0, true);
+#endif
 	}
 }
 
@@ -620,9 +630,14 @@ void __fastcall GameUI_Panel_Init(vgui::Panel* pthis, int dummy, int x, int y, i
 
 	if (DpiManagerInternal()->IsHighDpiSupportEnabled())
 	{
+#if 1
+		auto pPanel = (vgui::IClientPanel*)pthis;
+		pPanel->SetProportional(true);
+#else
 		PVOID* PanelVFTable = *(PVOID**)pthis;
-		void(__fastcall * pfnSetProportional)(vgui::Panel * pthis, int dummy, bool state) = (decltype(pfnSetProportional))PanelVFTable[113];//TODO: 113 should be ported to gamedata?
+		void(__fastcall * pfnSetProportional)(vgui::Panel * pthis, int dummy, bool state) = (decltype(pfnSetProportional))PanelVFTable[113]; //TODO: 113 should be ported to gamedata?
 		pfnSetProportional(pthis, 0, true);
+#endif
 	}
 }
 
@@ -1016,7 +1031,7 @@ public:
 			auto FocusNavGroup = pfnGetFocusNavGroup(m_pDialog, 0);
 			PVOID* FocusNavGroup_vftable = *(PVOID**)FocusNavGroup;
 
-			gPrivateFuncs.GameUI_FocusNavGroup_GetCurrentFocus = (decltype(gPrivateFuncs.GameUI_FocusNavGroup_GetCurrentFocus))FocusNavGroup_vftable[7];
+			gPrivateFuncs.GameUI_FocusNavGroup_GetCurrentFocus = (decltype(gPrivateFuncs.GameUI_FocusNavGroup_GetCurrentFocus))FocusNavGroup_vftable[7]; //TODO: gamedata
 			Install_InlineHook(GameUI_FocusNavGroup_GetCurrentFocus);
 		}
 
@@ -1032,7 +1047,7 @@ public:
 		{
 			PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
-			gPrivateFuncs.GameUI_PropertySheet_PerformLayout = (decltype(gPrivateFuncs.GameUI_PropertySheet_PerformLayout))_propertySheet_vftable[111];
+			gPrivateFuncs.GameUI_PropertySheet_PerformLayout = (decltype(gPrivateFuncs.GameUI_PropertySheet_PerformLayout))_propertySheet_vftable[111]; //TODO: gamedata
 			Install_InlineHook(GameUI_PropertySheet_PerformLayout);
 		}
 	}
@@ -2894,7 +2909,7 @@ void GameUI_FillAddress(void)
 	gPrivateFuncs.GameUI_Panel_Init = (decltype(gPrivateFuncs.GameUI_Panel_Init))
 		GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "vgui2::Panel::Init(int, int, int, int)", MH_GAMESYMBOL_KIND_FUNCTION);
 
-	gPrivateFuncs.GameUI_Menu_vftable = (decltype(gPrivateFuncs.GameUI_Menu_vftable))VGUI2_FindMenuVFTable(g_GameUIDllInfo, g_GameUIDllInfo);
+	gPrivateFuncs.GameUI_Menu_vftable = (decltype(gPrivateFuncs.GameUI_Menu_vftable))VGUI2_FindMenuVFTable(g_GameUIDllInfo, g_GameUIDllInfo);//TODO: gamedata?
 	Sig_FuncNotFound(GameUI_Menu_vftable);
 
 	for (int index = 175; index < 182; ++index)
@@ -2902,7 +2917,7 @@ void GameUI_FillAddress(void)
 		int offset_ScrollBar = 0;
 		if (VGUI2_IsMenuMakeItemsVisibleInScrollRange(gPrivateFuncs.GameUI_Menu_vftable[index], &offset_ScrollBar))
 		{
-			gPrivateFuncs.offset_ScrollBar = offset_ScrollBar;
+			gPrivateFuncs.offset_ScrollBar = offset_ScrollBar; //TODO: gamedata?
 			gPrivateFuncs.GameUI_Menu_MakeItemsVisibleInScrollRange =
 				(decltype(gPrivateFuncs.GameUI_Menu_MakeItemsVisibleInScrollRange))
 				gPrivateFuncs.GameUI_Menu_vftable[index];
@@ -3359,13 +3374,13 @@ void ServerBrowser_PatchAddress_ServerBrowserDialog(const mh_dll_info_t& DllInfo
 
 void ServerBrowser_FillAddress_KeyValues(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	gPrivateFuncs.ServerBrowser_KeyValues_vftable = VGUI2_FindKeyValueVFTable(g_ServerBrowserDllInfo, g_ServerBrowserDllInfo);
+	gPrivateFuncs.ServerBrowser_KeyValues_vftable = VGUI2_FindKeyValueVFTable(g_ServerBrowserDllInfo, g_ServerBrowserDllInfo); //TODO: gamedata?
 	Sig_FuncNotFound(ServerBrowser_KeyValues_vftable);
 
 	gPrivateFuncs.ServerBrowser_KeyValues_LoadFromFile = (decltype(gPrivateFuncs.ServerBrowser_KeyValues_LoadFromFile))
 		GetVFunctionFromVFTable(
 			gPrivateFuncs.ServerBrowser_KeyValues_vftable,
-			2,
+			2, //TODO: gamedata?
 			g_ServerBrowserDllInfo,
 			g_ServerBrowserDllInfo,
 			g_ServerBrowserDllInfo);
