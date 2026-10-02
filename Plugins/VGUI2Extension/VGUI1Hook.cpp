@@ -29,11 +29,14 @@ HMODULE g_hVGui1 = NULL;
 void* staticEngineSurface = NULL;
 
 static hook_t* g_phook_vgui_TextImage_paint = NULL;
-static hook_t* g_phook_EngineSurfaceWrap_WndProcHandler = NULL;
-static hook_t* g_phook_EngineSurfaceWrap_AppHandler = NULL;
-static hook_t* g_phook_EngineSurfaceWrap_setCursor = NULL;
 static hook_t* g_phook_EngineSurfaceWrap_lockCursor = NULL;
 static hook_t* g_phook_EngineSurfaceWrap_unlockCursor = NULL;
+
+//One VFTHook per vgui1::IEngineSurfaceWrap slot installed by
+//VGUI1_PostInstallHooks; kept so VGUI1_Shutdown can UnHook them. The modern and
+//legacy interface layouts hook different slots on different objects and only one
+//branch runs, so they share this slot-indexed array (sized past slot 35).
+static hook_t* g_phook_CEngineSurfaceWrap[36] = { NULL };
 
 static decltype(EngineSurfaceWrap_WndProcHandler)* m_pfnEngineSurfaceWrap_WndProcHandler = NULL;
 static decltype(EngineSurfaceWrap_AppHandler)* m_pfnEngineSurfaceWrap_AppHandler = NULL;
@@ -351,8 +354,8 @@ void VGUI1_PostInstallHooks(void)
 
 		PVOID* ProxyVFTable = *(PVOID**)&s_EngineSurfaceWrapProxy;
 
-		g_phook_EngineSurfaceWrap_setCursor = g_pMetaHookAPI->VFTHook(pStaticEngineSurface, 0, 30, (void*)ProxyVFTable[30], (void**)&m_pfnEngineSurfaceWrap_setCursor);
-		g_phook_EngineSurfaceWrap_AppHandler = g_pMetaHookAPI->VFTHook(pStaticEngineSurface, 0, 35, (void*)ProxyVFTable[35], (void**)&m_pfnEngineSurfaceWrap_AppHandler);
+		g_phook_CEngineSurfaceWrap[30] = g_pMetaHookAPI->VFTHook(pStaticEngineSurface, 0, 30, (void*)ProxyVFTable[30], (void**)&m_pfnEngineSurfaceWrap_setCursor);
+		g_phook_CEngineSurfaceWrap[35] = g_pMetaHookAPI->VFTHook(pStaticEngineSurface, 0, 35, (void*)ProxyVFTable[35], (void**)&m_pfnEngineSurfaceWrap_AppHandler);
 	}
 	else
 	{
@@ -363,8 +366,8 @@ void VGUI1_PostInstallHooks(void)
 
 		PVOID* ProxyVFTable = *(PVOID**)&s_EngineSurfaceWrapLegacyProxy;
 
-		g_phook_EngineSurfaceWrap_setCursor = g_pMetaHookAPI->VFTHook(pStaticEngineSurfaceLegacy, 0, 29, (void*)ProxyVFTable[29], (void**)&m_pfnEngineSurfaceWrap_setCursor);
-		g_phook_EngineSurfaceWrap_WndProcHandler = g_pMetaHookAPI->VFTHook(pStaticEngineSurfaceLegacy, 0, 34, (void*)ProxyVFTable[34], (void**)&m_pfnEngineSurfaceWrap_WndProcHandler);
+		g_phook_CEngineSurfaceWrap[29] = g_pMetaHookAPI->VFTHook(pStaticEngineSurfaceLegacy, 0, 29, (void*)ProxyVFTable[29], (void**)&m_pfnEngineSurfaceWrap_setCursor);
+		g_phook_CEngineSurfaceWrap[34] = g_pMetaHookAPI->VFTHook(pStaticEngineSurfaceLegacy, 0, 34, (void*)ProxyVFTable[34], (void**)&m_pfnEngineSurfaceWrap_WndProcHandler);
 	}
 }
 
@@ -386,8 +389,17 @@ void VGUI1_InstallHooks(void)
 void VGUI1_Shutdown(void)
 {
 	Uninstall_Hook(vgui_TextImage_paint);
-	Uninstall_Hook(EngineSurfaceWrap_WndProcHandler);
-	Uninstall_Hook(EngineSurfaceWrap_AppHandler);
-	Uninstall_Hook(EngineSurfaceWrap_setCursor);
+
+	//Restores the vgui1::IEngineSurfaceWrap vftable entries the matching proxy
+	//replaced; VGUI1_PostInstallHooks saved each handle in g_phook_CEngineSurfaceWrap.
+	for (int i = 1; i < _ARRAYSIZE(g_phook_CEngineSurfaceWrap); ++i)
+	{
+		if (g_phook_CEngineSurfaceWrap[i])
+		{
+			g_pMetaHookAPI->UnHook(g_phook_CEngineSurfaceWrap[i]);
+			g_phook_CEngineSurfaceWrap[i] = NULL;
+		}
+	}
+
 	g_hVGui1 = NULL;
 }
