@@ -4,13 +4,15 @@
 #include <IVideoMode.h>
 
 #include <detours.h>
-#include <capstone.h>
+#include <capstone/capstone.h>
 #include <LoadDllMemoryApi.h>
 
 #include <fstream>
 #include <sstream>
 #include <set>
+#include <string>
 #include <vector>
+#include <algorithm>
 #include <functional>
 #include <thread>
 
@@ -1561,6 +1563,55 @@ static bool MH_LoadEngine_ResolveGlobalOperand(const char* symbolName, PVOID glo
 	return true;
 }
 
+// Recursively enumerate every gamedata root directory under root that contains
+// an index.json. The primary root is always emitted first so it defines the
+// catalog (GameData::Initialize then requires its index.json to be valid).
+// Nested roots are emitted by a depth-first walk with each directory's children
+// sorted by name, which keeps the load order deterministic and guarantees a
+// parent root precedes its descendants.
+static bool MH_LoadEngine_HasIndexJson(const std::string& dir)
+{
+	DWORD attrs = GetFileAttributesA((dir + "\\index.json").c_str());
+	return attrs != INVALID_FILE_ATTRIBUTES && !(attrs & FILE_ATTRIBUTE_DIRECTORY);
+}
+
+static void MH_LoadEngine_CollectGamedataRoot(const std::string& dir, bool isPrimaryRoot, std::vector<std::string>& roots)
+{
+	// The primary root is pushed even without an index.json so that
+	// GameData::Initialize reports it as a hard failure; nested roots only take
+	// part when they actually declare one.
+	if (isPrimaryRoot || MH_LoadEngine_HasIndexJson(dir))
+		roots.push_back(dir);
+
+	// Nested gamedata lives in arbitrary-depth sub-directories (gamedata/**/),
+	// so recurse into every child directory regardless of whether this one
+	// declares its own index.json.
+	std::vector<std::string> subdirs;
+	WIN32_FIND_DATAA findData;
+	HANDLE hFind = FindFirstFileA((dir + "\\*").c_str(), &findData);
+	if (hFind != INVALID_HANDLE_VALUE)
+	{
+		do
+		{
+			if (!(findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+				continue;
+			// Do not follow junctions/symlinks: arbitrary-depth recursion into a
+			// self-referencing reparse point would never terminate.
+			if (findData.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
+				continue;
+			if (strcmp(findData.cFileName, ".") == 0 || strcmp(findData.cFileName, "..") == 0)
+				continue;
+
+			subdirs.push_back(findData.cFileName);
+		} while (FindNextFileA(hFind, &findData));
+		FindClose(hFind);
+	}
+	std::sort(subdirs.begin(), subdirs.end());
+
+	for (const auto& subdir : subdirs)
+		MH_LoadEngine_CollectGamedataRoot(dir + "\\" + subdir, false, roots);
+}
+
 void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* szGameName, const char* szFullGamePath, const char* pszEngineDLL)
 {
 	MH_ResetAllVars();
@@ -1624,7 +1675,18 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 			gamedataRoot += "\\";
 		gamedataRoot += szGameName;
 		gamedataRoot += "\\metahook\\gamedata";
-		if (!GameData::Initialize(gamedataRoot.c_str()))
+
+		// The catalog spans the primary root and every nested gamedata/**/ root
+		// that ships its own index.json.
+		std::vector<std::string> gamedataRoots;
+		MH_LoadEngine_CollectGamedataRoot(gamedataRoot, true, gamedataRoots);
+
+		std::vector<const char*> gamedataRootArgs;
+		gamedataRootArgs.reserve(gamedataRoots.size());
+		for (const auto& root : gamedataRoots)
+			gamedataRootArgs.push_back(root.c_str());
+
+		if (gamedataRootArgs.empty() || !GameData::Initialize(gamedataRootArgs.data(), gamedataRootArgs.size()))
 		{
 			std::string diagnostics = GameData::GetDiagnostics();
 			MH_SysError("MH_LoadEngine: Failed to load gamedata from: %s\nDiagnostics:\n%s",

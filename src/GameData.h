@@ -3,6 +3,7 @@
 
 #include <metahook.h>
 
+#include <cstddef>
 #include <string>
 
 // GameData owns the local gamedata catalog, the signature parser, module
@@ -12,13 +13,20 @@
 
 namespace GameData
 {
-	// Build (and freeze) the read-only catalog from <gamedataRoot>\index.json.
-	// Returns false and leaves the catalog unavailable when index.json is
-	// missing, malformed, or has an unsupported schema. Per-snapshot failures
+	// Build (and freeze) the read-only catalog from a set of gamedata root
+	// directories, each contributing its own index.json (typically the primary
+	// root plus every nested gamedata root discovered under gamedata/**/).
+	// gamedataRoots[0] is the primary root: if its index.json is missing,
+	// malformed, or has an unsupported schema, Initialize returns false and
+	// leaves the catalog unavailable. Every other root is merged on a
+	// best-effort basis and cannot fail the whole catalog. Per-snapshot failures
 	// (missing file, size/hash mismatch, bad schema, malformed records) are
-	// isolated and recorded as internal diagnostics without failing the whole
-	// catalog.
-	bool Initialize(const char* gamedataRoot);
+	// isolated and recorded as internal diagnostics. A gameVersion may be
+	// declared by several indexes (for example the launcher catalog plus a plugin
+	// catalog); every distinct (url, sha256) declaration is loaded, so their
+	// symbols form a union keyed by (moduleCRC64, symbolName). Only a
+	// byte-identical re-declaration of the same file is skipped.
+	bool Initialize(const char* const* gamedataRoots, size_t gamedataRootCount);
 
 	// Return all catalog diagnostics joined with newlines for error reporting.
 	std::string GetDiagnostics();
