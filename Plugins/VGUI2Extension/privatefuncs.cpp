@@ -1,5 +1,4 @@
 #include <metahook.h>
-#include <capstone.h>
 #include "plugins.h"
 #include "exportfuncs.h"
 #include "privatefuncs.h"
@@ -20,14 +19,14 @@ char m_szCurrentGameLanguage[128] = { 0 };
 
 private_funcs_t gPrivateFuncs = { 0 };
 
-static hook_t* g_phook_LanguageRegistry = nullptr;
-
 HMODULE g_hGameUI = NULL;
 HMODULE g_hServerBrowser = NULL;
 bool g_bIsServerBrowserHooked = false;
 
 mh_dll_info_t g_GameUIDllInfo = { 0 };
 mh_dll_info_t g_ServerBrowserDllInfo = { 0 };
+
+static hook_t* g_phook_LanguageRegistry = nullptr;
 
 const char* GetCurrentGameLanguage()
 {

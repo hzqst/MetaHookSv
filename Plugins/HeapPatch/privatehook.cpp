@@ -1,7 +1,7 @@
 #include <metahook.h>
-#include <capstone.h>
 #include <string>
 #include <vector>
+#include <capstone.h>
 #include "plugins.h"
 #include "privatehook.h"
 

@@ -1,5 +1,4 @@
 #include <metahook.h>
-#include <capstone.h>
 #include <vgui/IInput.h>
 #include <vgui/IVGui.h>
 #include <vgui/IInputInternal.h>

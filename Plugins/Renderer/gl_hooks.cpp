@@ -1,7 +1,7 @@
 
 #include <metahook.h>
-#include <capstone.h>
 #include <cstring>
+#include <capstone.h>
 #include "gl_local.h"
 
 static hook_t* g_phook_GL_Init = NULL;
@@ -1342,6 +1342,7 @@ void R_RedirectEngineLegacyOpenGLTextureAllocation(const mh_dll_info_t& RealDllI
 					*(size_t*)context = instLen;
 				}
 			}, &patchLength);
+
 		if (!patchLength)
 		{
 			Sys_Error("Invalid texture allocation patch %s at %p: expected MOV EAX, [mem] of at least 5 bytes (decoded length %d)",

@@ -1,5 +1,4 @@
 #include <metahook.h>
-#include <capstone.h>
 #include "gl_local.h"
 #include "privatehook.h"
 #include "plugins.h"

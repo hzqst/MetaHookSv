@@ -7,7 +7,6 @@
 #include <vgui/IClientPanel.h>
 #include <vgui_controls/Panel.h>
 #include <vgui_controls/Menu.h>
-#include <capstone.h>
 #include <set>
 #include <sstream>
 #include <vector>
@@ -19,7 +18,6 @@
 
 static hook_t* g_phook_ServerBrowser_Panel_Init = NULL;
 static hook_t* g_phook_ServerBrowser_KeyValues_LoadFromFile = NULL;
-//static hook_t* g_phook_ServerBrowser_LoadControlSettingsAndUserConfig = NULL;
 static hook_t* g_phook_GameUI_Panel_Init = NULL;
 static hook_t* g_phook_GameUI_KeyValues_LoadFromFile = NULL;
 static hook_t* g_phook_CGameConsoleDialog_ctor = NULL;
