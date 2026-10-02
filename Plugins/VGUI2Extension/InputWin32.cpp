@@ -1024,7 +1024,7 @@ public:
 
 			if (flags & VGUI_GCS_COMPSTR)
 			{
-				wchar_t tempstr[512];
+				wchar_t tempstr[512] = {0};
 				int len = ImmGetCompositionStringW(hIMC, GCS_COMPSTR, (LPVOID)tempstr, sizeof(tempstr));
 
 				if (len > 0)
