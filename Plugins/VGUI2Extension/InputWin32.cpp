@@ -16,6 +16,7 @@
 #pragma comment(lib, "Imm32.lib")
 
 #include "plugins.h"
+#include "privatefuncs.h"
 
 extern vgui::IVGui *g_pVGui;
 extern vgui::IInput* g_pVGuiInput;
@@ -33,12 +34,13 @@ static void(__fastcall* g_pfnCInputWin32_PostKeyMessage)(void* pthis, int, KeyVa
 
 void InputWin32_FillAddress(void)
 {
-	HMODULE hVGUI2 = GetModuleHandleA("vgui2.dll");
-
-	//The private CInputWin32::PostKeyMessage is published for every vgui2.dll identity;
-	//the CS/CZ/CZDS clients load the shared hl vgui2.dll and resolve against its records.
-	g_pfnCInputWin32_PostKeyMessage = (decltype(g_pfnCInputWin32_PostKeyMessage))
-		GamedataResolvePtr(hVGUI2, "vgui2", "CInputWin32::PostKeyMessage(KeyValues*)", MH_GAMESYMBOL_KIND_FUNCTION);
+	if (g_hVGUI2 && g_VGUI2DllInfo.ImageBase)
+	{
+		//The private CInputWin32::PostKeyMessage is published for every vgui2.dll identity;
+		//the CS/CZ/CZDS clients load the shared hl vgui2.dll and resolve against its records.
+		g_pfnCInputWin32_PostKeyMessage = (decltype(g_pfnCInputWin32_PostKeyMessage))
+			GamedataResolvePtr(g_VGUI2DllInfo.ImageBase, "vgui2", "CInputWin32::PostKeyMessage(KeyValues*)", MH_GAMESYMBOL_KIND_FUNCTION);
+	}
 }
 
 namespace vgui

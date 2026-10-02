@@ -21,10 +21,13 @@ private_funcs_t gPrivateFuncs = { 0 };
 
 HMODULE g_hGameUI = NULL;
 HMODULE g_hServerBrowser = NULL;
+HMODULE g_hVGUI2 = NULL;
+
 bool g_bIsServerBrowserHooked = false;
 
 mh_dll_info_t g_GameUIDllInfo = { 0 };
 mh_dll_info_t g_ServerBrowserDllInfo = { 0 };
+mh_dll_info_t g_VGUI2DllInfo = { 0 };
 
 static hook_t* g_phook_LanguageRegistry = nullptr;
 
@@ -256,6 +259,16 @@ void DllLoadNotification(mh_load_dll_notification_context_t* ctx)
 			g_ServerBrowserDllInfo.TextBase = g_pMetaHookAPI->GetSectionByName(g_ServerBrowserDllInfo.ImageBase, ".text\0\0\0", &g_ServerBrowserDllInfo.TextSize);
 			g_ServerBrowserDllInfo.RdataBase = g_pMetaHookAPI->GetSectionByName(g_ServerBrowserDllInfo.ImageBase, ".rdata\0\0", &g_ServerBrowserDllInfo.RdataSize);
 			g_ServerBrowserDllInfo.DataBase = g_pMetaHookAPI->GetSectionByName(g_ServerBrowserDllInfo.ImageBase, ".data\0\0\0", &g_ServerBrowserDllInfo.DataSize);
+		}
+		else if (ctx->BaseDllName && ctx->hModule && !_wcsicmp(ctx->BaseDllName, L"vgui2.dll"))
+		{
+			g_hVGUI2 = ctx->hModule;
+
+			g_VGUI2DllInfo.ImageBase = g_pMetaHookAPI->GetModuleBase(g_hServerBrowser);
+			g_VGUI2DllInfo.ImageSize = g_pMetaHookAPI->GetModuleSize(g_VGUI2DllInfo.ImageBase);
+			g_VGUI2DllInfo.TextBase = g_pMetaHookAPI->GetSectionByName(g_VGUI2DllInfo.ImageBase, ".text\0\0\0", &g_VGUI2DllInfo.TextSize);
+			g_VGUI2DllInfo.RdataBase = g_pMetaHookAPI->GetSectionByName(g_VGUI2DllInfo.ImageBase, ".rdata\0\0", &g_VGUI2DllInfo.RdataSize);
+			g_VGUI2DllInfo.DataBase = g_pMetaHookAPI->GetSectionByName(g_VGUI2DllInfo.ImageBase, ".data\0\0\0", &g_VGUI2DllInfo.DataSize);
 		}
 	}
 	else if (ctx->flags & LOAD_DLL_NOTIFICATION_IS_UNLOAD)

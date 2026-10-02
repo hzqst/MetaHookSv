@@ -207,9 +207,11 @@ const char* GetCurrentGameLanguage();
 
 extern HMODULE g_hGameUI;
 extern HMODULE g_hServerBrowser;
+extern HMODULE g_hVGUI2;
 extern bool g_bIsServerBrowserHooked;
 extern mh_dll_info_t g_GameUIDllInfo;
 extern mh_dll_info_t g_ServerBrowserDllInfo;
+extern mh_dll_info_t g_VGUI2DllInfo;
 
 PVOID VGUIClient001_CreateInterface(HINTERFACEMODULE hModule);
 
