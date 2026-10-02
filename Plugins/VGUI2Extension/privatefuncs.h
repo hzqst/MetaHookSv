@@ -98,10 +98,10 @@ typedef struct
 	void(__fastcall* GameUI_Panel_SetSize)(void* pthis, int dummy, int width, int height);
 	void(__fastcall* GameUI_Panel_SetMinimumSize)(void* pthis, int dummy, int width, int height);
 	void(__fastcall* GameUI_Menu_MakeItemsVisibleInScrollRange)(void* pthis, int dummy);
-	int offset_ScrollBar;
-	int offset_propertySheet;
-	int offset_activePage;
-	int offset_currentFocus;
+	int offset_Menu_m_pScroller;
+	int offset_PropertyDialog_propertySheet;
+	int offset_PropertySheet_activePage;
+	int offset_FocusNavGroup_currentFocus;
 	void *(__fastcall*MessageBox_ctor)(void* pthis, int dummy, const char *title, const char *text, void *parent);
 	void (__fastcall*MessageBox_ApplySchemeSettings)(void* pthis, int dummy, void *pScheme);
 	void *(__fastcall*CCreateMultiplayerGameDialog_ctor)(void* pthis, int dummy, void* parent);

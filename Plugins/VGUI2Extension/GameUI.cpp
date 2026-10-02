@@ -472,7 +472,7 @@ public:
 template<class T>
 void GameUI_Menu_MakeItemsVisibleInScrollRange_Template(vgui::Panel* pthis)
 {
-	T* pMenu = (T*)((PUCHAR)pthis + gPrivateFuncs.offset_ScrollBar - offsetof(T, m_pScroller));
+	T* pMenu = (T*)((PUCHAR)pthis + gPrivateFuncs.offset_Menu_m_pScroller - offsetof(T, m_pScroller));
 
 	for (int i = 0; i < pMenu->m_MenuItems.Count(); i++)
 	{
@@ -582,7 +582,7 @@ void __fastcall COptionsSubVideo_ApplyVidSettings(vgui::Panel* pthis, int dummy,
 //Fix GameUI_FocusNavGroup_GetCurrentFocus crash with nullptr access.
 void* __fastcall GameUI_FocusNavGroup_GetCurrentFocus(void* pthis, int dummy)
 {
-	vgui::VPanelHandle* _currentFocus = (vgui::VPanelHandle*)((PUCHAR)pthis + gPrivateFuncs.offset_currentFocus);
+	vgui::VPanelHandle* _currentFocus = (vgui::VPanelHandle*)((PUCHAR)pthis + gPrivateFuncs.offset_FocusNavGroup_currentFocus);
 
 	auto vpanel = _currentFocus->Get();
 
@@ -623,7 +623,7 @@ public:
 
 void __fastcall GameUI_PropertySheet_PerformLayout(vgui::Panel* pthis, int dummy)
 {
-	int offset_activePage = gPrivateFuncs.offset_activePage;
+	int offset_activePage = gPrivateFuncs.offset_PropertySheet_activePage;
 
 	gPrivateFuncs.GameUI_PropertySheet_PerformLayout(pthis, dummy);
 
@@ -657,7 +657,7 @@ void __fastcall GameUI_PropertySheet_PerformLayout(vgui::Panel* pthis, int dummy
 
 void* __fastcall GameUI_PropertySheet_HasHotkey(void* pthis, int dummy, wchar_t key)
 {
-	auto _activePage = *(vgui::Panel**)((PUCHAR)pthis + gPrivateFuncs.offset_activePage);
+	auto _activePage = *(vgui::Panel**)((PUCHAR)pthis + gPrivateFuncs.offset_PropertySheet_activePage);
 
 	if (!_activePage)
 		return 0;
@@ -704,7 +704,7 @@ public:
 	{
 		if (!gPrivateFuncs.GameUI_FocusNavGroup_GetCurrentFocus)
 		{
-			gPrivateFuncs.offset_currentFocus = GamedataResolveStructMember(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::FocusNavGroup._currentFocus");
+			gPrivateFuncs.offset_FocusNavGroup_currentFocus = GamedataResolveStructMember(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::FocusNavGroup._currentFocus");
 			gPrivateFuncs.GameUI_FocusNavGroup_GetCurrentFocus = (decltype(gPrivateFuncs.GameUI_FocusNavGroup_GetCurrentFocus))
 				GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::FocusNavGroup::GetCurrentFocus()", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 			Install_InlineHook(GameUI_FocusNavGroup_GetCurrentFocus);
@@ -891,7 +891,7 @@ void* __fastcall COptionsDialog_ctor(vgui::Panel* pthis, int dummy, vgui::Panel*
 {
 	auto result = gPrivateFuncs.COptionsDialog_ctor(pthis, dummy, parent);
 
-	vgui::Panel* _propertySheet = *(vgui::Panel**)((PUCHAR)pthis + gPrivateFuncs.offset_propertySheet);
+	vgui::Panel* _propertySheet = *(vgui::Panel**)((PUCHAR)pthis + gPrivateFuncs.offset_PropertyDialog_propertySheet);
 
 	CGameUIOptionsDialogCtorCallbackContext CallbackContext(pthis, _propertySheet);
 
@@ -2395,13 +2395,13 @@ void GameUI_FillAddress_ConsoleEntry(const mh_dll_info_t&, const mh_dll_info_t&)
 
 void GameUI_FillAddress_Sheet(const mh_dll_info_t&, const mh_dll_info_t&)
 {
-	gPrivateFuncs.offset_propertySheet = (decltype(gPrivateFuncs.offset_propertySheet))
+	gPrivateFuncs.offset_PropertyDialog_propertySheet = (decltype(gPrivateFuncs.offset_PropertyDialog_propertySheet))
 		GamedataResolveStructMember(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::PropertyDialog._propertySheet");
 }
 
 void GameUI_FillAddress_PropertySheet(const mh_dll_info_t&, const mh_dll_info_t&)
 {
-	gPrivateFuncs.offset_activePage = GamedataResolveStructMember(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::PropertySheet._activePage");
+	gPrivateFuncs.offset_PropertySheet_activePage = GamedataResolveStructMember(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::PropertySheet._activePage");
 
 	gPrivateFuncs.GameUI_PropertySheet_HasHotkey = (decltype(gPrivateFuncs.GameUI_PropertySheet_HasHotkey))
 		GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::PropertySheet::HasHotkey(wchar_t)", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
@@ -2516,7 +2516,7 @@ void GameUI_FillAddress(void)
 	gPrivateFuncs.GameUI_Panel_Init = (decltype(gPrivateFuncs.GameUI_Panel_Init))
 		GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::Panel::Init(int, int, int, int)", MH_GAMESYMBOL_KIND_FUNCTION);
 
-	gPrivateFuncs.offset_ScrollBar = GamedataResolveStructMember(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::Menu.m_pScroller");
+	gPrivateFuncs.offset_Menu_m_pScroller = GamedataResolveStructMember(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::Menu.m_pScroller");
 	//The target GameUI method has no explicit arguments, unlike the newer SDK overload.
 	gPrivateFuncs.GameUI_Menu_MakeItemsVisibleInScrollRange = (decltype(gPrivateFuncs.GameUI_Menu_MakeItemsVisibleInScrollRange))
 		GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::Menu::MakeItemsVisibleInScrollRange()", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
