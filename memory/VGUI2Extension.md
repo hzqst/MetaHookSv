@@ -138,6 +138,8 @@ The capabilities defined publicly in `IVGUI2Extension.h` generally correspond on
     - In-game console, taskbar and KeyValues paths were not verified.
   - See [[game-data]].
 
+- `InputWin32_FillAddress` migration (2026-10-02): `g_pfnCWin32Input_PostKeyMessage` (backing `IInput2::PostKeyMessage`) now resolves `CInputWin32::PostKeyMessage(KeyValues*)` as a vgui2 FUNCTION through `GamedataResolvePtr(GetModuleHandleA("vgui2.dll"), "vgui2", ...)`, replacing the `KeyCodeReleased` string search, the `68 ?? 68 <str> 8B C8` push pattern and the `DisasmRanges` walk to the first `E8` after `push eax`. The record comes from GoldSrc_VibeSignatures PR #321 (`find-CInputWin32_PostKeyMessage`) and covers all 11 vgui2.dll identities (hl-3248/3266/3329/3647/4554/6153/8684/10210, cof-5936, svencoop-8948/10257); the CS/CZ/CZDS clients load the shared hl vgui2.dll, so the gate follows `include_engine` like the gameui/serverbrowser entries (`VGUI2EXTENSION_VGUI2_FUNCTIONS`). The real method returns `void` and is `__thiscall` with `ret 4`; the plugin's `bool(__fastcall*)(void*, int, KeyValues*)` typedef is ABI-compatible but its returned AL is undefined, so callers must not rely on the result. Required catalog: published after PR #321; the 2026-10-01 local catalog lacks the record and fails the gate (11 errors) until regenerated. Validation: `python -m pytest scripts/tests -q` 188 passed / 2 skipped / 1695 subtests; Release and Debug Win32 `Plugins\VGUI2Extension` builds exited 0 (Debug LNK4075 only); no game runtime test performed.
+
 ## Callers (Optional)
 Plugins confirmed to obtain `VGUI2_EXTENSION_INTERFACE_VERSION` through `VGUI2ExtensionImport.cpp` and register callbacks:
 - `Plugins/CaptionMod` (BaseUI/ClientVGUI/GameUI)

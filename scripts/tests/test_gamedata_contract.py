@@ -1475,6 +1475,9 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
     condump_callees = ("CGameConsoleDialog::Print(char const*)",
                        "vgui2::RichText::InsertString(char const*)")
     serverbrowser_functions = {"vgui2::Panel::Init(int, int, int, int)": "function"}
+    # CInputWin32::PostKeyMessage replaced the KeyCodeReleased disassembly walk; vgui2.dll
+    # is published on every engine identity and shared by the CS/CZ clients.
+    vgui2_functions = {"CInputWin32::PostKeyMessage(KeyValues*)": "function"}
     engine_games = validate.RENDERER_ALL_GAMES
     registry_games = ("hl-3248", "hl-3266", "hl-3329", "hl-3647", "hl-4554")
     registry_reader = "Sys_GetRegKeyValueUnderRoot"
@@ -1518,6 +1521,8 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
         symbols[("gameui", keyvalues)] = {"kind": "virtualFunction", "module": "gameui"}
         symbols.update({("serverbrowser", name): {"kind": kind, "module": "serverbrowser"}
                         for name, kind in self.serverbrowser_functions.items()})
+        symbols.update({("vgui2", name): {"kind": kind, "module": "vgui2"}
+                        for name, kind in self.vgui2_functions.items()})
         if game_version in self.registry_games:
             symbols[("engine", self.registry_reader)] = {"kind": "function", "module": "engine"}
         else:
@@ -1931,6 +1936,27 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
                         del symbols[("serverbrowser", name)]
                         if record is not None:
                             symbols[("serverbrowser", name)] = record
+                        errors = validate.validate_vgui2extension(symbols, gv)
+                        self.assertTrue(any(name in e for e in errors), errors)
+
+    def test_vgui2_entries_are_required_on_engine_snapshots(self):
+        for name in self.vgui2_functions:
+            self.assertIn(name, validate.VGUI2EXTENSION_VGUI2_FUNCTIONS)
+        for gv in self.engine_games:
+            with self.subTest(gv=gv):
+                self.assertEqual([], validate.validate_vgui2extension(
+                    self.complete_engine_symbols(gv), gv))
+
+    def test_missing_or_mistyped_vgui2_entry_is_rejected(self):
+        for gv in self.engine_games:
+            for name, kind in self.vgui2_functions.items():
+                for record in (None, {"kind": "virtualFunction", "module": "vgui2"},
+                               {"kind": kind, "module": "gameui"}):
+                    with self.subTest(gv=gv, name=name, record=record):
+                        symbols = self.complete_engine_symbols(gv)
+                        del symbols[("vgui2", name)]
+                        if record is not None:
+                            symbols[("vgui2", name)] = record
                         errors = validate.validate_vgui2extension(symbols, gv)
                         self.assertTrue(any(name in e for e in errors), errors)
 

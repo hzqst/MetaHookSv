@@ -89,9 +89,11 @@ void Engine_PatchAddress_VGUIClient001(const mh_dll_info_t&, const mh_dll_info_t
 	}
 
 	// The PATCH is the Sys_GetFactory(hClientDLL) CALL, not the interface query.
-	auto address = (PUCHAR)GamedataResolvePtr(RealDllInfo.ImageBase, "engine", patchName, MH_GAMESYMBOL_KIND_PATCH);
-	gPrivateFuncs.VGUIClient001_CreateInterface = (decltype(gPrivateFuncs.VGUIClient001_CreateInterface))GetCallAddress(address);
-	g_pMetaHookAPI->InlinePatchRedirectBranch(address, VGUIClient001_CreateInterface, NULL);
+	{
+		auto address = (PUCHAR)GamedataResolvePtr(RealDllInfo.ImageBase, "engine", patchName, MH_GAMESYMBOL_KIND_PATCH);
+		gPrivateFuncs.VGUIClient001_CreateInterface = (decltype(gPrivateFuncs.VGUIClient001_CreateInterface))GetCallAddress(address);
+		g_pMetaHookAPI->InlinePatchRedirectBranch(address, VGUIClient001_CreateInterface, NULL);
+	}
 }
 
 void Engine_PatchAddress_LanguageStrncpy(const mh_dll_info_t&, const mh_dll_info_t& RealDllInfo)

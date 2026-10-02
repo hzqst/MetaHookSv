@@ -1075,6 +1075,13 @@ VGUI2EXTENSION_GAMEUI_RICHTEXT_PATCHES = (
 VGUI2EXTENSION_SERVERBROWSER_FUNCTIONS = (
     "vgui2::Panel::Init(int, int, int, int)",
 )
+# vgui2.dll is loaded from the same module identities as the engine snapshots
+# (the Counter-Strike / Condition Zero clients ship the hl vgui2.dll). The private
+# CInputWin32::PostKeyMessage replaced the KeyCodeReleased string / push-pattern
+# disassembly walk in InputWin32.cpp and is published on every engine identity.
+VGUI2EXTENSION_VGUI2_FUNCTIONS = (
+    "CInputWin32::PostKeyMessage(KeyValues*)",
+)
 VGUI2EXTENSION_REGISTRY_LANGUAGE_GAMES = (
     "hl-3248", "hl-3266", "hl-3329", "hl-3647", "hl-4554",
 )
@@ -1132,6 +1139,8 @@ def validate_vgui2extension(symbols, game_version, include_engine=True):
         errors += _keyvalues_loadfromfile_check(symbols, game_version, "gameui")
         errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_SERVERBROWSER_FUNCTIONS,
                                   "function", "serverbrowser", "VGUI2Extension")
+        errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_VGUI2_FUNCTIONS,
+                                  "function", "vgui2", "VGUI2Extension")
         factory_patch = VGUI2EXTENSION_MODULE_FACTORY_PATCH
         if (game_version in VGUI2EXTENSION_MODULE_FACTORY_GAMES or
                 ("engine", factory_patch) in symbols):

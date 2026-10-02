@@ -29,6 +29,10 @@ and has no explicit arguments in the target GameUI binaries.
 The Menu hook still relies on the Legacy/HL25 layout of members adjacent to `m_pScroller`;
 PropertySheet `_pageTabs` also retains its legacy array layout dependency.
 
+`IInput2::PostKeyMessage` additionally requires the vgui2 record from GoldSrc_VibeSignatures
+PR #321: `CInputWin32::PostKeyMessage(KeyValues*)`, resolved directly against `vgui2.dll`
+instead of the former `KeyCodeReleased` string and push-pattern scan.
+
 ## Features
 
 ### VGUI2 modding framework
