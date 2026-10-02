@@ -102,7 +102,7 @@ public:
 	virtual void SetCandidateListPageStart( int start ) = 0;
 	virtual void GetCompositionString(wchar_t *dest, int destSizeBytes) = 0;
 	virtual void OnIMESelectCandidate(int num) = 0;
-	virtual bool PostKeyMessage(KeyValues *message) = 0;
+	virtual void PostKeyMessage(KeyValues *message) = 0;
 	virtual void DestroyCandidateList(void) = 0;
 	virtual void CreateNewCandidateListWin32(void) = 0;
 	virtual void InternalShowCandidateWindow(void) = 0;
