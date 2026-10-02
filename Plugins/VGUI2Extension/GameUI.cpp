@@ -373,9 +373,7 @@ void __fastcall GameUI_Panel_SetBounds_HL25(vgui::Panel* pthis, int dummy, int x
 		auto pPanel = (vgui::IClientPanel*)pthis;
 		if (pPanel->IsProportional())
 		{
-			width = g_pVGuiSchemeManager2->GetProportionalScaledValue(width);
-			height = g_pVGuiSchemeManager2->GetProportionalScaledValue(height);
-
+			//TODO: ?
 			gPrivateFuncs.GameUI_Panel_SetBounds(pthis, 0, x, y, width, height);
 			return;
 		}
@@ -2421,8 +2419,8 @@ void GameUI_PatchPanelSize(void)
 	// HL25 already scales these dimensions. SvEngine still uses raw constants.
 	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		PatchPanelSizeCallsites(g_GameUIDllInfo.ImageBase, "gameui", "vgui2_Panel_SetBounds_Const_callsite_",
-			GameUI_Panel_SetBounds_HL25, (PVOID*)&gPrivateFuncs.GameUI_Panel_SetBounds);
+		//PatchPanelSizeCallsites(g_GameUIDllInfo.ImageBase, "gameui", "vgui2_Panel_SetBounds_Const_callsite_",
+		//	GameUI_Panel_SetBounds_HL25, (PVOID*)&gPrivateFuncs.GameUI_Panel_SetBounds);
 	}
 	else
 	{

@@ -2082,9 +2082,6 @@ void Surface_UninstallHooks(void)
 	{
 		if (g_phook_CSurface[i])
 		{
-			char test[32]{};
-			snprintf(test, 31, "%d\n", i);
-			OutputDebugStringA(test);
 			g_pMetaHookAPI->UnHook(g_phook_CSurface[i]);
 			g_phook_CSurface[i] = NULL;
 		}
