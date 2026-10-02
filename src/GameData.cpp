@@ -323,14 +323,23 @@ namespace
 	// Payload normalization.
 	// -----------------------------------------------------------------------
 
+	// The signature is optional: upstream omits func_sig when no unique byte
+	// pattern exists (e.g. a constructor duplicated by the compiler), and the
+	// resolver consumes only the rva. A present func_sig must still be a
+	// well-formed string.
 	bool NormalizeFunction(const rapidjson::Value& payload, GameSymbolRecord& rec, std::string& error)
 	{
 		const rapidjson::Value* funcRva = FindMember(payload, "func_rva");
 		const rapidjson::Value* funcSize = FindMember(payload, "func_size");
-		const rapidjson::Value* funcSig = FindMember(payload, "func_sig");
-		if (!funcRva || !funcRva->IsString() || !funcSize || !funcSize->IsString() || !funcSig || !funcSig->IsString())
+		if (!funcRva || !funcRva->IsString() || !funcSize || !funcSize->IsString())
 		{
-			error = "function payload is missing func_rva/func_size/func_sig";
+			error = "function payload is missing func_rva/func_size";
+			return false;
+		}
+		const rapidjson::Value* funcSig = FindMember(payload, "func_sig");
+		if (funcSig && !funcSig->IsString())
+		{
+			error = "function payload has a non-string func_sig";
 			return false;
 		}
 
@@ -344,12 +353,13 @@ namespace
 			error = "invalid func_size";
 			return false;
 		}
-		if (!ParseSignature(funcSig->GetString(), rec.signatureBytes, rec.signatureMask, rec.legacyPattern, error))
+		if (funcSig &&
+			!ParseSignature(funcSig->GetString(), rec.signatureBytes, rec.signatureMask, rec.legacyPattern, error))
 			return false;
 
 		rec.kind = MH_GAMESYMBOL_KIND_FUNCTION;
-		rec.signatureText = funcSig->GetString();
-		rec.signatureRva = rec.rva;
+		rec.signatureText = funcSig ? funcSig->GetString() : "";
+		rec.signatureRva = funcSig ? rec.rva : 0;
 		rec.instructionOffset = 0;
 		rec.operandOffset = 0;
 		rec.instructionLength = 0;

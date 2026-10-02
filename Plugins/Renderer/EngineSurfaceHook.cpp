@@ -43,15 +43,15 @@ static void(__fastcall* m_pfnBaseUISurface_DrawSetTexture)(void* pthis, int, int
 
 void Engine_FillAddress_EngineSurface_drawFlushText(const mh_dll_info_t& RealDllInfo)
 {
-	g_VertexBuffer = (decltype(g_VertexBuffer))GamedataResolvePtr(RealDllInfo.ImageBase, "g_VertexBuffer", MH_GAMESYMBOL_KIND_GLOBAL);
-	g_iVertexBufferEntriesUsed = (decltype(g_iVertexBufferEntriesUsed))GamedataResolvePtr(RealDllInfo.ImageBase, "g_iVertexBufferEntriesUsed", MH_GAMESYMBOL_KIND_GLOBAL);
+	g_VertexBuffer = (decltype(g_VertexBuffer))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "g_VertexBuffer", MH_GAMESYMBOL_KIND_GLOBAL);
+	g_iVertexBufferEntriesUsed = (decltype(g_iVertexBufferEntriesUsed))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "g_iVertexBufferEntriesUsed", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Engine_FillAddress_EngineSurface_pushMakeCurrent(const mh_dll_info_t& RealDllInfo)
 {
-	pmainwindow = (decltype(pmainwindow))GamedataResolvePtr(RealDllInfo.ImageBase, "pmainwindow", MH_GAMESYMBOL_KIND_GLOBAL);
-	g_bScissor = (decltype(g_bScissor))GamedataResolvePtr(RealDllInfo.ImageBase, "g_bScissor", MH_GAMESYMBOL_KIND_GLOBAL);
-	g_ScissorRect = (decltype(g_ScissorRect))GamedataResolvePtr(RealDllInfo.ImageBase, "g_ScissorRect", MH_GAMESYMBOL_KIND_GLOBAL);
+	pmainwindow = (decltype(pmainwindow))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "pmainwindow", MH_GAMESYMBOL_KIND_GLOBAL);
+	g_bScissor = (decltype(g_bScissor))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "g_bScissor", MH_GAMESYMBOL_KIND_GLOBAL);
+	g_ScissorRect = (decltype(g_ScissorRect))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "g_ScissorRect", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 inline float InterpTCoord(float val, float mins, float maxs, float tMin, float tMax)

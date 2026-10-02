@@ -4,9 +4,9 @@
 #include <IGameConsole.h>
 #include <vgui/VGUI.h>
 #include <vgui/IPanel.h>
+#include <vgui/IClientPanel.h>
 #include <vgui_controls/Panel.h>
 #include <vgui_controls/Menu.h>
-#include <capstone.h>
 #include <set>
 #include <sstream>
 #include <vector>
@@ -18,7 +18,6 @@
 
 static hook_t* g_phook_ServerBrowser_Panel_Init = NULL;
 static hook_t* g_phook_ServerBrowser_KeyValues_LoadFromFile = NULL;
-//static hook_t* g_phook_ServerBrowser_LoadControlSettingsAndUserConfig = NULL;
 static hook_t* g_phook_GameUI_Panel_Init = NULL;
 static hook_t* g_phook_GameUI_KeyValues_LoadFromFile = NULL;
 static hook_t* g_phook_CGameConsoleDialog_ctor = NULL;
@@ -48,6 +47,12 @@ static hook_t* g_phook_GameUI_Menu_MakeItemsVisibleInScrollRange = NULL;
 static hook_t* g_phook_CCareerProfileFrame_ctor = NULL;
 static hook_t* g_phook_CCareerMapFrame_ctor = NULL;
 static hook_t* g_phook_CCareerBotFrame_ctor = NULL;
+
+//One VFTHook per IGameUI / IGameConsole slot installed by GameUI_InstallHooks;
+//kept so GameUI_UninstallHooks can UnHook them instead of leaving the proxy
+//vftable written into the engine's interfaces.
+static hook_t* g_phook_CGameUI[20] = { NULL };
+static hook_t* g_phook_CGameConsole[9] = { NULL };
 
 namespace vgui
 {
@@ -110,271 +115,27 @@ int GetPatchedGetFontTall(int fontTall)
 	return fontTall;
 }
 
-bool VGUI2_IsMenuMakeItemsVisibleInScrollRange(PVOID Candidate, int* poffset_ScrollBar)
+// Numbered callsites are contiguous within each module's gamedata.
+static void PatchPanelSizeCallsites(PVOID moduleBase, const char* moduleName, const char* prefix, PVOID replacement, PVOID* original)
 {
-	typedef struct VGUI2_IsMenuMakeItemsVisibleInScrollRange_SearchContext_s
+	for (int index = 0; ; ++index)
 	{
-		int offset_ScrollBar{};
-		bool bFoundCall21Ch{};
-	}VGUI2_IsMenuMakeItemsVisibleInScrollRange_SearchContext;
+		char symbolName[128];
+		snprintf(symbolName, sizeof(symbolName), "%s%d", prefix, index);
 
-	VGUI2_IsMenuMakeItemsVisibleInScrollRange_SearchContext ctx = {  };
+		// Every pre-HL25 module publishes at least one call for each sizing method.
+		auto address = index == 0
+			? GamedataResolvePtr(moduleBase, moduleName, symbolName, MH_GAMESYMBOL_KIND_PATCH)
+			: GamedataResolvePtrIfAvailable(moduleBase, moduleName, symbolName, MH_GAMESYMBOL_KIND_PATCH);
+		if (!address)
+			return;
 
-	g_pMetaHookAPI->DisasmRanges(Candidate, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (VGUI2_IsMenuMakeItemsVisibleInScrollRange_SearchContext*)context;
-
-		if (!ctx->offset_ScrollBar &&
-			pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[0].reg &&
-			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[1].mem.base &&
-			pinst->detail->x86.operands[1].mem.base != X86_REG_ESP &&
-			pinst->detail->x86.operands[1].mem.base != X86_REG_EBP &&
-			pinst->detail->x86.operands[1].mem.disp >= 0x80 &&
-			pinst->detail->x86.operands[1].mem.disp <= 0x90)
+		if (!g_pMetaHookAPI->InlinePatchRedirectBranch(address, replacement, original))
 		{
-			ctx->offset_ScrollBar = pinst->detail->x86.operands[1].mem.disp;
+			Sys_Error("Could not redirect gamedata patch: %s (module %s)\nEngine buildnum: %d", symbolName, moduleName, g_dwEngineBuildnum);
+			return;
 		}
-
-		//call  [exx+21Ch]
-		if (!ctx->bFoundCall21Ch &&
-			pinst->id == X86_INS_CALL &&
-			pinst->detail->x86.op_count == 1 &&
-			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[0].mem.base &&
-			pinst->detail->x86.operands[0].mem.base != X86_REG_ESP &&
-			pinst->detail->x86.operands[0].mem.base != X86_REG_EBP &&
-			pinst->detail->x86.operands[0].mem.disp == 0x21C)
-		{
-			ctx->bFoundCall21Ch = true;
-			return TRUE;
-		}
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-		}, 0, &ctx);
-
-	if (ctx.bFoundCall21Ch)
-	{
-		if (poffset_ScrollBar)
-			(*poffset_ScrollBar) = ctx.offset_ScrollBar;
-
-		return TRUE;
 	}
-
-	return FALSE;
-}
-
-bool VGUI2_IsPanelSetSize(PVOID Candidate)
-{
-	typedef struct VGUI2_IsPanelSetSize_SearchContext_s
-	{
-		bool bFoundCall10h{};
-		bool bAdd10h{};
-		bool bMov10h{};
-		int instCount_Add10h{};
-		int instCount_Mov10h{};
-		int reg_Add10h{};
-		int reg_Mov10h{};
-	}VGUI2_IsPanelSetSize_SearchContext;
-
-	VGUI2_IsPanelSetSize_SearchContext ctx = { };
-
-	g_pMetaHookAPI->DisasmRanges(Candidate, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (VGUI2_IsPanelSetSize_SearchContext*)context;
-
-		//call  [exx+10h]
-		if (!ctx->bFoundCall10h &&
-			pinst->id == X86_INS_CALL &&
-			pinst->detail->x86.op_count == 1 &&
-			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[0].mem.base &&
-			pinst->detail->x86.operands[0].mem.base != X86_REG_ESP &&
-			pinst->detail->x86.operands[0].mem.base != X86_REG_EBP &&
-			pinst->detail->x86.operands[0].mem.disp == 0x10)
-		{
-			ctx->bFoundCall10h = true;
-			return TRUE;
-		}
-
-		//mov     exx, [exx+10h]
-		if (!ctx->bMov10h &&
-			pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[1].mem.base &&
-			pinst->detail->x86.operands[1].mem.base != X86_REG_ESP &&
-			pinst->detail->x86.operands[1].mem.base != X86_REG_EBP &&
-			pinst->detail->x86.operands[1].mem.disp == 0x10)
-		{
-			ctx->bMov10h = true;
-			ctx->instCount_Mov10h = instCount;
-			ctx->reg_Mov10h = pinst->detail->x86.operands[0].reg;
-		}
-
-		//add     exx, 10
-		if (!ctx->bAdd10h &&
-			pinst->id == X86_INS_ADD &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-			pinst->detail->x86.operands[1].imm == 0x10)
-		{
-			ctx->bAdd10h = true;
-			ctx->instCount_Add10h = instCount;
-			ctx->reg_Add10h = pinst->detail->x86.operands[0].reg;
-		}
-
-		//mov     exx, [exx]
-		if (ctx->bAdd10h &&
-			!ctx->bMov10h &&
-			pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[1].mem.base == ctx->reg_Add10h)
-		{
-			ctx->bMov10h = true;
-			ctx->instCount_Mov10h = instCount;
-			ctx->reg_Mov10h = pinst->detail->x86.operands[0].reg;
-		}
-
-		//call     exx
-		if (ctx->bMov10h &&
-			instCount > ctx->instCount_Mov10h &&
-			instCount < ctx->instCount_Mov10h + 10 &&
-			pinst->id == X86_INS_CALL &&
-			pinst->detail->x86.op_count == 1 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[0].reg == ctx->reg_Mov10h)
-		{
-			ctx->bFoundCall10h = true;
-			return TRUE;
-		}
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-	}, 0, &ctx);
-
-	return ctx.bFoundCall10h;
-}
-
-bool VGUI2_IsPanelSetMinimumSize(PVOID Candidate)
-{
-	typedef struct VGUI2_IsPanelSetMinimumSize_SearchContext_s
-	{
-		bool bFoundCall18h{};
-		bool bAdd18h{};
-		bool bMov18h{};
-		int instCount_Add18h{};
-		int instCount_Mov18h{};
-		int reg_Add18h{};
-		int reg_Mov18h{};
-	}VGUI2_IsPanelSetMinimumSize_SearchContext;
-
-	VGUI2_IsPanelSetMinimumSize_SearchContext ctx = { };
-
-	g_pMetaHookAPI->DisasmRanges(Candidate, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (VGUI2_IsPanelSetMinimumSize_SearchContext*)context;
-
-		if (!ctx->bFoundCall18h &&
-			pinst->id == X86_INS_CALL &&
-			pinst->detail->x86.op_count == 1 &&
-			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[0].mem.base &&
-			pinst->detail->x86.operands[0].mem.base != X86_REG_ESP &&
-			pinst->detail->x86.operands[0].mem.base != X86_REG_EBP &&
-			pinst->detail->x86.operands[0].mem.disp == 0x18)
-		{
-			ctx->bFoundCall18h = true;
-			return TRUE;
-		}
-
-		//mov     exx, [exx+18h]
-		if (!ctx->bMov18h &&
-			pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[1].mem.base &&
-			pinst->detail->x86.operands[1].mem.base != X86_REG_ESP &&
-			pinst->detail->x86.operands[1].mem.base != X86_REG_EBP &&
-			pinst->detail->x86.operands[1].mem.disp == 0x18)
-		{
-			ctx->bMov18h = true;
-			ctx->instCount_Mov18h = instCount;
-			ctx->reg_Mov18h = pinst->detail->x86.operands[0].reg;
-		}
-
-		if (!ctx->bAdd18h &&
-			pinst->id == X86_INS_ADD &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-			pinst->detail->x86.operands[1].imm == 0x18)
-		{
-			ctx->bAdd18h = true;
-			ctx->instCount_Add18h = instCount;
-			ctx->reg_Add18h = pinst->detail->x86.operands[0].reg;
-		}
-
-		if (ctx->bAdd18h &&
-			!ctx->bMov18h &&
-			pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[1].mem.base == ctx->reg_Add18h)
-		{
-			ctx->bMov18h = true;
-			ctx->instCount_Mov18h = instCount;
-			ctx->reg_Mov18h = pinst->detail->x86.operands[0].reg;
-		}
-
-		if (ctx->bMov18h &&
-			instCount > ctx->instCount_Mov18h &&
-			instCount < ctx->instCount_Mov18h + 12 &&
-			pinst->id == X86_INS_CALL &&
-			pinst->detail->x86.op_count == 1 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[0].reg == ctx->reg_Mov18h)
-		{
-			ctx->bFoundCall18h = true;
-			return TRUE;
-		}
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-	}, 0, &ctx);
-
-	return ctx.bFoundCall18h;
 }
 
 /*
@@ -385,7 +146,9 @@ ServerBrowser inline hook
 
 void __fastcall ServerBrowser_Panel_SetSize(vgui::Panel* pthis, int dummy, int width, int height)
 {
-	if (pthis->IsProportional())
+	auto pPanel = (vgui::IClientPanel*)pthis;
+
+	if (pPanel->IsProportional())
 	{
 		width = g_pVGuiSchemeManager2->GetProportionalScaledValue(width);
 		height = g_pVGuiSchemeManager2->GetProportionalScaledValue(height);
@@ -396,7 +159,9 @@ void __fastcall ServerBrowser_Panel_SetSize(vgui::Panel* pthis, int dummy, int w
 
 void __fastcall ServerBrowser_Panel_SetMinimumSize(vgui::Panel* pthis, int dummy, int width, int height)
 {
-	if (pthis->IsProportional())
+	auto pPanel = (vgui::IClientPanel*)pthis;
+
+	if (pPanel->IsProportional())
 	{
 		width = g_pVGuiSchemeManager2->GetProportionalScaledValue(width);
 		height = g_pVGuiSchemeManager2->GetProportionalScaledValue(height);
@@ -405,71 +170,14 @@ void __fastcall ServerBrowser_Panel_SetMinimumSize(vgui::Panel* pthis, int dummy
 	gPrivateFuncs.ServerBrowser_Panel_SetMinimumSize(pthis, 0, width, height);
 }
 
-#if 0
-void __fastcall CBaseGamesPage_OnButtonToggled(vgui::Panel* pthis, int dummy, vgui::Panel* a2, int state)
-{
-	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		return gPrivateFuncs.CBaseGamesPage_OnButtonToggled(pthis, dummy, a2, state);
-	}
-
-	gPrivateFuncs.CBaseGamesPage_OnButtonToggled(pthis, dummy, a2, state);
-}
-
-void* __fastcall CServerBrowserDialog_ctor(vgui::Panel* pthis, int dummy, vgui::Panel* parent)
-{
-	auto result = gPrivateFuncs.CServerBrowserDialog_ctor(pthis, dummy, parent);
-
-	//TODO callbacks?
-
-
-
-	return result;
-}
-
-void __fastcall ServerBrowser_LoadControlSettings(vgui::Panel* pthis, int dummy, const char* controlResourceName, const char* pathID)
-{
-	gPrivateFuncs.ServerBrowser_LoadControlSettings(pthis, 0, controlResourceName, pathID);
-}
-
-void __fastcall ServerBrowser_LoadControlSettingsAndUserConfig(vgui::Panel* pthis, int dummy, const char* dialogResourceName, int dialogID)
-{
-	if (!strcmp(dialogResourceName, "Servers/DialogServerBrowser.res"))
-	{
-		if (!gPrivateFuncs.ServerBrowser_LoadControlSettings)
-		{
-			auto panel_vftable = *(PVOID**)pthis;
-			gPrivateFuncs.ServerBrowser_LoadControlSettings = (decltype(gPrivateFuncs.ServerBrowser_LoadControlSettings))panel_vftable[536 / 4];
-			//Install_InlineHook(ServerBrowser_LoadControlSettings);
-		}
-
-		//int offset_AutoResize = 92;
-
-		//*(int*)((PUCHAR)pthis + offset_AutoResize) = 0;
-
-		//gPrivateFuncs.ServerBrowser_LoadControlSettings(pthis, 0, "Servers/DialogServerBrowser.res", NULL);
-
-		gPrivateFuncs.ServerBrowser_LoadControlSettingsAndUserConfig(pthis, dummy, dialogResourceName, dialogID);
-
-
-
-		return;
-	}
-
-	return gPrivateFuncs.ServerBrowser_LoadControlSettingsAndUserConfig(pthis, dummy, dialogResourceName, dialogID);
-}
-
-#endif
-
 void __fastcall ServerBrowser_Panel_Init(vgui::Panel* pthis, int dummy, int x, int y, int w, int h)
 {
 	gPrivateFuncs.ServerBrowser_Panel_Init(pthis, 0, x, y, w, h);
 
 	if (DpiManagerInternal()->IsHighDpiSupportEnabled())
 	{
-		PVOID* PanelVFTable = *(PVOID**)pthis;
-		void(__fastcall * pfnSetProportional)(vgui::Panel * pthis, int dummy, bool state) = (decltype(pfnSetProportional))PanelVFTable[113]; //TODO: 113 should be ported to gamedata?
-		pfnSetProportional(pthis, 0, true);
+		auto pPanel = (vgui::IClientPanel*)pthis;
+		pPanel->SetProportional(true);
 	}
 }
 
@@ -620,15 +328,64 @@ void __fastcall GameUI_Panel_Init(vgui::Panel* pthis, int dummy, int x, int y, i
 
 	if (DpiManagerInternal()->IsHighDpiSupportEnabled())
 	{
-		PVOID* PanelVFTable = *(PVOID**)pthis;
-		void(__fastcall * pfnSetProportional)(vgui::Panel * pthis, int dummy, bool state) = (decltype(pfnSetProportional))PanelVFTable[113];//TODO: 113 should be ported to gamedata?
-		pfnSetProportional(pthis, 0, true);
+		auto pPanel = (vgui::IClientPanel*)pthis;
+		pPanel->SetProportional(true);
 	}
+}
+
+void __fastcall GameUI_Panel_SetSize(vgui::Panel* pthis, int dummy, int width, int height)
+{
+	auto pPanel = (vgui::IClientPanel*)pthis;
+	if (pPanel->IsProportional())
+	{
+		width = g_pVGuiSchemeManager2->GetProportionalScaledValue(width);
+		height = g_pVGuiSchemeManager2->GetProportionalScaledValue(height);
+	}
+	gPrivateFuncs.GameUI_Panel_SetSize(pthis, 0, width, height);
+}
+
+void __fastcall GameUI_Panel_SetBounds(vgui::Panel* pthis, int dummy, int x, int y, int width, int height)
+{
+	auto pPanel = (vgui::IClientPanel*)pthis;
+	if (pPanel->IsProportional())
+	{
+		width = g_pVGuiSchemeManager2->GetProportionalScaledValue(width);
+		height = g_pVGuiSchemeManager2->GetProportionalScaledValue(height);
+	}
+	gPrivateFuncs.GameUI_Panel_SetBounds(pthis, 0, x, y, width, height);
+}
+
+void __fastcall GameUI_Panel_SetMinimumSize(vgui::Panel* pthis, int dummy, int width, int height)
+{
+	auto pPanel = (vgui::IClientPanel*)pthis;
+	if (pPanel->IsProportional())
+	{
+		width = g_pVGuiSchemeManager2->GetProportionalScaledValue(width);
+		height = g_pVGuiSchemeManager2->GetProportionalScaledValue(height);
+	}
+	gPrivateFuncs.GameUI_Panel_SetMinimumSize(pthis, 0, width, height);
+}
+
+void __fastcall GameUI_Panel_SetBounds_HL25(vgui::Panel* pthis, int dummy, int x, int y, int width, int height)
+{
+	if (x == 0 && y == 0 && width == 372 && height == 160)
+	{
+		auto pPanel = (vgui::IClientPanel*)pthis;
+		if (pPanel->IsProportional())
+		{
+			//TODO: ?
+			gPrivateFuncs.GameUI_Panel_SetBounds(pthis, 0, x, y, width, height);
+			return;
+		}
+	}
+	gPrivateFuncs.GameUI_Panel_SetBounds(pthis, 0, x, y, width, height);
 }
 
 void __fastcall GameUI_MessageBox_ApplySchemeSettings_Panel_SetSize(vgui::Panel* pthis, int dummy, int width, int height)
 {
-	if (pthis->IsProportional())
+	auto pPanel = (vgui::IClientPanel*)pthis;
+
+	if (pPanel->IsProportional())
 	{
 		int basewidth = width - 100;
 		int baseheight = height - 100;
@@ -691,7 +448,7 @@ public:
 template<class T>
 void GameUI_Menu_MakeItemsVisibleInScrollRange_Template(vgui::Panel* pthis)
 {
-	T* pMenu = (T*)((PUCHAR)pthis + gPrivateFuncs.offset_ScrollBar - offsetof(T, m_pScroller));
+	T* pMenu = (T*)((PUCHAR)pthis + gPrivateFuncs.offset_Menu_m_pScroller - offsetof(T, m_pScroller));
 
 	for (int i = 0; i < pMenu->m_MenuItems.Count(); i++)
 	{
@@ -801,7 +558,7 @@ void __fastcall COptionsSubVideo_ApplyVidSettings(vgui::Panel* pthis, int dummy,
 //Fix GameUI_FocusNavGroup_GetCurrentFocus crash with nullptr access.
 void* __fastcall GameUI_FocusNavGroup_GetCurrentFocus(void* pthis, int dummy)
 {
-	vgui::VPanelHandle* _currentFocus = (vgui::VPanelHandle*)((PUCHAR)pthis + 12); //TODO: gamedata?
+	vgui::VPanelHandle* _currentFocus = (vgui::VPanelHandle*)((PUCHAR)pthis + gPrivateFuncs.offset_FocusNavGroup_currentFocus);
 
 	auto vpanel = _currentFocus->Get();
 
@@ -842,90 +599,12 @@ public:
 
 void __fastcall GameUI_PropertySheet_PerformLayout(vgui::Panel* pthis, int dummy)
 {
-	int offset_activePage = 144; //TODO: gamedata
-
-	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		offset_activePage = 148; //TODO: gamedata
-	}
+	int offset_activePage = gPrivateFuncs.offset_PropertySheet_activePage;
 
 	gPrivateFuncs.GameUI_PropertySheet_PerformLayout(pthis, dummy);
 
-	PVOID* _propertySheet_vftable = *(PVOID**)pthis;
-
-	void(__fastcall * pfnChangeActiveTab)(vgui::Panel * pthis, int dummy, int index) =
-		(decltype(pfnChangeActiveTab))_propertySheet_vftable[149];
-
+	//TODO: gamedata for _pageTabs; _activePage alone does not describe the array layout.
 	auto pPropertySheet = (CPropertySheet_Legacy*)((PUCHAR)pthis + offset_activePage - offsetof(CPropertySheet_Legacy, _activePage));
-
-#if 0
-	if (!pPropertySheet->_activePage)
-	{
-		// first page becomes the active page
-		pfnChangeActiveTab(pthis, 0, 0);
-
-		if (pPropertySheet->_activePage)
-			pPropertySheet->_activePage->RequestFocus(0);
-	}
-
-	int x, y, wide, tall;
-	pthis->GetBounds(x, y, wide, tall);
-	if (pPropertySheet->_activePage)
-	{
-		if (pPropertySheet->_showTabs)
-		{
-			pPropertySheet->_activePage->SetBounds(
-				0,
-				vgui::scheme()->GetProportionalScaledValue(28),
-				wide,
-				tall - vgui::scheme()->GetProportionalScaledValue(28));
-		}
-		else
-		{
-			pPropertySheet->_activePage->SetBounds(0, 0, wide, tall);
-		}
-		pPropertySheet->_activePage->InvalidateLayout();
-	}
-
-	int limit = pPropertySheet->_pageTabs.GetCount();
-
-	int xtab = 0;
-
-	// draw the visible tabs
-	if (pPropertySheet->_showTabs)
-	{
-		for (int i = 0; i < limit; i++)
-		{
-			int width, tall;
-
-			pPropertySheet->_pageTabs[i]->GetSize(width, tall);
-			if (pPropertySheet->_pageTabs[i] == pPropertySheet->_activeTab)
-			{
-				// active tab is taller
-				pPropertySheet->_activeTab->SetBounds(xtab,
-					vgui::scheme()->GetProportionalScaledValue(2),
-					width,
-					vgui::scheme()->GetProportionalScaledValue(27));
-			}
-			else
-			{
-				pPropertySheet->_pageTabs[i]->SetBounds(xtab,
-					vgui::scheme()->GetProportionalScaledValue(4),
-					width,
-					vgui::scheme()->GetProportionalScaledValue(25));
-			}
-			pPropertySheet->_pageTabs[i]->SetVisible(true);
-			xtab += (width + vgui::scheme()->GetProportionalScaledValue(1));
-		}
-	}
-	else
-	{
-		for (int i = 0; i < limit; i++)
-		{
-			pPropertySheet->_pageTabs[i]->SetVisible(false);
-		}
-	}
-#endif
 
 	int xtab = 0;
 	int limit = pPropertySheet->_pageTabs.GetCount();
@@ -954,16 +633,7 @@ void __fastcall GameUI_PropertySheet_PerformLayout(vgui::Panel* pthis, int dummy
 
 void* __fastcall GameUI_PropertySheet_HasHotkey(void* pthis, int dummy, wchar_t key)
 {
-	int offset_activePage = 144; //TODO: gamedata
-
-	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		offset_activePage = 148; //TODO: gamedata
-	}
-
-	auto pPropertySheet = (CPropertySheet_Legacy*)((PUCHAR)pthis + offset_activePage - offsetof(CPropertySheet_Legacy, _activePage));
-
-	auto _activePage = pPropertySheet->_activePage;
+	auto _activePage = *(vgui::Panel**)((PUCHAR)pthis + gPrivateFuncs.offset_PropertySheet_activePage);
 
 	if (!_activePage)
 		return 0;
@@ -1010,31 +680,13 @@ public:
 	{
 		if (!gPrivateFuncs.GameUI_FocusNavGroup_GetCurrentFocus)
 		{
-			PVOID* COptionsDialog_vftable = *(PVOID**)m_pDialog;
-			void* (__fastcall * pfnGetFocusNavGroup)(vgui::Panel * pthis, int dummy) = (decltype(pfnGetFocusNavGroup))COptionsDialog_vftable[612 / 4]; //TODO: gamedata
-
-			auto FocusNavGroup = pfnGetFocusNavGroup(m_pDialog, 0);
-			PVOID* FocusNavGroup_vftable = *(PVOID**)FocusNavGroup;
-
-			gPrivateFuncs.GameUI_FocusNavGroup_GetCurrentFocus = (decltype(gPrivateFuncs.GameUI_FocusNavGroup_GetCurrentFocus))FocusNavGroup_vftable[7];
+			gPrivateFuncs.offset_FocusNavGroup_currentFocus = GamedataResolveStructMember(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::FocusNavGroup._currentFocus");
+			gPrivateFuncs.GameUI_FocusNavGroup_GetCurrentFocus = (decltype(gPrivateFuncs.GameUI_FocusNavGroup_GetCurrentFocus))
+				GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::FocusNavGroup::GetCurrentFocus()", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 			Install_InlineHook(GameUI_FocusNavGroup_GetCurrentFocus);
 		}
 
-		if (!gPrivateFuncs.GameUI_PropertySheet_HasHotkey)
-		{
-			PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
-
-			gPrivateFuncs.GameUI_PropertySheet_HasHotkey = (decltype(gPrivateFuncs.GameUI_PropertySheet_HasHotkey))_propertySheet_vftable[73]; //TODO: gamedata
-			Install_InlineHook(GameUI_PropertySheet_HasHotkey);
-		}
-
-		if (!gPrivateFuncs.GameUI_PropertySheet_PerformLayout)
-		{
-			PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
-
-			gPrivateFuncs.GameUI_PropertySheet_PerformLayout = (decltype(gPrivateFuncs.GameUI_PropertySheet_PerformLayout))_propertySheet_vftable[111];
-			Install_InlineHook(GameUI_PropertySheet_PerformLayout);
-		}
+		//PropertySheet hooks are resolved and installed by GameUI_InstallHooks.
 	}
 
 	void* GetDialog() const override
@@ -1052,7 +704,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		void(__fastcall * pfnAddPage)(vgui::Panel * pthis, int dummy, vgui::Panel * panel, const char* title) =
-			(decltype(pfnAddPage))_propertySheet_vftable[134]; //TODO: gamedata
+			(decltype(pfnAddPage))_propertySheet_vftable[gPrivateFuncs.vfunc_index_PropertySheet_AddPage];
 
 		pfnAddPage(m_pPropertySheet, 0, (vgui::Panel*)panel, title);
 	}
@@ -1062,7 +714,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		void(__fastcall * pfnSetActivePage)(vgui::Panel * pthis, int dummy, vgui::Panel * panel) =
-			(decltype(pfnSetActivePage))_propertySheet_vftable[135]; //TODO: gamedata
+			(decltype(pfnSetActivePage))_propertySheet_vftable[gPrivateFuncs.vfunc_index_PropertySheet_SetActivePage];
 
 		pfnSetActivePage(m_pPropertySheet, 0, (vgui::Panel*)panel);
 	}
@@ -1072,7 +724,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		void(__fastcall * pfnSetTabWidth)(vgui::Panel * pthis, int dummy, int width) =
-			(decltype(pfnSetTabWidth))_propertySheet_vftable[136]; //TODO: gamedata
+			(decltype(pfnSetTabWidth))_propertySheet_vftable[gPrivateFuncs.vfunc_index_PropertySheet_SetTabWidth];
 
 		pfnSetTabWidth(m_pPropertySheet, 0, width);
 	}
@@ -1082,7 +734,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		void* (__fastcall * pfnGetActivePage)(vgui::Panel * pthis, int dummy) =
-			(decltype(pfnGetActivePage))_propertySheet_vftable[137]; //TODO: gamedata
+			(decltype(pfnGetActivePage))_propertySheet_vftable[gPrivateFuncs.vfunc_index_PropertySheet_GetActivePage];
 
 		return pfnGetActivePage(m_pPropertySheet, 0);
 	}
@@ -1092,7 +744,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		void(__fastcall * pfnResetAllData)(vgui::Panel * pthis, int dummy) =
-			(decltype(pfnResetAllData))_propertySheet_vftable[138]; //TODO: gamedata
+			(decltype(pfnResetAllData))_propertySheet_vftable[gPrivateFuncs.vfunc_index_PropertySheet_ResetAllData];
 
 		pfnResetAllData(m_pPropertySheet, 0);
 	}
@@ -1102,7 +754,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		void(__fastcall * pfnApplyChanges)(vgui::Panel * pthis, int dummy) =
-			(decltype(pfnApplyChanges))_propertySheet_vftable[139]; //TODO: gamedata
+			(decltype(pfnApplyChanges))_propertySheet_vftable[gPrivateFuncs.vfunc_index_PropertySheet_ApplyChanges];
 
 		pfnApplyChanges(m_pPropertySheet, 0);
 	}
@@ -1112,7 +764,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		void* (__fastcall * pfnGetPage)(vgui::Panel * pthis, int dummy, int i) =
-			(decltype(pfnGetPage))_propertySheet_vftable[140]; //TODO: gamedata
+			(decltype(pfnGetPage))_propertySheet_vftable[gPrivateFuncs.vfunc_index_PropertySheet_GetPage];
 
 		return pfnGetPage(m_pPropertySheet, 0, i);
 	}
@@ -1122,7 +774,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		void(__fastcall * pfnDeletePage)(vgui::Panel * pthis, int dummy, void* panel) =
-			(decltype(pfnDeletePage))_propertySheet_vftable[141]; //TODO: gamedata
+			(decltype(pfnDeletePage))_propertySheet_vftable[gPrivateFuncs.vfunc_index_PropertySheet_DeletePage];
 
 		pfnDeletePage(m_pPropertySheet, 0, panel);
 	}
@@ -1132,7 +784,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		void* (__fastcall * pfnGetActiveTab)(vgui::Panel * pthis, int dummy) =
-			(decltype(pfnGetActiveTab))_propertySheet_vftable[142]; //TODO: gamedata
+			(decltype(pfnGetActiveTab))_propertySheet_vftable[gPrivateFuncs.vfunc_index_PropertySheet_GetActiveTab];
 
 		return pfnGetActiveTab(m_pPropertySheet, 0);
 	}
@@ -1142,7 +794,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		void(__fastcall * pfnGetActiveTabTitle)(vgui::Panel * pthis, int dummy, char* textOut, int bufferLen) =
-			(decltype(pfnGetActiveTabTitle))_propertySheet_vftable[143]; //TODO: gamedata
+			(decltype(pfnGetActiveTabTitle))_propertySheet_vftable[gPrivateFuncs.vfunc_index_PropertySheet_GetActiveTabTitle];
 
 		pfnGetActiveTabTitle(m_pPropertySheet, 0, textOut, bufferLen);
 	}
@@ -1152,7 +804,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		bool(__fastcall * pfnGetTabTitle)(vgui::Panel * pthis, int dummy, int i, char* textOut, int bufferLen) =
-			(decltype(pfnGetTabTitle))_propertySheet_vftable[144]; //TODO: gamedata
+			(decltype(pfnGetTabTitle))_propertySheet_vftable[gPrivateFuncs.vfunc_index_PropertySheet_GetTabTitle];
 
 		return pfnGetTabTitle(m_pPropertySheet, 0, i, textOut, bufferLen);
 	}
@@ -1162,7 +814,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		int(__fastcall * pfnGetActivePageNum)(vgui::Panel * pthis, int dummy) =
-			(decltype(pfnGetActivePageNum))_propertySheet_vftable[145]; //TODO: gamedata
+			(decltype(pfnGetActivePageNum))_propertySheet_vftable[gPrivateFuncs.vfunc_index_PropertySheet_GetActivePageNum];
 
 		return pfnGetActivePageNum(m_pPropertySheet, 0);
 	}
@@ -1172,7 +824,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		int(__fastcall * pfnGetGetNumPages)(vgui::Panel * pthis, int dummy) =
-			(decltype(pfnGetGetNumPages))_propertySheet_vftable[146]; //TODO: gamedata
+			(decltype(pfnGetGetNumPages))_propertySheet_vftable[gPrivateFuncs.vfunc_index_PropertySheet_GetNumPages];
 
 		return pfnGetGetNumPages(m_pPropertySheet, 0);
 	}
@@ -1182,7 +834,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		void(__fastcall * pfnDisablePage)(vgui::Panel * pthis, int dummy, const char* title) =
-			(decltype(pfnDisablePage))_propertySheet_vftable[147]; //TODO: gamedata
+			(decltype(pfnDisablePage))_propertySheet_vftable[gPrivateFuncs.vfunc_index_PropertySheet_DisablePage];
 
 		pfnDisablePage(m_pPropertySheet, 0, title);
 	}
@@ -1192,7 +844,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		void(__fastcall * pfnEnablePage)(vgui::Panel * pthis, int dummy, const char* title) =
-			(decltype(pfnEnablePage))_propertySheet_vftable[148]; //TODO: gamedata
+			(decltype(pfnEnablePage))_propertySheet_vftable[gPrivateFuncs.vfunc_index_PropertySheet_EnablePage];
 
 		pfnEnablePage(m_pPropertySheet, 0, title);
 	}
@@ -1202,7 +854,7 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		void(__fastcall * pfnChangeActiveTab)(vgui::Panel * pthis, int dummy, int index) =
-			(decltype(pfnChangeActiveTab))_propertySheet_vftable[149]; //TODO: gamedata
+			(decltype(pfnChangeActiveTab))_propertySheet_vftable[gPrivateFuncs.vfunc_index_PropertySheet_ChangeActiveTab];
 
 		pfnChangeActiveTab(m_pPropertySheet, 0, index);
 	}
@@ -1215,7 +867,7 @@ void* __fastcall COptionsDialog_ctor(vgui::Panel* pthis, int dummy, vgui::Panel*
 {
 	auto result = gPrivateFuncs.COptionsDialog_ctor(pthis, dummy, parent);
 
-	vgui::Panel* _propertySheet = *(vgui::Panel**)((PUCHAR)pthis + gPrivateFuncs.offset_propertySheet);
+	vgui::Panel* _propertySheet = *(vgui::Panel**)((PUCHAR)pthis + gPrivateFuncs.offset_PropertyDialog_propertySheet);
 
 	CGameUIOptionsDialogCtorCallbackContext CallbackContext(pthis, _propertySheet);
 
@@ -1305,9 +957,8 @@ public:
 	{
 		if (!gPrivateFuncs.COptionsSubVideo_OnApplyChanges)
 		{
-			PVOID* COptionsSubVideo_vftable = *(PVOID**)m_pPage;
-
-			gPrivateFuncs.COptionsSubVideo_OnApplyChanges = (decltype(gPrivateFuncs.COptionsSubVideo_OnApplyChanges))COptionsSubVideo_vftable[636 / 4]; //TODO: gamedata
+			gPrivateFuncs.COptionsSubVideo_OnApplyChanges = (decltype(gPrivateFuncs.COptionsSubVideo_OnApplyChanges))
+				GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "gameui", "COptionsSubVideo::OnApplyChanges()", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 			Install_InlineHook(COptionsSubVideo_OnApplyChanges);
 		}
 	}
@@ -1372,9 +1023,8 @@ public:
 	{
 		if (!gPrivateFuncs.COptionsSubAudio_OnApplyChanges)
 		{
-			PVOID* COptionsSubAudio_vftable = *(PVOID**)m_pPage;
-
-			gPrivateFuncs.COptionsSubAudio_OnApplyChanges = (decltype(gPrivateFuncs.COptionsSubAudio_OnApplyChanges))COptionsSubAudio_vftable[636 / 4]; //TODO: gamedata
+			gPrivateFuncs.COptionsSubAudio_OnApplyChanges = (decltype(gPrivateFuncs.COptionsSubAudio_OnApplyChanges))
+				GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "gameui", "COptionsSubAudio::OnApplyChanges()", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 			Install_InlineHook(COptionsSubAudio_OnApplyChanges);
 		}
 	}
@@ -1439,9 +1089,8 @@ public:
 	{
 		if (!gPrivateFuncs.COptionsSubMultiplayer_OnApplyChanges)
 		{
-			PVOID* COptionsSubMultiplayer_vftable = *(PVOID**)m_pPage;
-
-			gPrivateFuncs.COptionsSubMultiplayer_OnApplyChanges = (decltype(gPrivateFuncs.COptionsSubMultiplayer_OnApplyChanges))COptionsSubMultiplayer_vftable[636 / 4]; //TODO: gamedata
+			gPrivateFuncs.COptionsSubMultiplayer_OnApplyChanges = (decltype(gPrivateFuncs.COptionsSubMultiplayer_OnApplyChanges))
+				GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "gameui", "COptionsSubMultiplayer::OnApplyChanges()", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 			Install_InlineHook(COptionsSubMultiplayer_OnApplyChanges);
 		}
 	}
@@ -1535,17 +1184,6 @@ public:
 		m_pszPanelName = panelName;
 	}
 
-	void InstallHooks()
-	{
-		if (!gPrivateFuncs.CTaskBar_OnCommand)
-		{
-			gPrivateFuncs.CTaskBar_vftable = *(PVOID**)m_pTaskBar;
-			gPrivateFuncs.CTaskBar_OnCommand = (decltype(gPrivateFuncs.CTaskBar_OnCommand))gPrivateFuncs.CTaskBar_vftable[348 / 4]; //TODO: gamedata
-
-			Install_InlineHook(CTaskBar_OnCommand);
-		}
-	}
-
 	void* GetTaskBar() const override
 	{
 		return m_pTaskBar;
@@ -1571,8 +1209,6 @@ void* __fastcall CTaskBar_ctor(void* pthis, int dummy, void* parent, const char*
 	auto result = gPrivateFuncs.CTaskBar_ctor(pthis, dummy, parent, panelName);
 
 	CGameUITaskBarCtorCallbackContext CallbackContext((vgui::Panel*)pthis, (vgui::Panel*)parent, panelName);
-
-	CallbackContext.InstallHooks();
 
 	VGUI2ExtensionInternal()->GameUI_CTaskBar_ctor(&CallbackContext);
 
@@ -1614,10 +1250,10 @@ public:
 
 	void InstallHooks()
 	{
-		if (!gPrivateFuncs.CBasePanel_vftable)
+		if (!gPrivateFuncs.CBasePanel_ApplySchemeSettings)
 		{
-			gPrivateFuncs.CBasePanel_vftable = *(PVOID**)m_pBasePanel;
-			gPrivateFuncs.CBasePanel_ApplySchemeSettings = (decltype(gPrivateFuncs.CBasePanel_ApplySchemeSettings))gPrivateFuncs.CBasePanel_vftable[0x13C / 4]; //TODO: gamedata
+			gPrivateFuncs.CBasePanel_ApplySchemeSettings = (decltype(gPrivateFuncs.CBasePanel_ApplySchemeSettings))
+				GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "gameui", "CBasePanel::ApplySchemeSettings(vgui2::IScheme*)", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 
 			Install_InlineHook(CBasePanel_ApplySchemeSettings);
 		}
@@ -2599,19 +2235,19 @@ End of hook proxy
 void GameUI_FillAddress_GameConsoleDialog(const mh_dll_info_t& RealDllInfo)
 {
 	gPrivateFuncs.CGameConsoleDialog_ctor = (decltype(gPrivateFuncs.CGameConsoleDialog_ctor))
-		GamedataResolvePtr(RealDllInfo.ImageBase, "CGameConsoleDialog::CGameConsoleDialog()", MH_GAMESYMBOL_KIND_FUNCTION);
+		GamedataResolvePtr(RealDllInfo.ImageBase, "gameui", "CGameConsoleDialog::CGameConsoleDialog()", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void GameUI_FillAddress_CreateMultiplayerGameDialog(const mh_dll_info_t& RealDllInfo)
 {
 	gPrivateFuncs.CCreateMultiplayerGameDialog_ctor = (decltype(gPrivateFuncs.CCreateMultiplayerGameDialog_ctor))
-		GamedataResolvePtr(RealDllInfo.ImageBase, "CCreateMultiplayerGameDialog::CCreateMultiplayerGameDialog(vgui2::Panel*)", MH_GAMESYMBOL_KIND_FUNCTION);
+		GamedataResolvePtr(RealDllInfo.ImageBase, "gameui", "CCreateMultiplayerGameDialog::CCreateMultiplayerGameDialog(vgui2::Panel*)", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void GameUI_FillAddress_COptionsDialog(const mh_dll_info_t& RealDllInfo)
 {
 	gPrivateFuncs.COptionsDialog_ctor = (decltype(gPrivateFuncs.COptionsDialog_ctor))
-		GamedataResolvePtr(RealDllInfo.ImageBase, "COptionsDialog::COptionsDialog(vgui2::Panel*)", MH_GAMESYMBOL_KIND_FUNCTION);
+		GamedataResolvePtr(RealDllInfo.ImageBase, "gameui", "COptionsDialog::COptionsDialog(vgui2::Panel*)", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void GameUI_FillAddress_CCareerProfileFrame(const mh_dll_info_t& RealDllInfo)
@@ -2621,7 +2257,7 @@ void GameUI_FillAddress_CCareerProfileFrame(const mh_dll_info_t& RealDllInfo)
 	if (g_bIsCZero)
 	{
 		gPrivateFuncs.CCareerProfileFrame_ctor = (decltype(gPrivateFuncs.CCareerProfileFrame_ctor))
-			GamedataResolvePtr(RealDllInfo.ImageBase, "CCareerProfileFrame::CCareerProfileFrame(vgui2::Panel*)", MH_GAMESYMBOL_KIND_FUNCTION);
+			GamedataResolvePtr(RealDllInfo.ImageBase, "gameui", "CCareerProfileFrame::CCareerProfileFrame(vgui2::Panel*)", MH_GAMESYMBOL_KIND_FUNCTION);
 	}
 }
 
@@ -2630,7 +2266,7 @@ void GameUI_FillAddress_CCareerMapFrame(const mh_dll_info_t& RealDllInfo)
 	if (g_bIsCZero)
 	{
 		gPrivateFuncs.CCareerMapFrame_ctor = (decltype(gPrivateFuncs.CCareerMapFrame_ctor))
-			GamedataResolvePtr(RealDllInfo.ImageBase, "CCareerMapFrame::CCareerMapFrame(vgui2::Panel*)", MH_GAMESYMBOL_KIND_FUNCTION);
+			GamedataResolvePtr(RealDllInfo.ImageBase, "gameui", "CCareerMapFrame::CCareerMapFrame(vgui2::Panel*)", MH_GAMESYMBOL_KIND_FUNCTION);
 	}
 }
 
@@ -2639,1021 +2275,216 @@ void GameUI_FillAddress_CCareerBotFrame(const mh_dll_info_t& RealDllInfo)
 	if (g_bIsCZero)
 	{
 		gPrivateFuncs.CCareerBotFrame_ctor = (decltype(gPrivateFuncs.CCareerBotFrame_ctor))
-			GamedataResolvePtr(RealDllInfo.ImageBase, "CCareerBotFrame::CCareerBotFrame(vgui2::Panel*)", MH_GAMESYMBOL_KIND_FUNCTION);
+			GamedataResolvePtr(RealDllInfo.ImageBase, "gameui", "CCareerBotFrame::CCareerBotFrame(vgui2::Panel*)", MH_GAMESYMBOL_KIND_FUNCTION);
 	}
 }
 
 void GameUI_FillAddress_COptionsSubAudio(const mh_dll_info_t& RealDllInfo)
 {
 	gPrivateFuncs.COptionsSubAudio_ctor = (decltype(gPrivateFuncs.COptionsSubAudio_ctor))
-		GamedataResolvePtr(RealDllInfo.ImageBase, "COptionsSubAudio::COptionsSubAudio(vgui2::Panel*)", MH_GAMESYMBOL_KIND_FUNCTION);
+		GamedataResolvePtr(RealDllInfo.ImageBase, "gameui", "COptionsSubAudio::COptionsSubAudio(vgui2::Panel*)", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void GameUI_FillAddress_COptionsSubVideo(const mh_dll_info_t& RealDllInfo)
 {
 	gPrivateFuncs.COptionsSubVideo_ctor = (decltype(gPrivateFuncs.COptionsSubVideo_ctor))
-		GamedataResolvePtr(RealDllInfo.ImageBase, "COptionsSubVideo::COptionsSubVideo(vgui2::Panel*)", MH_GAMESYMBOL_KIND_FUNCTION);
+		GamedataResolvePtr(RealDllInfo.ImageBase, "gameui", "COptionsSubVideo::COptionsSubVideo(vgui2::Panel*)", MH_GAMESYMBOL_KIND_FUNCTION);
 
 	//hl-10210 inlined ApplyVidSettings into the OnApplyChanges() virtual, which the
 	//sub-page ctor wrapper already hooks through its vtable slot; that identity is
 	//the only one publishing no standalone ApplyVidSettings.
 	gPrivateFuncs.COptionsSubVideo_ApplyVidSettings = (decltype(gPrivateFuncs.COptionsSubVideo_ApplyVidSettings))
-		GamedataResolvePtrIfAvailable(RealDllInfo.ImageBase, "COptionsSubVideo::ApplyVidSettings(bool)", MH_GAMESYMBOL_KIND_FUNCTION);
+		GamedataResolvePtrIfAvailable(RealDllInfo.ImageBase, "gameui", "COptionsSubVideo::ApplyVidSettings(bool)", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void GameUI_FillAddress_COptionsSubMultiplayer_ctor(const mh_dll_info_t& RealDllInfo)
 {
 	gPrivateFuncs.COptionsSubMultiplayer_ctor = (decltype(gPrivateFuncs.COptionsSubMultiplayer_ctor))
-		GamedataResolvePtr(RealDllInfo.ImageBase, "COptionsSubMultiplayer::COptionsSubMultiplayer(vgui2::Panel*)", MH_GAMESYMBOL_KIND_FUNCTION);
+		GamedataResolvePtr(RealDllInfo.ImageBase, "gameui", "COptionsSubMultiplayer::COptionsSubMultiplayer(vgui2::Panel*)", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void GameUI_FillAddress_ConsoleHistory(const mh_dll_info_t& RealDllInfo)
 {
 	gPrivateFuncs.GameUI_RichText_OnThink = (decltype(gPrivateFuncs.GameUI_RichText_OnThink))
-		GamedataResolvePtr(RealDllInfo.ImageBase, "vgui2::RichText::OnThink()", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
+		GamedataResolvePtr(RealDllInfo.ImageBase, "gameui", "vgui2::RichText::OnThink()", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 }
 
 void GameUI_FillAddress_RichText(const mh_dll_info_t& RealDllInfo)
 {
-	//The console dialog's condump failure path calls CGameConsoleDialog::Print where
-	//that is a standalone function, and vgui2::RichText::InsertString where Valve
-	//inlined Print into it. Every identity publishes exactly one of the two.
-	gPrivateFuncs.GameUI_RichText_InsertStringA = (decltype(gPrivateFuncs.GameUI_RichText_InsertStringA))
-		GamedataResolvePtrIfAvailable(RealDllInfo.ImageBase, "vgui2::RichText::InsertString(char const*)", MH_GAMESYMBOL_KIND_FUNCTION);
+	//Hook whichever function hosts the carriage-return filter branch: the standalone
+	//RichText::InsertChar, or RichText::InsertString(wchar_t const*) on hl-10210, where
+	//Valve inlined InsertChar into it and the catalog publishes no InsertChar.
+	gPrivateFuncs.GameUI_RichText_InsertChar = (decltype(gPrivateFuncs.GameUI_RichText_InsertChar))
+		GamedataResolvePtrIfAvailable(RealDllInfo.ImageBase, "gameui", "vgui2::RichText::InsertChar(wchar_t)", MH_GAMESYMBOL_KIND_FUNCTION);
 
-	if (!gPrivateFuncs.GameUI_RichText_InsertStringA)
+	if (!gPrivateFuncs.GameUI_RichText_InsertChar)
 	{
-		gPrivateFuncs.GameUI_RichText_Print = (decltype(gPrivateFuncs.GameUI_RichText_Print))
-			GamedataResolvePtr(RealDllInfo.ImageBase, "CGameConsoleDialog::Print(char const*)", MH_GAMESYMBOL_KIND_FUNCTION);
+		gPrivateFuncs.GameUI_RichText_InsertStringW = (decltype(gPrivateFuncs.GameUI_RichText_InsertStringW))
+			GamedataResolvePtr(RealDllInfo.ImageBase, "gameui", "vgui2::RichText::InsertString(wchar_t const*)", MH_GAMESYMBOL_KIND_FUNCTION);
 	}
 }
 
-void GameUI_PatchAddress_RichText_InsertChar(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void GameUI_PatchAddress_RichText_InsertChar(const mh_dll_info_t& RealDllInfo)
 {
-	PVOID RecursiveWalkBase = ConvertDllInfoSpace(
-		(gPrivateFuncs.GameUI_RichText_Print) ? gPrivateFuncs.GameUI_RichText_Print : gPrivateFuncs.GameUI_RichText_InsertStringA,
-		RealDllInfo,
-		DllInfo
-	);
+	//The patch is the Jcc right after the compare against 0Dh that takes the native '\r' early-out.
+	//The catalog only locates the branch, so the rewrite is chosen from its encoding here;
+	//the InsertChar / InsertStringW hooks filter carriage returns themselves.
+	auto address = (PUCHAR)GamedataResolvePtr(RealDllInfo.ImageBase, "gameui", "vgui2::RichText carriage-return filter branch", MH_GAMESYMBOL_KIND_PATCH);
 
-	typedef struct RichText_Print_SearchContext_s
+	if (address[0] == 0x74)
 	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-		PVOID base{};
-		size_t max_insts{};
-		int max_depth{};
-		std::set<PVOID> code{};
-		std::set<PVOID> branches{};
-		std::vector<walk_context_t> walks{};
-
-		PVOID FunctionBeginCandidate{};
-		int FunctionBeginCandidateDepth{};
-		PVOID Found0xDCandidate{};
-		int Found0xDCandidateInstCount{};
-		bool Is0xDCandidatePatched{};
-	}RichText_Print_SearchContext;
-
-	RichText_Print_SearchContext ctx = { DllInfo, RealDllInfo };
-
-	ctx.base = RecursiveWalkBase;
-	ctx.max_insts = 1000;
-	ctx.max_depth = 16;
-	ctx.walks.emplace_back(ctx.base, 0x1000, 0);
-
-	while (ctx.walks.size())
-	{
-		auto walk = ctx.walks[ctx.walks.size() - 1];
-		ctx.walks.pop_back();
-
-		g_pMetaHookAPI->DisasmRanges(walk.address, walk.len, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (RichText_Print_SearchContext*)context;
-
-			if (ctx->code.size() > ctx->max_insts)
-				return TRUE;
-
-			if (ctx->code.find(address) != ctx->code.end())
-				return TRUE;
-
-			ctx->code.emplace(address);
-
-			/*
-			Engine: 3266
-.text:1006BE4D 0F BE 45 08                                         movsx   eax, byte ptr [ebp+arg_0]
-.text:1006BE51 83 F8 0D                                            cmp     eax, 0Dh
-.text:1006BE54 75 02                                               jnz     short loc_1006BE58 label_work
-.text:1006BE56 EB 67                                               jmp     short loc_1006BEBF label_exit
-				*/
-
-				/*
-				Engine: 4554, 6153
-.text:100573B0 8A 44 24 04                                         mov     al, byte ptr [esp+arg_0]
-.text:100573B4 55                                                  push    ebp
-.text:100573B5 3C 0D                                               cmp     al, 0Dh
-.text:100573B7 8B E9                                               mov     ebp, ecx
-.text:100573B9 0F 84 8C 00 00 00                                   jz      loc_1005744B label_exit
-				*/
-
-				/*
-				Engine: SvEngine
-.text:10047463 80 7D 08 0D                                         cmp     [ebp+arg_0], 0Dh
-
-.text:1004746A 74 3C                                               jz      short loc_100474A8 label_exit
-				*/
-
-				/*
-				Engine: 9920
-.text:1005D664 0F B7 C1                                            movzx   eax, cx
-.text:1005D667 89 45 08                                            mov     [ebp+arg_0], eax
-.text:1005D66A 80 F9 0D                                            cmp     cl, 0Dh
-.text:1005D66D 74 3B                                               jz      short loc_1005D6AA label_exit
-				*/
-
-			if (instCount == 1)
-			{
-				ctx->FunctionBeginCandidate = address;
-				ctx->FunctionBeginCandidateDepth = depth;
-			}
-
-			if (!ctx->Found0xDCandidate &&
-				instCount < 25 &&
-				depth == ctx->FunctionBeginCandidateDepth &&
-				pinst->id == X86_INS_CMP &&
-				pinst->detail->x86.op_count == 2 &&
-				(pinst->detail->x86.operands[0].type == X86_OP_REG || pinst->detail->x86.operands[0].type == X86_OP_MEM) &&
-				pinst->detail->x86.operands[1].imm == 0x0D)
-			{
-				ctx->Found0xDCandidate = address;
-				ctx->Found0xDCandidateInstCount = instCount;
-
-				typedef struct RichText_InsertChar_SearchContext_s
-				{
-					const mh_dll_info_t& DllInfo;
-					const mh_dll_info_t& RealDllInfo;
-					bool IsFetchWord{};
-				}RichText_InsertChar_SearchContext;
-
-				RichText_InsertChar_SearchContext ctx2 = { ctx->DllInfo, ctx->RealDllInfo };
-
-				g_pMetaHookAPI->DisasmRanges(ctx->FunctionBeginCandidate, address - ctx->FunctionBeginCandidate, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-					auto pinst = (cs_insn*)inst;
-					auto ctx = (RichText_InsertChar_SearchContext*)context;
-
-					//66 8B 06                                            mov     ax, [esi]
-					//0F B7 07                                            movzx   eax, word ptr [edi]
-					//66 8B 08                                            mov     cx, [eax]
-
-					if ((pinst->id == X86_INS_MOV || pinst->id == X86_INS_MOVZX) &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_REG &&
-						pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-						(pinst->detail->x86.operands[0].size == 2 || pinst->detail->x86.operands[1].size == 2) &&
-						pinst->detail->x86.operands[1].mem.base != 0 &&
-						pinst->detail->x86.operands[1].mem.disp == 0 &&
-						pinst->detail->x86.operands[1].mem.index == 0 &&
-						pinst->detail->x86.operands[1].mem.scale == 1)
-					{
-						ctx->IsFetchWord = true;
-					}
-
-					if (address[0] == 0xCC)
-						return TRUE;
-
-					if (pinst->id == X86_INS_RET)
-						return TRUE;
-
-					return FALSE;
-
-					}, 0, &ctx2);
-
-				if (ctx2.IsFetchWord)
-				{
-					gPrivateFuncs.GameUI_RichText_InsertStringW = (decltype(gPrivateFuncs.GameUI_RichText_InsertStringW))
-						ConvertDllInfoSpace(ctx->FunctionBeginCandidate, ctx->DllInfo, ctx->RealDllInfo);
-				}
-				else
-				{
-					gPrivateFuncs.GameUI_RichText_InsertChar = (decltype(gPrivateFuncs.GameUI_RichText_InsertChar))
-						ConvertDllInfoSpace(ctx->FunctionBeginCandidate, ctx->DllInfo, ctx->RealDllInfo);
-				}
-			}
-
-			if (!ctx->Is0xDCandidatePatched &&
-				ctx->Found0xDCandidateInstCount > 0 &&
-				instCount > ctx->Found0xDCandidateInstCount &&
-				instCount < ctx->Found0xDCandidateInstCount + 5 &&
-				(pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS) &&
-				pinst->detail->x86.op_count == 1 &&
-				pinst->detail->x86.operands[0].type == X86_OP_IMM)
-			{
-				if (pinst->id == X86_INS_JE)
-				{
-					auto address_RealDllBased = ConvertDllInfoSpace(address, ctx->DllInfo, ctx->RealDllInfo);
-					g_pMetaHookAPI->WriteNOP(address_RealDllBased, instLen);
-					ctx->Is0xDCandidatePatched = true;
-				}
-				else if (pinst->id == X86_INS_JNE)
-				{
-					if (instLen == 2)
-					{
-						//redirect jmp short
-						auto address_RealDllBased = ConvertDllInfoSpace(address, ctx->DllInfo, ctx->RealDllInfo);
-						g_pMetaHookAPI->WriteBYTE(address_RealDllBased, 0xEB);
-						ctx->Is0xDCandidatePatched = true;
-					}
-					else if (instLen == 5)
-					{
-						//redirect jmp
-						auto address_RealDllBased = ConvertDllInfoSpace(address, ctx->DllInfo, ctx->RealDllInfo);
-						g_pMetaHookAPI->WriteBYTE(address_RealDllBased, 0xE9);
-						ctx->Is0xDCandidatePatched = true;
-					}
-				}
-			}
-
-			if (ctx->Is0xDCandidatePatched)
-				return TRUE;
-
-			if ((pinst->id == X86_INS_CALL || pinst->id == X86_INS_JMP || (pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS)) &&
-				pinst->detail->x86.op_count == 1 &&
-				pinst->detail->x86.operands[0].type == X86_OP_IMM)
-			{
-				PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
-				if (imm >= (PUCHAR)ctx->DllInfo.TextBase && imm < (PUCHAR)ctx->DllInfo.TextBase + ctx->DllInfo.TextSize)
-				{
-					auto foundbranch = ctx->branches.find(imm);
-					if (foundbranch == ctx->branches.end())
-					{
-						ctx->branches.emplace(imm);
-						if (depth + 1 < ctx->max_depth)
-							ctx->walks.emplace_back(imm, 0x1000, depth + 1);
-					}
-				}
-
-				if (pinst->id == X86_INS_JMP)
-					return TRUE;
-			}
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-
-			}, walk.depth, &ctx);
+		//jz short label_exit
+		g_pMetaHookAPI->WriteNOP(address, 2);
 	}
-
-	if (!ctx.Is0xDCandidatePatched)
+	else if (address[0] == 0x0F && address[1] == 0x84)
 	{
-		Sys_Error("Failed to patch GameUI!RichText_InsertChar.");
+		//jz label_exit
+		g_pMetaHookAPI->WriteNOP(address, 6);
 	}
-
-	if (!gPrivateFuncs.GameUI_RichText_InsertChar && !gPrivateFuncs.GameUI_RichText_InsertStringW)
+	else if (address[0] == 0x75)
 	{
-		Sys_Error("Failed to locate GameUI!RichText_InsertChar or RichText_InsertStringW.");
-	}
-}
-
-void GameUI_FillAddress_ConsoleEntry(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	const char sigs1[] = "ConsoleEntry\0";
-	auto ConsoleEntry_String = Search_Pattern_From_Size(DllInfo.RdataBase, DllInfo.RdataSize, sigs1);
-	if (!ConsoleEntry_String)
-		ConsoleEntry_String = Search_Pattern_From_Size(DllInfo.DataBase, DllInfo.DataSize, sigs1);
-	Sig_VarNotFound(ConsoleEntry_String);
-
-	char pattern[] = "\x68\x2A\x2A\x2A\x2A";
-	*(DWORD*)(pattern + 1) = (DWORD)ConsoleEntry_String;
-	auto ConsoleEntry_PushString = Search_Pattern(pattern, DllInfo);
-	Sig_VarNotFound(ConsoleEntry_PushString);
-
-	typedef struct ConsoleEntrySearchContext_s
-	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-
-		PVOID* ConsoleEntry_vftable{};
-	} ConsoleEntrySearchContext;
-
-	ConsoleEntrySearchContext ctx = { DllInfo, RealDllInfo };
-
-	g_pMetaHookAPI->DisasmRanges(ConsoleEntry_PushString, 0x60, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (ConsoleEntrySearchContext*)context;
-
-		if (pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-			((PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->DllInfo.RdataBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.RdataBase + ctx->DllInfo.RdataSize))
-		{
-			auto candidate = (PVOID*)pinst->detail->x86.operands[1].imm;
-			if (candidate[0] >= (PUCHAR)ctx->DllInfo.TextBase && candidate[0] < (PUCHAR)ctx->DllInfo.TextBase + ctx->DllInfo.TextSize)
-			{
-				ctx->ConsoleEntry_vftable = candidate;
-			}
-		}
-
-		if (ctx->ConsoleEntry_vftable)
-			return TRUE;
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-		}, 0, &ctx);
-
-	Sig_VarNotFound(ctx.ConsoleEntry_vftable);
-
-	gPrivateFuncs.GameUI_TextEntry_OnKeyCodeTyped = (decltype(gPrivateFuncs.GameUI_TextEntry_OnKeyCodeTyped))
-		GetVFunctionFromVFTable(ctx.ConsoleEntry_vftable, 0x194 / 4, DllInfo, RealDllInfo, RealDllInfo);//TODO: need to move to gamedata
-
-	//gPrivateFuncs.GameUI_TextEntry_InsertChar = (decltype(gPrivateFuncs.GameUI_TextEntry_InsertChar))
-	// GetVFunctionFromVFTable(ctx.ConsoleEntry_vftable, 0x250 / 4, DllInfo, RealDllInfo, RealDllInfo);//TODO: need to move to gamedata
-
-	gPrivateFuncs.GameUI_TextEntry_LayoutVerticalScrollBarSlider = (decltype(gPrivateFuncs.GameUI_TextEntry_LayoutVerticalScrollBarSlider))
-		GetVFunctionFromVFTable(ctx.ConsoleEntry_vftable, 0x2C0 / 4, DllInfo, RealDllInfo, RealDllInfo);//TODO: need to move to gamedata
-
-	gPrivateFuncs.GameUI_TextEntry_GetStartDrawIndex = (decltype(gPrivateFuncs.GameUI_TextEntry_GetStartDrawIndex))
-		GetVFunctionFromVFTable(ctx.ConsoleEntry_vftable, 0x2F8 / 4, DllInfo, RealDllInfo, RealDllInfo);//TODO: need to move to gamedata
-}
-
-void GameUI_FillAddress_Sheet(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	PVOID Sheet_PushString = NULL;
-
-	const char sigs[] = "Sheet\0";
-	auto PropertySheet_String = Search_Pattern_From_Size(DllInfo.RdataBase, DllInfo.RdataSize, sigs);
-
-	if (PropertySheet_String)
-	{
-		//We got string in .rdata section
-		PUCHAR SearchBegin = (PUCHAR)DllInfo.RdataBase;
-		PUCHAR SearchLimit = (PUCHAR)DllInfo.RdataBase + DllInfo.RdataSize;
-		while (SearchBegin < SearchLimit)
-		{
-			PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, sigs);
-			if (pFound)
-			{
-				char pattern[] = "\x74\x2A\x68\x2A\x2A\x2A\x2A";
-
-				*(DWORD*)(pattern + 3) = (DWORD)pFound;
-
-				Sheet_PushString = Search_Pattern(pattern, DllInfo);
-
-				if (Sheet_PushString)
-				{
-					break;
-				}
-
-				SearchBegin = pFound + Sig_Length(pattern);
-			}
-			else
-			{
-				break;
-			}
-		}
+		//jnz short label_work, followed by jmp short label_exit
+		g_pMetaHookAPI->WriteBYTE(address, 0xEB);
 	}
 	else
 	{
-		//We got string in .data section
-		PropertySheet_String = Search_Pattern_From_Size(DllInfo.DataBase, DllInfo.DataSize, sigs);
-		if (PropertySheet_String)
-		{
-			PUCHAR SearchBegin = (PUCHAR)DllInfo.DataBase;
-			PUCHAR SearchLimit = (PUCHAR)DllInfo.DataBase + DllInfo.DataSize;
-			while (SearchBegin < SearchLimit)
-			{
-				PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, sigs);
-				if (pFound)
-				{
-					char pattern[] = "\x74\x2A\x68\x2A\x2A\x2A\x2A";
-
-					*(DWORD*)(pattern + 3) = (DWORD)pFound;
-
-					Sheet_PushString = Search_Pattern(pattern, DllInfo);
-
-					if (Sheet_PushString)
-					{
-						break;
-					}
-
-					SearchBegin = pFound + Sig_Length(sigs);
-				}
-				else
-				{
-					break;
-				}
-			}
-		}
+		Sys_Error("Failed to patch GameUI!RichText_InsertChar: unexpected branch opcode %02X %02X.\nEngine buildnum: %d",
+			address[0], address[1], g_dwEngineBuildnum);
 	}
-
-	Sig_VarNotFound(Sheet_PushString);
-
-	typedef struct SheetCtor_SearchContext_s
-	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-		int instCount_Sheet_ctor{};
-	}SheetCtor_SearchContext;
-
-	SheetCtor_SearchContext ctx = { DllInfo, RealDllInfo };
-
-	g_pMetaHookAPI->DisasmRanges(Sheet_PushString, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (SheetCtor_SearchContext*)context;
-
-		if (!gPrivateFuncs.GameUI_Sheet_ctor && address[0] == 0xE8 && instCount <= 8)
-		{
-			PVOID GameUI_Sheet_ctor_VA = GetCallAddress(address);
-
-			gPrivateFuncs.GameUI_Sheet_ctor = (decltype(gPrivateFuncs.GameUI_Sheet_ctor))
-				ConvertDllInfoSpace(GameUI_Sheet_ctor_VA, ctx->DllInfo, ctx->RealDllInfo);
-
-			ctx->instCount_Sheet_ctor = instCount;
-		}
-
-		if (!gPrivateFuncs.offset_propertySheet && instCount > ctx->instCount_Sheet_ctor && instCount < ctx->instCount_Sheet_ctor + 10)
-		{
-			if (pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base != 0 &&
-				pinst->detail->x86.operands[0].mem.disp >= 260 &&
-				pinst->detail->x86.operands[0].mem.disp <= 280 &&
-				pinst->detail->x86.operands[1].type == X86_OP_REG)
-			{
-				gPrivateFuncs.offset_propertySheet = (decltype(gPrivateFuncs.offset_propertySheet))pinst->detail->x86.operands[0].mem.disp;
-			}
-		}
-
-		if (gPrivateFuncs.GameUI_Sheet_ctor && gPrivateFuncs.offset_propertySheet)
-			return TRUE;
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-		}, 0, &ctx);
-
-	Sig_FuncNotFound(GameUI_Sheet_ctor);//TODO: need to move to gamedata
-	Sig_FuncNotFound(offset_propertySheet);//TODO: need to move to gamedata
 }
 
-void GameUI_FillAddress_PropertySheet(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void GameUI_FillAddress_ConsoleEntry(const mh_dll_info_t&, const mh_dll_info_t&)
 {
-	PVOID GameUI_Sheet_ctor_VA = ConvertDllInfoSpace(gPrivateFuncs.GameUI_Sheet_ctor, RealDllInfo, DllInfo);
+	//All three are TextEntry virtuals reached through the TabCatchingTextEntry
+	//vtable. Resolving them by name removes the previous vftable scan, which
+	//accepted the first .rdata pointer whose head landed in .text without
+	//verifying it belonged to TabCatchingTextEntry.
+	gPrivateFuncs.GameUI_TextEntry_OnKeyCodeTyped = (decltype(gPrivateFuncs.GameUI_TextEntry_OnKeyCodeTyped))
+		GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "gameui", "TabCatchingTextEntry::OnKeyCodeTyped(vgui2::KeyCode)", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 
-	typedef struct SheetSearchContext_s
-	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
+	gPrivateFuncs.GameUI_TextEntry_LayoutVerticalScrollBarSlider = (decltype(gPrivateFuncs.GameUI_TextEntry_LayoutVerticalScrollBarSlider))
+		GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::TextEntry::LayoutVerticalScrollBarSlider()", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 
-	}SheetSearchContext;
+	gPrivateFuncs.GameUI_TextEntry_GetStartDrawIndex = (decltype(gPrivateFuncs.GameUI_TextEntry_GetStartDrawIndex))
+		GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::TextEntry::GetStartDrawIndex(int&)", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
+}
 
-	SheetSearchContext ctx = { DllInfo, RealDllInfo };
+void GameUI_FillAddress_Sheet(const mh_dll_info_t&, const mh_dll_info_t&)
+{
+	gPrivateFuncs.offset_PropertyDialog_propertySheet = (decltype(gPrivateFuncs.offset_PropertyDialog_propertySheet))
+		GamedataResolveStructMember(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::PropertyDialog._propertySheet");
+}
 
-	g_pMetaHookAPI->DisasmRanges(GameUI_Sheet_ctor_VA, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (SheetSearchContext*)context;
-
-		if (!gPrivateFuncs.GameUI_Sheet_vftable)
-		{
-			if (pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				((PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->DllInfo.RdataBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.RdataBase + ctx->DllInfo.RdataSize))
-			{
-				auto candidate = (PVOID*)pinst->detail->x86.operands[1].imm;
-				if (candidate[0] >= (PUCHAR)ctx->DllInfo.TextBase && candidate[0] < (PUCHAR)ctx->DllInfo.TextBase + ctx->DllInfo.TextSize)
-				{
-					gPrivateFuncs.GameUI_Sheet_vftable = (decltype(gPrivateFuncs.GameUI_Sheet_vftable))ConvertDllInfoSpace(candidate, ctx->DllInfo, ctx->RealDllInfo);
-				}
-			}
-		}
-
-		if (gPrivateFuncs.GameUI_Sheet_vftable)
-			return TRUE;
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-		}, 0, &ctx);
-
-	Sig_FuncNotFound(GameUI_Sheet_vftable);
+void GameUI_FillAddress_PropertySheet(const mh_dll_info_t&, const mh_dll_info_t&)
+{
+	gPrivateFuncs.offset_PropertySheet_activePage = GamedataResolveStructMember(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::PropertySheet._activePage");
 
 	gPrivateFuncs.GameUI_PropertySheet_HasHotkey = (decltype(gPrivateFuncs.GameUI_PropertySheet_HasHotkey))
-		GetVFunctionFromVFTable(gPrivateFuncs.GameUI_Sheet_vftable, 73, DllInfo, RealDllInfo, RealDllInfo);
+		GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::PropertySheet::HasHotkey(wchar_t)", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 
 	gPrivateFuncs.GameUI_PropertySheet_PerformLayout = (decltype(gPrivateFuncs.GameUI_PropertySheet_PerformLayout))
-		GetVFunctionFromVFTable(gPrivateFuncs.GameUI_Sheet_vftable, 111, DllInfo, RealDllInfo, RealDllInfo);
+		GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::PropertySheet::PerformLayout()", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 
-	Sig_FuncNotFound(GameUI_PropertySheet_HasHotkey);
-	Sig_FuncNotFound(GameUI_PropertySheet_PerformLayout);
+	//The Options-dialog proxy callback reads these slots from the live property
+	//sheet's vtable; resolve all of them here so the callbacks stay plain reads.
+	gPrivateFuncs.vfunc_index_PropertySheet_AddPage = GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::PropertySheet::AddPage(vgui2::Panel*, char const*)");
+	gPrivateFuncs.vfunc_index_PropertySheet_SetActivePage = GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::PropertySheet::SetActivePage(vgui2::Panel*)");
+	gPrivateFuncs.vfunc_index_PropertySheet_SetTabWidth = GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::PropertySheet::SetTabWidth(int)");
+	gPrivateFuncs.vfunc_index_PropertySheet_GetActivePage = GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::PropertySheet::GetActivePage()");
+	gPrivateFuncs.vfunc_index_PropertySheet_ResetAllData = GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::PropertySheet::ResetAllData()");
+	gPrivateFuncs.vfunc_index_PropertySheet_ApplyChanges = GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::PropertySheet::ApplyChanges()");
+	gPrivateFuncs.vfunc_index_PropertySheet_GetPage = GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::PropertySheet::GetPage(int)");
+	gPrivateFuncs.vfunc_index_PropertySheet_DeletePage = GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::PropertySheet::DeletePage(vgui2::Panel*)");
+	gPrivateFuncs.vfunc_index_PropertySheet_GetActiveTab = GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::PropertySheet::GetActiveTab()");
+	gPrivateFuncs.vfunc_index_PropertySheet_GetActiveTabTitle = GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::PropertySheet::GetActiveTabTitle(char*, int)");
+	gPrivateFuncs.vfunc_index_PropertySheet_GetTabTitle = GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::PropertySheet::GetTabTitle(int, char*, int)");
+	gPrivateFuncs.vfunc_index_PropertySheet_GetActivePageNum = GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::PropertySheet::GetActivePageNum()");
+	gPrivateFuncs.vfunc_index_PropertySheet_GetNumPages = GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::PropertySheet::GetNumPages()");
+	gPrivateFuncs.vfunc_index_PropertySheet_DisablePage = GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::PropertySheet::DisablePage(char const*)");
+	gPrivateFuncs.vfunc_index_PropertySheet_EnablePage = GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::PropertySheet::EnablePage(char const*)");
+	gPrivateFuncs.vfunc_index_PropertySheet_ChangeActiveTab = GamedataResolveVFuncIndex(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::PropertySheet::ChangeActiveTab(int)");
 }
 
-void GameUI_FillAddress_MessageBox(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void GameUI_FillAddress_MessageBox(const mh_dll_info_t&, const mh_dll_info_t&)
 {
-	const char sigs1[] = "MessageBoxText";
-	auto MessageBoxText_String = g_pMetaHookAPI->SearchPattern(DllInfo.RdataBase, DllInfo.RdataSize, sigs1, sizeof(sigs1) - 1);
-	if (!MessageBoxText_String)
-	{
-		MessageBoxText_String = g_pMetaHookAPI->SearchPattern(DllInfo.DataBase, DllInfo.DataSize, sigs1, sizeof(sigs1) - 1);
-	}
-	Sig_VarNotFound(MessageBoxText_String);
-	char pattern[] = "\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A";
-	*(DWORD*)(pattern + 1) = (DWORD)MessageBoxText_String;
-	auto MessageBoxText_PushString = g_pMetaHookAPI->SearchPattern(DllInfo.TextBase, DllInfo.TextSize, pattern, sizeof(pattern) - 1);
-	Sig_VarNotFound(MessageBoxText_PushString);
-
-	{
-		typedef struct MessageBoxText_SearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-		}MessageBoxText_SearchContext;
-
-		MessageBoxText_SearchContext ctx = { DllInfo , RealDllInfo };
-
-		g_pMetaHookAPI->DisasmRanges(MessageBoxText_PushString, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (MessageBoxText_SearchContext*)context;
-
-			if (address[0] == 0xE8 && instCount <= 8)
-			{
-				PVOID MessageBox_ctor_VA = GetCallAddress(address);
-				gPrivateFuncs.MessageBox_ctor = (decltype(gPrivateFuncs.MessageBox_ctor))ConvertDllInfoSpace(MessageBox_ctor_VA, ctx->DllInfo, ctx->RealDllInfo);
-
-				return TRUE;
-			}
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-
-			}, 0, &ctx);
-
-		Sig_FuncNotFound(MessageBox_ctor);
-	}
-
-	{
-		typedef struct MessageBoxSearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-		} MessageBoxSearchContext;
-
-		MessageBoxSearchContext ctx = { DllInfo, RealDllInfo };
-
-		g_pMetaHookAPI->DisasmRanges(ConvertDllInfoSpace(gPrivateFuncs.MessageBox_ctor, RealDllInfo, DllInfo), 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (MessageBoxSearchContext*)context;
-
-			if (!gPrivateFuncs.MessageBox_vftable)
-			{
-				if (pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[0].mem.disp == 0 &&
-					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-					((PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->DllInfo.RdataBase &&
-						(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.RdataBase + ctx->DllInfo.RdataSize))
-				{
-					auto candidate = (PVOID*)pinst->detail->x86.operands[1].imm;
-					if (candidate[0] >= (PUCHAR)ctx->DllInfo.TextBase && candidate[0] < (PUCHAR)ctx->DllInfo.TextBase + ctx->DllInfo.TextSize)
-					{
-						gPrivateFuncs.MessageBox_vftable = (decltype(gPrivateFuncs.MessageBox_vftable))ConvertDllInfoSpace(candidate, ctx->DllInfo, ctx->RealDllInfo);
-					}
-				}
-			}
-
-			if (gPrivateFuncs.MessageBox_vftable)
-				return TRUE;
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-
-			}, 0, &ctx);
-
-		Sig_FuncNotFound(MessageBox_vftable);
-	}
+	gPrivateFuncs.MessageBox_ctor = (decltype(gPrivateFuncs.MessageBox_ctor))
+		GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::MessageBox::MessageBox(char const*, char const*, vgui2::Panel*)", MH_GAMESYMBOL_KIND_FUNCTION);
 
 	gPrivateFuncs.MessageBox_ApplySchemeSettings = (decltype(gPrivateFuncs.MessageBox_ApplySchemeSettings))
-		GetVFunctionFromVFTable(gPrivateFuncs.MessageBox_vftable, 0x13C / 4, DllInfo, RealDllInfo, RealDllInfo);
-
-	Sig_FuncNotFound(MessageBox_ApplySchemeSettings);
+		GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::MessageBox::ApplySchemeSettings(vgui2::IScheme*)", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 }
 
-void GameUI_PatchAddress_MessageBox_ApplySchemeSettings(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void GameUI_PatchPanelSize(void)
 {
-	if (g_iEngineType != ENGINE_GOLDSRC_HL25)
+	// HL25 already scales these dimensions. SvEngine still uses raw constants.
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		PVOID MessageBox_ApplySchemeSettings_VA = ConvertDllInfoSpace(gPrivateFuncs.MessageBox_ApplySchemeSettings, RealDllInfo, DllInfo);
+		//PatchPanelSizeCallsites(g_GameUIDllInfo.ImageBase, "gameui", "vgui2_Panel_SetBounds_Const_callsite_",
+		//	GameUI_Panel_SetBounds_HL25, (PVOID*)&gPrivateFuncs.GameUI_Panel_SetBounds);
+	}
+	else
+	{
+		PatchPanelSizeCallsites(g_GameUIDllInfo.ImageBase, "gameui", "vgui2_Panel_SetSize_Const_callsite_",
+			GameUI_Panel_SetSize, (PVOID*)&gPrivateFuncs.GameUI_Panel_SetSize);
+		PatchPanelSizeCallsites(g_GameUIDllInfo.ImageBase, "gameui", "vgui2_Panel_SetMinimumSize_Const_callsite_",
+			GameUI_Panel_SetMinimumSize, (PVOID*)&gPrivateFuncs.GameUI_Panel_SetMinimumSize);
+		PatchPanelSizeCallsites(g_GameUIDllInfo.ImageBase, "gameui", "vgui2_Panel_SetBounds_Const_callsite_",
+			GameUI_Panel_SetBounds, (PVOID*)&gPrivateFuncs.GameUI_Panel_SetBounds);
 
-		typedef struct MessageBox_ApplySchemeSettings_SearchContext_s
+		// MessageBox adds a fixed margin to measured content; scale only that margin.
 		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-			std::set<PVOID> addr_SetSize;
-			int instCount_Add64h{};
-		}MessageBox_ApplySchemeSettings_SearchContext;
-
-		MessageBox_ApplySchemeSettings_SearchContext ctx = { DllInfo, RealDllInfo };
-
-		g_pMetaHookAPI->DisasmRanges(MessageBox_ApplySchemeSettings_VA, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (MessageBox_ApplySchemeSettings_SearchContext*)context;
-
-			if (!ctx->instCount_Add64h &&
-				pinst->id == X86_INS_ADD &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				pinst->detail->x86.operands[1].imm == 0x64)
+			const char* symbolName = "vgui2::MessageBox::ApplySchemeSettings to vgui2::Panel::SetSize callsite";
+			auto address = GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "gameui", symbolName, MH_GAMESYMBOL_KIND_PATCH);
+			if (!g_pMetaHookAPI->InlinePatchRedirectBranch(address,
+				GameUI_MessageBox_ApplySchemeSettings_Panel_SetSize, (PVOID*)&gPrivateFuncs.GameUI_Panel_SetSize))
 			{
-				ctx->instCount_Add64h = instCount;
+				Sys_Error("Could not redirect gamedata patch: %s\nEngine buildnum: %d", symbolName, g_dwEngineBuildnum);
+				return;
 			}
-
-			if (address[0] == 0xE8 && ctx->instCount_Add64h && instCount > ctx->instCount_Add64h && instCount < ctx->instCount_Add64h + 15)
-			{
-				auto address_RealDllBased = ConvertDllInfoSpace(address, ctx->DllInfo, ctx->RealDllInfo);
-
-				auto Candidate = GetCallAddress(address);
-
-				auto Candidate_RealDllBased = ConvertDllInfoSpace(Candidate, ctx->DllInfo, ctx->RealDllInfo);
-
-				if (Candidate_RealDllBased)
-				{
-					if (Candidate_RealDllBased == gPrivateFuncs.GameUI_Panel_SetSize)
-					{
-						ctx->addr_SetSize.emplace(address_RealDllBased);
-					}
-					else if (!gPrivateFuncs.GameUI_Panel_SetSize && VGUI2_IsPanelSetSize(Candidate))
-					{
-						gPrivateFuncs.GameUI_Panel_SetSize = (decltype(gPrivateFuncs.GameUI_Panel_SetSize))Candidate_RealDllBased;
-
-						ctx->addr_SetSize.emplace(address_RealDllBased);
-					}
-				}
-
-				return TRUE;
-			}
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-
-			}, 0, &ctx);
-
-		Sig_FuncNotFound(GameUI_Panel_SetSize);
-
-		for (auto addr : ctx.addr_SetSize)
-		{
-			g_pMetaHookAPI->InlinePatchRedirectBranch(addr, GameUI_MessageBox_ApplySchemeSettings_Panel_SetSize, NULL);
 		}
 	}
 }
 
-void GameUI_FillAddress_CBasePanel(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void GameUI_FillAddress_CBasePanel(const mh_dll_info_t& RealDllInfo)
 {
-	const char sigs1[] = "Resource/gameui_%language%.txt";
-	const char sigs2[] = "resource/gameui_%language%.txt";
-
-	auto GameUI_String = Search_Pattern_From_Size(DllInfo.RdataBase, DllInfo.RdataSize, sigs1);
-	if (!GameUI_String)
-	{
-		GameUI_String = Search_Pattern_From_Size(DllInfo.DataBase, DllInfo.DataSize, sigs1);
-	}
-	if (!GameUI_String)
-	{
-		GameUI_String = Search_Pattern_From_Size(DllInfo.RdataBase, DllInfo.RdataSize, sigs2);
-		if (!GameUI_String)
-		{
-			GameUI_String = Search_Pattern_From_Size(DllInfo.DataBase, DllInfo.DataSize, sigs2);
-		}
-	}
-	Sig_VarNotFound(GameUI_String);
-
-	char pattern[] = "\x68\x2A\x2A\x2A\x2A";
-	*(DWORD*)(pattern + 1) = (DWORD)GameUI_String;
-
-	auto GameUI_PushString = Search_Pattern(pattern, DllInfo);
-	Sig_VarNotFound(GameUI_PushString);
-
-	typedef struct CGameUIInitializeSearchContext_s
-	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-		PVOID OperatorNewAddress{};
-	} CGameUIInitializeSearchContext;
-
-	CGameUIInitializeSearchContext ctx = { DllInfo, RealDllInfo };
-
-	g_pMetaHookAPI->DisasmRanges(GameUI_PushString, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (CGameUIInitializeSearchContext*)context;
-
-		if (pinst->id == X86_INS_PUSH &&
-			pinst->detail->x86.op_count == 1 &&
-			pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-			pinst->detail->x86.operands[0].imm >= 0x90 && pinst->detail->x86.operands[0].imm <= 0x100)
-		{
-			auto nextaddr = address + instLen;
-
-			if (nextaddr[0] == 0xE8)
-			{
-				ctx->OperatorNewAddress = nextaddr;
-			}
-		}
-		else if (ctx->OperatorNewAddress && address > ctx->OperatorNewAddress && address[0] == 0xE8)
-		{
-			PVOID callTarget = GetCallAddress(address);
-
-			gPrivateFuncs.CBasePanel_ctor = (decltype(gPrivateFuncs.CBasePanel_ctor))
-				ConvertDllInfoSpace(callTarget, ctx->DllInfo, ctx->RealDllInfo);
-
-			return TRUE;
-		}
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-	}, 0, &ctx);
-
-	Sig_FuncNotFound(CBasePanel_ctor);
+	gPrivateFuncs.CBasePanel_ctor = (decltype(gPrivateFuncs.CBasePanel_ctor))
+		GamedataResolvePtr(RealDllInfo.ImageBase, "gameui", "CBasePanel::CBasePanel()", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
-void GameUI_FillAddress_CTaskBar(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void GameUI_FillAddress_CTaskBar(const mh_dll_info_t& RealDllInfo)
 {
-	const char sigs1[] = "GameMenuButton\0";
-	auto GameMenuButton_String = Search_Pattern_From_Size(DllInfo.RdataBase, DllInfo.RdataSize, sigs1);
-	if (!GameMenuButton_String)
-		GameMenuButton_String = Search_Pattern_From_Size(DllInfo.DataBase, DllInfo.DataSize, sigs1);
-
-	Sig_VarNotFound(GameMenuButton_String);
-
-	char pattern[] = "\x74\x2A\x68\x2A\x2A\x2A\x2A";
-	*(DWORD*)(pattern + 3) = (DWORD)GameMenuButton_String;
-
-	auto GameMenuButton_PushString = Search_Pattern(pattern, DllInfo);
-	Sig_VarNotFound(GameMenuButton_PushString);
-
-	PVOID CTaskBar_ctor_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(GameMenuButton_PushString, 0x350, [](PUCHAR Candidate) {
-
-		if (Candidate[0] == 0x55 &&
-			Candidate[1] == 0x8B &&
-			Candidate[2] == 0xEC &&
-			Candidate[3] == 0x83 &&
-			Candidate[4] == 0xEC)
-			return TRUE;
-
-		if (Candidate[0] == 0x53 &&
-			Candidate[1] == 0x8B &&
-			Candidate[2] == 0xDC &&
-			Candidate[3] == 0x83 &&
-			Candidate[4] == 0xEC)
-			return TRUE;
-
-		//8B 44 24 04                                         mov     eax, [esp+arg_0]
-		if (Candidate[0] == 0x8B &&
-			Candidate[1] == 0x44 &&
-			Candidate[2] == 0x24)
-		{
-			//.text:1002AD81 83 C8 FF                                            or      eax, 0FFFFFFFFh
-			if (Search_Pattern_From_Size(Candidate, 0x100, "\x83\xC8\xFF"))
-			{
-				return TRUE;
-			}
-		}
-		return FALSE;
-	});
-	
+	//hl-10210 publishes the ctor without a func_sig; the resolver only consumes its rva.
 	gPrivateFuncs.CTaskBar_ctor = (decltype(gPrivateFuncs.CTaskBar_ctor))
-		ConvertDllInfoSpace(CTaskBar_ctor_VA, DllInfo, RealDllInfo);
+		GamedataResolvePtr(RealDllInfo.ImageBase, "gameui", "CTaskbar::CTaskbar(vgui2::Panel*, char const*)", MH_GAMESYMBOL_KIND_FUNCTION);
 
-	Sig_FuncNotFound(CTaskBar_ctor);
+	gPrivateFuncs.CTaskBar_OnCommand = (decltype(gPrivateFuncs.CTaskBar_OnCommand))
+		GamedataResolvePtr(RealDllInfo.ImageBase, "gameui", "CTaskbar::OnCommand(char const*)", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 }
 
-void GameUI_FillAddress_CTaskBarKeyValues(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void GameUI_FillAddress_KeyValues(const mh_dll_info_t& RealDllInfo)
 {
-	PVOID CTaskBar_ctor_VA = ConvertDllInfoSpace(gPrivateFuncs.CTaskBar_ctor, RealDllInfo, DllInfo);
+	gPrivateFuncs.GameUI_KeyValues_LoadFromFile = (decltype(gPrivateFuncs.GameUI_KeyValues_LoadFromFile))
+		GamedataResolveIfAvailable(RealDllInfo.ImageBase, "gameui",
+			{ "vgui2::KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)",
+			  "KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)" },
+			MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 
-	if (!CTaskBar_ctor_VA)
-	{
-		Sig_NotFound(CTaskBar_ctor_VA);
-	}
-
-	typedef struct CTaskBarCtorSearchContext_s
-	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-	} CTaskBarCtorSearchContext;
-
-	CTaskBarCtorSearchContext ctx = { DllInfo, RealDllInfo };
-
-	g_pMetaHookAPI->DisasmRanges(CTaskBar_ctor_VA, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (CTaskBarCtorSearchContext*)context;
-
-		if (!gPrivateFuncs.CTaskBar_vftable)
-		{
-			if (pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.disp == 0 &&
-				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				((PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->DllInfo.RdataBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.RdataBase + ctx->DllInfo.RdataSize))
-			{
-				auto candidate = (PVOID*)pinst->detail->x86.operands[1].imm;
-
-				if (candidate[0] >= (PUCHAR)ctx->DllInfo.TextBase && candidate[0] < (PUCHAR)ctx->DllInfo.TextBase + ctx->DllInfo.TextSize)
-				{
-					gPrivateFuncs.CTaskBar_vftable = (decltype(gPrivateFuncs.CTaskBar_vftable))ConvertDllInfoSpace(candidate, ctx->DllInfo, ctx->RealDllInfo);
-					gPrivateFuncs.CTaskBar_OnCommand = (decltype(gPrivateFuncs.CTaskBar_OnCommand))GetVFunctionFromVFTable(gPrivateFuncs.CTaskBar_vftable, 348 / 4, ctx->DllInfo, ctx->RealDllInfo, ctx->RealDllInfo);
-				}
-			}
-		}
-
-		if (address[0] == 0xE8)
-		{
-			PVOID call_candidate = (decltype(call_candidate))GetCallAddress(address);
-
-			typedef struct CTaskBarCtor_SearchContext2_s
-			{
-				const mh_dll_info_t& DllInfo;
-				const mh_dll_info_t& RealDllInfo;
-
-				bool bHasPush18h{};
-				bool bHasPushGameMenu{};
-				int instCount_PushGameMenu{};
-			} CTaskBarCtor_SearchContext2;
-
-			CTaskBarCtor_SearchContext2 ctx2 = { ctx->DllInfo, ctx->RealDllInfo };
-
-			g_pMetaHookAPI->DisasmRanges(call_candidate, 0x350, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-				auto pinst = (cs_insn*)inst;
-				auto ctx2 = (CTaskBarCtor_SearchContext2*)context;
-
-				if (!ctx2->bHasPush18h &&
-					pinst->id == X86_INS_PUSH &&
-					pinst->detail->x86.op_count == 1 &&
-					pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-					pinst->detail->x86.operands[0].imm == 0x18)
-				{
-					ctx2->bHasPush18h = true;
-				}
-
-				if (ctx2->bHasPush18h &&
-					pinst->id == X86_INS_PUSH &&
-					pinst->detail->x86.op_count == 1 &&
-					pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-					(
-						((PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)ctx2->DllInfo.DataBase &&
-							(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx2->DllInfo.DataBase + ctx2->DllInfo.DataSize) ||
-						((PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)ctx2->DllInfo.RdataBase &&
-							(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx2->DllInfo.RdataBase + ctx2->DllInfo.RdataSize)
-						))
-				{
-					auto pString = (PCHAR)pinst->detail->x86.operands[0].imm;
-
-					if (!memcmp(pString, "GameMenu\0", sizeof("GameMenu\0") - 1))
-					{
-						ctx2->bHasPushGameMenu = true;
-						ctx2->instCount_PushGameMenu = instCount;
-					}
-				}
-
-				if (!gPrivateFuncs.GameUI_KeyValues_ctor)
-				{
-					if (address[0] == 0xE8)
-					{
-						if (ctx2->bHasPushGameMenu && instCount > ctx2->instCount_PushGameMenu && instCount < ctx2->instCount_PushGameMenu + 5)
-						{
-							PVOID GameUI_KeyValues_ctor_VA = GetCallAddress(address);
-
-							gPrivateFuncs.GameUI_KeyValues_ctor = (decltype(gPrivateFuncs.GameUI_KeyValues_ctor))ConvertDllInfoSpace(GameUI_KeyValues_ctor_VA, ctx2->DllInfo, ctx2->RealDllInfo);
-
-							g_pMetaHookAPI->DisasmRanges(GameUI_KeyValues_ctor_VA, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-								auto pinst = (cs_insn*)inst;
-								auto ctx2 = (CTaskBarCtor_SearchContext2*)context;
-
-								if (!gPrivateFuncs.GameUI_KeyValues_vftable)
-								{
-									if (pinst->id == X86_INS_MOV &&
-										pinst->detail->x86.op_count == 2 &&
-										pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-										pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-										((PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx2->DllInfo.RdataBase &&
-											(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx2->DllInfo.RdataBase + ctx2->DllInfo.RdataSize))
-									{
-										auto candidate_vftable = (PVOID*)pinst->detail->x86.operands[1].imm;
-
-										if (candidate_vftable[0] >= (PUCHAR)ctx2->DllInfo.TextBase && candidate_vftable[0] < (PUCHAR)ctx2->DllInfo.TextBase + ctx2->DllInfo.TextSize)
-										{
-											gPrivateFuncs.GameUI_KeyValues_vftable = (decltype(gPrivateFuncs.GameUI_KeyValues_vftable))
-												ConvertDllInfoSpace(candidate_vftable, ctx2->DllInfo, ctx2->RealDllInfo);
-
-											gPrivateFuncs.GameUI_KeyValues_LoadFromFile = (decltype(gPrivateFuncs.GameUI_KeyValues_LoadFromFile))
-												GetVFunctionFromVFTable(candidate_vftable, 2, ctx2->DllInfo, ctx2->RealDllInfo, ctx2->RealDllInfo);
-										}
-									}
-								}
-
-								if (gPrivateFuncs.GameUI_KeyValues_vftable &&
-									gPrivateFuncs.GameUI_KeyValues_LoadFromFile)
-									return TRUE;
-
-								if (address[0] == 0xCC)
-									return TRUE;
-
-								if (pinst->id == X86_INS_RET)
-									return TRUE;
-
-								return FALSE;
-
-								}, 0, ctx2);
-						}
-					}
-				}
-
-				if (gPrivateFuncs.GameUI_KeyValues_ctor &&
-					gPrivateFuncs.GameUI_KeyValues_vftable &&
-					gPrivateFuncs.GameUI_KeyValues_LoadFromFile)
-					return TRUE;
-
-				if (address[0] == 0xCC)
-					return TRUE;
-
-				if (pinst->id == X86_INS_RET)
-					return TRUE;
-
-				return FALSE;
-
-			}, 0, &ctx2);
-		}
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-	}, 0, &ctx);
-
-	Sig_FuncNotFound(GameUI_KeyValues_ctor);
 	Sig_FuncNotFound(GameUI_KeyValues_LoadFromFile);
+}
+
+void GameUI_FillAddress_Panel_Init(const mh_dll_info_t& RealDllInfo)
+{
+	gPrivateFuncs.GameUI_Panel_Init = (decltype(gPrivateFuncs.GameUI_Panel_Init))
+		GamedataResolvePtr(RealDllInfo.ImageBase, "gameui", "vgui2::Panel::Init(int, int, int, int)", MH_GAMESYMBOL_KIND_FUNCTION);
+}
+
+void GameUI_FillAddress_Menu(const mh_dll_info_t& RealDllInfo)
+{
+	gPrivateFuncs.offset_Menu_m_pScroller = GamedataResolveStructMember(RealDllInfo.ImageBase, "gameui", "vgui2::Menu.m_pScroller");
+
+	//The target GameUI method has no explicit arguments, unlike the newer SDK overload.
+	gPrivateFuncs.GameUI_Menu_MakeItemsVisibleInScrollRange = (decltype(gPrivateFuncs.GameUI_Menu_MakeItemsVisibleInScrollRange))
+		GamedataResolvePtr(RealDllInfo.ImageBase, "gameui", "vgui2::Menu::MakeItemsVisibleInScrollRange()", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 }
 
 void GameUI_FillAddress(void)
@@ -3669,8 +2500,6 @@ void GameUI_FillAddress(void)
 	GameUI_FillAddress_CreateMultiplayerGameDialog(g_GameUIDllInfo);
 
 	GameUI_FillAddress_COptionsDialog(g_GameUIDllInfo);
-
-	//GameUI_FillAddress_QueryBox(g_GameUIDllInfo, g_GameUIDllInfo);
 
 	GameUI_FillAddress_CCareerProfileFrame(g_GameUIDllInfo);
 
@@ -3688,7 +2517,7 @@ void GameUI_FillAddress(void)
 
 	GameUI_FillAddress_RichText(g_GameUIDllInfo);
 
-	GameUI_PatchAddress_RichText_InsertChar(g_GameUIDllInfo, g_GameUIDllInfo);
+	GameUI_PatchAddress_RichText_InsertChar(g_GameUIDllInfo);
 
 	GameUI_FillAddress_ConsoleEntry(g_GameUIDllInfo, g_GameUIDllInfo);
 
@@ -3698,34 +2527,15 @@ void GameUI_FillAddress(void)
 
 	GameUI_FillAddress_MessageBox(g_GameUIDllInfo, g_GameUIDllInfo);
 
-	GameUI_PatchAddress_MessageBox_ApplySchemeSettings(g_GameUIDllInfo, g_GameUIDllInfo);
+	GameUI_FillAddress_CBasePanel(g_GameUIDllInfo);
 
-	GameUI_FillAddress_CBasePanel(g_GameUIDllInfo, g_GameUIDllInfo);
+	GameUI_FillAddress_CTaskBar(g_GameUIDllInfo);
 
-	GameUI_FillAddress_CTaskBar(g_GameUIDllInfo, g_GameUIDllInfo);
+	GameUI_FillAddress_KeyValues(g_GameUIDllInfo);
 
-	GameUI_FillAddress_CTaskBarKeyValues(g_GameUIDllInfo, g_GameUIDllInfo);
+	GameUI_FillAddress_Panel_Init(g_GameUIDllInfo);
 
-	gPrivateFuncs.GameUI_Panel_Init = (decltype(gPrivateFuncs.GameUI_Panel_Init))
-		GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "vgui2::Panel::Init(int, int, int, int)", MH_GAMESYMBOL_KIND_FUNCTION);
-
-	gPrivateFuncs.GameUI_Menu_vftable = (decltype(gPrivateFuncs.GameUI_Menu_vftable))VGUI2_FindMenuVFTable(g_GameUIDllInfo, g_GameUIDllInfo);
-	Sig_FuncNotFound(GameUI_Menu_vftable);
-
-	for (int index = 175; index < 182; ++index)
-	{
-		int offset_ScrollBar = 0;
-		if (VGUI2_IsMenuMakeItemsVisibleInScrollRange(gPrivateFuncs.GameUI_Menu_vftable[index], &offset_ScrollBar))
-		{
-			gPrivateFuncs.offset_ScrollBar = offset_ScrollBar;
-			gPrivateFuncs.GameUI_Menu_MakeItemsVisibleInScrollRange =
-				(decltype(gPrivateFuncs.GameUI_Menu_MakeItemsVisibleInScrollRange))
-				gPrivateFuncs.GameUI_Menu_vftable[index];
-			break;
-		}
-	}
-
-	Sig_FuncNotFound(GameUI_Menu_MakeItemsVisibleInScrollRange);
+	GameUI_FillAddress_Menu(g_GameUIDllInfo);
 }
 
 bool GameUI_HasExclusiveInput()
@@ -3771,39 +2581,43 @@ void GameUI_InstallHooks(void)
 	{
 		PVOID* ProxyVFTable = *(PVOID**)&s_GameUIProxy;
 
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 1, ProxyVFTable[1], (void**)&g_pfnCGameUI_Initialize);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 2, ProxyVFTable[2], (void**)&g_pfnCGameUI_Start);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 3, ProxyVFTable[3], (void**)&g_pfnCGameUI_Shutdown);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 4, ProxyVFTable[4], (void**)&g_pfnCGameUI_ActivateGameUI);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 5, ProxyVFTable[5], (void**)&g_pfnCGameUI_ActivateDemoUI);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 6, ProxyVFTable[6], (void**)&g_pfnCGameUI_HasExclusiveInput);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 7, ProxyVFTable[7], (void**)&g_pfnCGameUI_RunFrame);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 8, ProxyVFTable[8], (void**)&g_pfnCGameUI_ConnectToServer);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 9, ProxyVFTable[9], (void**)&g_pfnCGameUI_DisconnectFromServer);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 10, ProxyVFTable[10], (void**)&g_pfnCGameUI_HideGameUI);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 11, ProxyVFTable[11], (void**)&g_pfnCGameUI_IsGameUIActive);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 12, ProxyVFTable[12], (void**)&g_pfnCGameUI_LoadingStarted);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 13, ProxyVFTable[13], (void**)&g_pfnCGameUI_LoadingFinished);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 14, ProxyVFTable[14], (void**)&g_pfnCGameUI_StartProgressBar);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 15, ProxyVFTable[15], (void**)&g_pfnCGameUI_ContinueProgressBar);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 16, ProxyVFTable[16], (void**)&g_pfnCGameUI_StopProgressBar);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 17, ProxyVFTable[17], (void**)&g_pfnCGameUI_SetProgressBarStatusText);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 18, ProxyVFTable[18], (void**)&g_pfnCGameUI_SetSecondaryProgressBar);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 19, ProxyVFTable[19], (void**)&g_pfnCGameUI_SetSecondaryProgressBarText);
+		//Slot 0 is IGameUI's Unknown() and is left untouched. Slots 1..19 are
+		//proxied and unhooked again in GameUI_UninstallHooks.
+		g_phook_CGameUI[1] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 1, ProxyVFTable[1], (void**)&g_pfnCGameUI_Initialize);
+		g_phook_CGameUI[2] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 2, ProxyVFTable[2], (void**)&g_pfnCGameUI_Start);
+		g_phook_CGameUI[3] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 3, ProxyVFTable[3], (void**)&g_pfnCGameUI_Shutdown);
+		g_phook_CGameUI[4] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 4, ProxyVFTable[4], (void**)&g_pfnCGameUI_ActivateGameUI);
+		g_phook_CGameUI[5] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 5, ProxyVFTable[5], (void**)&g_pfnCGameUI_ActivateDemoUI);
+		g_phook_CGameUI[6] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 6, ProxyVFTable[6], (void**)&g_pfnCGameUI_HasExclusiveInput);
+		g_phook_CGameUI[7] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 7, ProxyVFTable[7], (void**)&g_pfnCGameUI_RunFrame);
+		g_phook_CGameUI[8] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 8, ProxyVFTable[8], (void**)&g_pfnCGameUI_ConnectToServer);
+		g_phook_CGameUI[9] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 9, ProxyVFTable[9], (void**)&g_pfnCGameUI_DisconnectFromServer);
+		g_phook_CGameUI[10] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 10, ProxyVFTable[10], (void**)&g_pfnCGameUI_HideGameUI);
+		g_phook_CGameUI[11] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 11, ProxyVFTable[11], (void**)&g_pfnCGameUI_IsGameUIActive);
+		g_phook_CGameUI[12] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 12, ProxyVFTable[12], (void**)&g_pfnCGameUI_LoadingStarted);
+		g_phook_CGameUI[13] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 13, ProxyVFTable[13], (void**)&g_pfnCGameUI_LoadingFinished);
+		g_phook_CGameUI[14] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 14, ProxyVFTable[14], (void**)&g_pfnCGameUI_StartProgressBar);
+		g_phook_CGameUI[15] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 15, ProxyVFTable[15], (void**)&g_pfnCGameUI_ContinueProgressBar);
+		g_phook_CGameUI[16] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 16, ProxyVFTable[16], (void**)&g_pfnCGameUI_StopProgressBar);
+		g_phook_CGameUI[17] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 17, ProxyVFTable[17], (void**)&g_pfnCGameUI_SetProgressBarStatusText);
+		g_phook_CGameUI[18] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 18, ProxyVFTable[18], (void**)&g_pfnCGameUI_SetSecondaryProgressBar);
+		g_phook_CGameUI[19] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 19, ProxyVFTable[19], (void**)&g_pfnCGameUI_SetSecondaryProgressBarText);
 	}
 
 	if (1)
 	{
 		PVOID* ProxyVFTable = *(PVOID**)&s_GameConsoleProxy;
 
-		g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 1, ProxyVFTable[1], (void**)&g_pfnCGameConsole_Activate);
-		g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 2, ProxyVFTable[2], (void**)&g_pfnCGameConsole_Initialize);
-		g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 3, ProxyVFTable[3], (void**)&g_pfnCGameConsole_Hide);
-		g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 4, ProxyVFTable[4], (void**)&g_pfnCGameConsole_Clear);
-		g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 5, ProxyVFTable[5], (void**)&g_pfnCGameConsole_IsConsoleVisible);
-		g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 6, ProxyVFTable[6], (void**)&g_pfnCGameConsole_Printf);
-		g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 7, ProxyVFTable[7], (void**)&g_pfnCGameConsole_DPrintf);
-		g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 8, ProxyVFTable[8], (void**)&g_pfnCGameConsole_SetParent);
+		//Slot 0 is IGameConsole's Unknown() and is left untouched. Slots 1..8 are
+		//proxied and unhooked again in GameUI_UninstallHooks.
+		g_phook_CGameConsole[1] = g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 1, ProxyVFTable[1], (void**)&g_pfnCGameConsole_Activate);
+		g_phook_CGameConsole[2] = g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 2, ProxyVFTable[2], (void**)&g_pfnCGameConsole_Initialize);
+		g_phook_CGameConsole[3] = g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 3, ProxyVFTable[3], (void**)&g_pfnCGameConsole_Hide);
+		g_phook_CGameConsole[4] = g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 4, ProxyVFTable[4], (void**)&g_pfnCGameConsole_Clear);
+		g_phook_CGameConsole[5] = g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 5, ProxyVFTable[5], (void**)&g_pfnCGameConsole_IsConsoleVisible);
+		g_phook_CGameConsole[6] = g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 6, ProxyVFTable[6], (void**)&g_pfnCGameConsole_Printf);
+		g_phook_CGameConsole[7] = g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 7, ProxyVFTable[7], (void**)&g_pfnCGameConsole_DPrintf);
+		g_phook_CGameConsole[8] = g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 8, ProxyVFTable[8], (void**)&g_pfnCGameConsole_SetParent);
 	}
 
 	Install_InlineHook(GameUI_Panel_Init);
@@ -3893,6 +2707,9 @@ void GameUI_InstallHooks(void)
 	{
 		Install_InlineHook(CCareerBotFrame_ctor);
 	}
+
+	GameUI_PatchPanelSize();
+
 }
 
 void GameUI_UninstallHooks(void)
@@ -3925,272 +2742,59 @@ void GameUI_UninstallHooks(void)
 	Uninstall_Hook(GameUI_PropertySheet_HasHotkey);
 	Uninstall_Hook(GameUI_PropertySheet_PerformLayout);
 	Uninstall_Hook(GameUI_FocusNavGroup_GetCurrentFocus);
-	Uninstall_Hook(GameUI_Menu_MakeItemsVisibleInScrollRange)
+	Uninstall_Hook(GameUI_Menu_MakeItemsVisibleInScrollRange);
 
-		Uninstall_Hook(CCareerProfileFrame_ctor);
+	Uninstall_Hook(CCareerProfileFrame_ctor);
 	Uninstall_Hook(CCareerMapFrame_ctor);
 	Uninstall_Hook(CCareerBotFrame_ctor);
 
-}
-
-void ServerBrowser_PatchAddress_BaseGamesPage(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (g_iEngineType != ENGINE_GOLDSRC_HL25)
+	//Restores the IGameUI / IGameConsole vftable entries the proxies replaced.
+	//g_pGameUI and g_pGameConsole stay cached; only the hooks are dropped.
+	for (int i = 1; i < _ARRAYSIZE(g_phook_CGameUI); ++i)
 	{
-		const char sigs1[] = "servers/%sPage_Filters.res";
-		auto sPage_Filters_String = Search_Pattern_From_Size(DllInfo.RdataBase, DllInfo.RdataSize, sigs1);
-		if (!sPage_Filters_String)
-			sPage_Filters_String = Search_Pattern_From_Size(DllInfo.DataBase, DllInfo.DataSize, sigs1);
-		if (sPage_Filters_String)
+		if (g_phook_CGameUI[i])
 		{
-			char pattern[] = "\x68\x16\x01\x00\x00\x68\x70\x02\x00";
-			auto CBaseGamesPage_OnButtonToggled_SetSizeImm = Search_Pattern(pattern, DllInfo);
-			Sig_VarNotFound(CBaseGamesPage_OnButtonToggled_SetSizeImm);
+			g_pMetaHookAPI->UnHook(g_phook_CGameUI[i]);
+			g_phook_CGameUI[i] = NULL;
+		}
+	}
 
-			//gPrivateFuncs.CServerBrowserDialog_ctor = (decltype(gPrivateFuncs.CServerBrowserDialog_ctor))g_pMetaHookAPI->ReverseSearchFunctionBegin(DialogServerBrowser_Call, 0x800);
-			//Sig_FuncNotFound(CServerBrowserDialog_ctor);
-
-			typedef struct OnButtonToggled_SearchContext_s
-			{
-				const mh_dll_info_t& DllInfo;
-				const mh_dll_info_t& RealDllInfo;
-				std::set<PVOID> addrSets_SetSize;
-				int instCount_push270h{};
-			}OnButtonToggled_SearchContext;
-
-			OnButtonToggled_SearchContext ctx = { DllInfo, RealDllInfo };
-
-			ctx.instCount_push270h = 0;
-
-			g_pMetaHookAPI->DisasmRanges(CBaseGamesPage_OnButtonToggled_SetSizeImm, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-				auto pinst = (cs_insn*)inst;
-				auto ctx = (OnButtonToggled_SearchContext*)context;
-
-				if (address[0] == 0xE8 && instCount <= 8)
-				{
-					auto Candidate = GetCallAddress(address);
-
-					if (VGUI2_IsPanelSetSize(Candidate))
-					{
-						gPrivateFuncs.ServerBrowser_Panel_SetSize = (decltype(gPrivateFuncs.ServerBrowser_Panel_SetSize))
-							ConvertDllInfoSpace(Candidate, ctx->DllInfo, ctx->RealDllInfo);
-
-						ctx->addrSets_SetSize.emplace(address);
-					}
-
-					return TRUE;
-				}
-
-				if (address[0] == 0xCC)
-					return TRUE;
-
-				if (pinst->id == X86_INS_RET)
-					return TRUE;
-
-				return FALSE;
-
-				}, 0, &ctx);
-
-			Sig_FuncNotFound(ServerBrowser_Panel_SetSize);
-
-			char pattern2[] = "\x68\x16\x01\x00\x00";
-			PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
-			PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
-			while (SearchBegin < SearchLimit)
-			{
-				PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern2);
-				if (pFound)
-				{
-					if (ctx.addrSets_SetSize.find(pFound) == ctx.addrSets_SetSize.end())
-					{
-						ctx.instCount_push270h = 0;
-						g_pMetaHookAPI->DisasmRanges(pFound, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-							auto pinst = (cs_insn*)inst;
-							auto ctx = (OnButtonToggled_SearchContext*)context;
-
-							if (!ctx->instCount_push270h &&
-								pinst->id == X86_INS_PUSH &&
-								pinst->detail->x86.op_count == 1 &&
-								pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-								pinst->detail->x86.operands[0].imm == 0x270)
-							{
-								ctx->instCount_push270h = instCount;
-							}
-
-							if (address[0] == 0xE8 && instCount > ctx->instCount_push270h && instCount <= ctx->instCount_push270h + 5)
-							{
-								PVOID callTarget = GetCallAddress(address);
-								PVOID callTarget_RealDllInfoBased = ConvertDllInfoSpace(callTarget, ctx->DllInfo, ctx->RealDllInfo);
-
-								if (callTarget_RealDllInfoBased == gPrivateFuncs.ServerBrowser_Panel_SetSize)
-								{
-									ctx->addrSets_SetSize.emplace(address);
-									return TRUE;
-								}
-
-								if (!gPrivateFuncs.ServerBrowser_Panel_SetSize && VGUI2_IsPanelSetSize(callTarget))
-								{
-									gPrivateFuncs.ServerBrowser_Panel_SetSize = (decltype(gPrivateFuncs.ServerBrowser_Panel_SetSize))callTarget_RealDllInfoBased;
-
-									ctx->addrSets_SetSize.emplace(address);
-
-									return TRUE;
-								}
-							}
-
-							if (address[0] == 0xCC)
-								return TRUE;
-
-							if (pinst->id == X86_INS_RET)
-								return TRUE;
-
-							return FALSE;
-
-						}, 0, &ctx);
-					}
-
-					SearchBegin = pFound + Sig_Length(pattern2);
-				}
-				else
-				{
-					break;
-				}
-			}
-
-			for (auto addr : ctx.addrSets_SetSize)
-			{
-				g_pMetaHookAPI->InlinePatchRedirectBranch(addr, ServerBrowser_Panel_SetSize, NULL);
-			}
+	for (int i = 1; i < _ARRAYSIZE(g_phook_CGameConsole); ++i)
+	{
+		if (g_phook_CGameConsole[i])
+		{
+			g_pMetaHookAPI->UnHook(g_phook_CGameConsole[i]);
+			g_phook_CGameConsole[i] = NULL;
 		}
 	}
 }
 
-void ServerBrowser_PatchAddress_ServerBrowserDialog(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void ServerBrowser_PatchPanelSize(void)
 {
-	if (g_iEngineType != ENGINE_GOLDSRC_HL25)
-	{
-		typedef struct CServerBrowserDialog_ctor_SearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-			std::set<PVOID> addrSets_SetSize;
-			std::set<PVOID> addrSets_SetMinimumSize;
-			int instCount_push280h{};
-		}CServerBrowserDialog_ctor_SearchContext;
+	// HL25 already scales these dimensions. SvEngine still uses raw constants.
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		return;
 
-		CServerBrowserDialog_ctor_SearchContext ctx = { DllInfo, RealDllInfo };
-
-		char pattern[] = "\x68\x80\x01\x00\x00\x68\x80\x02\x00\x00";
-		PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
-		PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
-		while (SearchBegin < SearchLimit)
-		{
-			PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
-			if (pFound)
-			{
-				if (ctx.addrSets_SetSize.find(pFound) == ctx.addrSets_SetSize.end() &&
-					ctx.addrSets_SetMinimumSize.find(pFound) == ctx.addrSets_SetMinimumSize.end())
-				{
-					ctx.instCount_push280h = 0;
-
-					g_pMetaHookAPI->DisasmRanges(pFound, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-						auto pinst = (cs_insn*)inst;
-						auto ctx = (CServerBrowserDialog_ctor_SearchContext*)context;
-
-						if (!ctx->instCount_push280h &&
-							pinst->id == X86_INS_PUSH &&
-							pinst->detail->x86.op_count == 1 &&
-							pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-							pinst->detail->x86.operands[0].imm == 0x280)
-						{
-							ctx->instCount_push280h = instCount;
-						}
-
-						if (address[0] == 0xE8 && instCount > ctx->instCount_push280h && instCount <= ctx->instCount_push280h + 5)
-						{
-							PVOID callTarget = GetCallAddress(address);
-							PVOID callTarget_RealDllInfoBased = ConvertDllInfoSpace(callTarget, ctx->DllInfo, ctx->RealDllInfo);
-
-							if (gPrivateFuncs.ServerBrowser_Panel_SetSize == callTarget_RealDllInfoBased)
-							{
-								ctx->addrSets_SetSize.emplace(address);
-								return TRUE;
-							}
-
-							if (gPrivateFuncs.ServerBrowser_Panel_SetMinimumSize == callTarget_RealDllInfoBased)
-							{
-								ctx->addrSets_SetMinimumSize.emplace(address);
-								return TRUE;
-							}
-
-							if (!gPrivateFuncs.ServerBrowser_Panel_SetSize && VGUI2_IsPanelSetSize(callTarget))
-							{
-								gPrivateFuncs.ServerBrowser_Panel_SetSize = (decltype(gPrivateFuncs.ServerBrowser_Panel_SetSize))callTarget_RealDllInfoBased;
-								ctx->addrSets_SetSize.emplace(address);
-								return TRUE;
-							}
-
-							if (!gPrivateFuncs.ServerBrowser_Panel_SetMinimumSize && VGUI2_IsPanelSetMinimumSize(callTarget))
-							{
-								gPrivateFuncs.ServerBrowser_Panel_SetMinimumSize = (decltype(gPrivateFuncs.ServerBrowser_Panel_SetMinimumSize))callTarget_RealDllInfoBased;
-								ctx->addrSets_SetMinimumSize.emplace(address);
-								return TRUE;
-							}
-						}
-
-						if (address[0] == 0xCC)
-							return TRUE;
-
-						if (pinst->id == X86_INS_RET)
-							return TRUE;
-
-						return FALSE;
-
-					}, 0, &ctx);
-				}
-
-				SearchBegin = pFound + Sig_Length(pattern);
-			}
-			else
-			{
-				break;
-			}
-		}
-
-		for (auto insn : ctx.addrSets_SetSize)
-		{
-			g_pMetaHookAPI->InlinePatchRedirectBranch(insn, ServerBrowser_Panel_SetSize, NULL);
-		}
-
-		for (auto insn : ctx.addrSets_SetMinimumSize)
-		{
-			g_pMetaHookAPI->InlinePatchRedirectBranch(insn, ServerBrowser_Panel_SetMinimumSize, NULL);
-		}
-	}
+	PatchPanelSizeCallsites(g_ServerBrowserDllInfo.ImageBase, "serverbrowser", "vgui2_Panel_SetSize_Const_callsite_",
+		ServerBrowser_Panel_SetSize, (PVOID*)&gPrivateFuncs.ServerBrowser_Panel_SetSize);
+	PatchPanelSizeCallsites(g_ServerBrowserDllInfo.ImageBase, "serverbrowser", "vgui2_Panel_SetMinimumSize_Const_callsite_",
+		ServerBrowser_Panel_SetMinimumSize, (PVOID*)&gPrivateFuncs.ServerBrowser_Panel_SetMinimumSize);
 }
 
 void ServerBrowser_FillAddress_KeyValues(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	gPrivateFuncs.ServerBrowser_KeyValues_vftable = VGUI2_FindKeyValueVFTable(g_ServerBrowserDllInfo, g_ServerBrowserDllInfo);
-	Sig_FuncNotFound(ServerBrowser_KeyValues_vftable);
-
 	gPrivateFuncs.ServerBrowser_KeyValues_LoadFromFile = (decltype(gPrivateFuncs.ServerBrowser_KeyValues_LoadFromFile))
-		GetVFunctionFromVFTable(
-			gPrivateFuncs.ServerBrowser_KeyValues_vftable,
-			2,
-			g_ServerBrowserDllInfo,
-			g_ServerBrowserDllInfo,
-			g_ServerBrowserDllInfo);
+		GamedataResolveIfAvailable(RealDllInfo.ImageBase, "serverbrowser",
+			{ "vgui2::KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)",
+			  "KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)" },
+			MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 	Sig_FuncNotFound(ServerBrowser_KeyValues_LoadFromFile);
 }
 
 void ServerBrowser_FillAddress_PanelInit(void)
 {
 	gPrivateFuncs.ServerBrowser_Panel_Init = (decltype(gPrivateFuncs.ServerBrowser_Panel_Init))
-		GamedataResolvePtr(g_ServerBrowserDllInfo.ImageBase, "vgui2::Panel::Init(int, int, int, int)", MH_GAMESYMBOL_KIND_FUNCTION);
+		GamedataResolvePtr(g_ServerBrowserDllInfo.ImageBase, "serverbrowser", "vgui2::Panel::Init(int, int, int, int)", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void ServerBrowser_FillAddress(void)
@@ -4201,10 +2805,6 @@ void ServerBrowser_FillAddress(void)
 		return;
 	}
 
-	ServerBrowser_PatchAddress_BaseGamesPage(g_ServerBrowserDllInfo, g_ServerBrowserDllInfo);
-
-	ServerBrowser_PatchAddress_ServerBrowserDialog(g_ServerBrowserDllInfo, g_ServerBrowserDllInfo);
-
 	ServerBrowser_FillAddress_KeyValues(g_ServerBrowserDllInfo, g_ServerBrowserDllInfo);
 
 	ServerBrowser_FillAddress_PanelInit();
@@ -4212,12 +2812,18 @@ void ServerBrowser_FillAddress(void)
 
 void ServerBrowser_InstallHooks(void)
 {
+	ServerBrowser_PatchPanelSize();
+
 	Install_InlineHook(ServerBrowser_Panel_Init);
 	Install_InlineHook(ServerBrowser_KeyValues_LoadFromFile);
+
+	g_bIsServerBrowserHooked = true;
 }
 
 void ServerBrowser_UninstallHooks(void)
 {
 	Uninstall_Hook(ServerBrowser_Panel_Init);
 	Uninstall_Hook(ServerBrowser_KeyValues_LoadFromFile);
+
+	g_bIsServerBrowserHooked = false;
 }

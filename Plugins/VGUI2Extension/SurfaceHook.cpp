@@ -43,6 +43,13 @@ bool g_bIsForcingHDProportional = false;
 
 static CUtlVector<CUtlSymbol> m_CustomFontFileNames;
 
+//One VFTHook per ISurface slot installed by Surface_InstallHooks; kept so
+//Surface_UninstallHooks can UnHook them. The HL25 and legacy branches hook the
+//same slot layout on different objects (g_pSurface_HL25 / g_pSurface) and only
+//one branch runs, so they share this slot-indexed array; sized past the highest
+//slot either branch references.
+static hook_t* g_phook_CSurface[105] = { NULL };
+
 using namespace vgui;
 
 class CSurfaceProxy : public ISurface
@@ -2007,62 +2014,76 @@ void Surface_InstallHooks(void)
 	{
 		PVOID* pVFTable = *(PVOID**)&g_SurfaceProxy_HL25;
 
-		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 1, (void*)pVFTable[1], (void**)&m_pfnSurface_Shutdown);
-		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 13, (void*)pVFTable[13], (void**)&m_pfnDrawSetTextFont);
-		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 15, (void*)pVFTable[15], (void**)&m_pfnDrawSetTextColor);
-		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 14, (void*)pVFTable[14], (void**)&m_pfnDrawSetTextColor2);
-		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 19, (void *)pVFTable[19], (void **)&m_pfnDrawUnicodeChar);
-		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 20, (void *)pVFTable[20], (void **)&m_pfnDrawUnicodeCharAdd);
-		//g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 45, (void*)pVFTable[45], (void**)&m_pfnSetCursor);
-		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 50, (void *)pVFTable[50], (void **)&m_pfnSupportsFeature);
-		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, kSurfaceVTableIndex_GetScreenSize, (void *)pVFTable[kSurfaceVTableIndex_GetScreenSize], (void **)&m_pfnGetScreenSize);
-		//g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 54, (void*)pVFTable[54], (void**)&m_pfnUnlockCursor);
-		//g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 55, (void*)pVFTable[55], (void**)&m_pfnLockCursor);
-		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 59, (void *)pVFTable[59], (void **)&m_pfnCreateFont);
-		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 60, (void *)pVFTable[60], (void **)&m_pfnAddGlyphSetToFont);
-		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 61, (void *)pVFTable[61], (void **)&m_pfnAddCustomFontFile);
-		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 62, (void *)pVFTable[62], (void **)&m_pfnGetFontTall);
-		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 63, (void *)pVFTable[63], (void **)&m_pfnGetCharABCwide);
-		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 64, (void *)pVFTable[64], (void **)&m_pfnGetCharacterWidth);
-		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 65, (void *)pVFTable[65], (void **)&m_pfnGetTextSize);
-		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 82, (void*)pVFTable[82], (void**)&m_pfnGetProportionalBase);
-		//g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 83, (void*)pVFTable[83], (void**)&m_pfnCalculateMouseVisible);
-		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 89, (void *)pVFTable[89], (void **)&m_pfnGetFontAscent);
-		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 91, (void*)pVFTable[91], (void**)&m_pfnSetLanguage);
-		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 101, (void*)pVFTable[101], (void**)&m_pfnGetFontBlur);
-		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 102, (void*)pVFTable[102], (void**)&m_pfnIsFontAdditive);
-		//g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 104, (void*)pVFTable[104], (void**)&m_pfnGetHDProportionalBase);
+		//Each installed hook is saved so Surface_UninstallHooks can restore the
+		//vftable; the commented-out slots keep the engine's originals.
+		g_phook_CSurface[1] = g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 1, (void*)pVFTable[1], (void**)&m_pfnSurface_Shutdown);
+		g_phook_CSurface[13] = g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 13, (void*)pVFTable[13], (void**)&m_pfnDrawSetTextFont);
+		g_phook_CSurface[15] = g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 15, (void*)pVFTable[15], (void**)&m_pfnDrawSetTextColor);
+		g_phook_CSurface[14] = g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 14, (void*)pVFTable[14], (void**)&m_pfnDrawSetTextColor2);
+		g_phook_CSurface[19] = g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 19, (void *)pVFTable[19], (void **)&m_pfnDrawUnicodeChar);
+		g_phook_CSurface[20] = g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 20, (void *)pVFTable[20], (void **)&m_pfnDrawUnicodeCharAdd);
+		//g_phook_CSurface[45] = g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 45, (void*)pVFTable[45], (void**)&m_pfnSetCursor);
+		g_phook_CSurface[50] = g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 50, (void *)pVFTable[50], (void **)&m_pfnSupportsFeature);
+		g_phook_CSurface[kSurfaceVTableIndex_GetScreenSize] = g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, kSurfaceVTableIndex_GetScreenSize, (void *)pVFTable[kSurfaceVTableIndex_GetScreenSize], (void **)&m_pfnGetScreenSize);
+		//g_phook_CSurface[54] = g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 54, (void*)pVFTable[54], (void**)&m_pfnUnlockCursor);
+		//g_phook_CSurface[55] = g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 55, (void*)pVFTable[55], (void**)&m_pfnLockCursor);
+		g_phook_CSurface[59] = g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 59, (void *)pVFTable[59], (void **)&m_pfnCreateFont);
+		g_phook_CSurface[60] = g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 60, (void *)pVFTable[60], (void **)&m_pfnAddGlyphSetToFont);
+		g_phook_CSurface[61] = g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 61, (void *)pVFTable[61], (void **)&m_pfnAddCustomFontFile);
+		g_phook_CSurface[62] = g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 62, (void *)pVFTable[62], (void **)&m_pfnGetFontTall);
+		g_phook_CSurface[63] = g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 63, (void *)pVFTable[63], (void **)&m_pfnGetCharABCwide);
+		g_phook_CSurface[64] = g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 64, (void *)pVFTable[64], (void **)&m_pfnGetCharacterWidth);
+		g_phook_CSurface[65] = g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 65, (void *)pVFTable[65], (void **)&m_pfnGetTextSize);
+		g_phook_CSurface[82] = g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 82, (void*)pVFTable[82], (void**)&m_pfnGetProportionalBase);
+		//g_phook_CSurface[83] = g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 83, (void*)pVFTable[83], (void**)&m_pfnCalculateMouseVisible);
+		g_phook_CSurface[89] = g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 89, (void *)pVFTable[89], (void **)&m_pfnGetFontAscent);
+		g_phook_CSurface[91] = g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 91, (void*)pVFTable[91], (void**)&m_pfnSetLanguage);
+		g_phook_CSurface[101] = g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 101, (void*)pVFTable[101], (void**)&m_pfnGetFontBlur);
+		g_phook_CSurface[102] = g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 102, (void*)pVFTable[102], (void**)&m_pfnIsFontAdditive);
+		//g_phook_CSurface[104] = g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 104, (void*)pVFTable[104], (void**)&m_pfnGetHDProportionalBase);
 	}
 	else
 	{
 		PVOID* pVFTable = *(PVOID**)&g_SurfaceProxy;
 
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 1, (void*)pVFTable[1], (void**)&m_pfnSurface_Shutdown);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 13, (void*)pVFTable[13], (void**)&m_pfnDrawSetTextFont);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 15, (void*)pVFTable[15], (void**)&m_pfnDrawSetTextColor);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 14, (void*)pVFTable[14], (void**)&m_pfnDrawSetTextColor2);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 19, (void*)pVFTable[19], (void**)&m_pfnDrawUnicodeChar);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 20, (void*)pVFTable[20], (void**)&m_pfnDrawUnicodeCharAdd);
-		//g_pMetaHookAPI->VFTHook(g_pSurface, 0, 45, (void*)pVFTable[45], (void**)&m_pfnSetCursor);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 50, (void*)pVFTable[50], (void**)&m_pfnSupportsFeature);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, kSurfaceVTableIndex_GetScreenSize, (void*)pVFTable[kSurfaceVTableIndex_GetScreenSize], (void**)&m_pfnGetScreenSize);
-		//g_pMetaHookAPI->VFTHook(g_pSurface, 0, 54, (void*)pVFTable[54], (void**)&m_pfnUnlockCursor);
-		//g_pMetaHookAPI->VFTHook(g_pSurface, 0, 55, (void*)pVFTable[55], (void**)&m_pfnLockCursor);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 59, (void*)pVFTable[59], (void**)&m_pfnCreateFont);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 60, (void*)pVFTable[60], (void**)&m_pfnAddGlyphSetToFont);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 61, (void*)pVFTable[61], (void**)&m_pfnAddCustomFontFile);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 62, (void*)pVFTable[62], (void**)&m_pfnGetFontTall);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 63, (void*)pVFTable[63], (void**)&m_pfnGetCharABCwide);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 64, (void*)pVFTable[64], (void**)&m_pfnGetCharacterWidth);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 65, (void*)pVFTable[65], (void**)&m_pfnGetTextSize);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 82, (void*)pVFTable[82], (void**)&m_pfnGetProportionalBase);
-		//g_pMetaHookAPI->VFTHook(g_pSurface, 0, 83, (void*)pVFTable[83], (void**)&m_pfnCalculateMouseVisible);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 89, (void*)pVFTable[89], (void**)&m_pfnGetFontAscent);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 91, (void*)pVFTable[91], (void**)&m_pfnSetLanguage);
+		//Each installed hook is saved so Surface_UninstallHooks can restore the
+		//vftable; the commented-out slots keep the engine's originals.
+		g_phook_CSurface[1] = g_pMetaHookAPI->VFTHook(g_pSurface, 0, 1, (void*)pVFTable[1], (void**)&m_pfnSurface_Shutdown);
+		g_phook_CSurface[13] = g_pMetaHookAPI->VFTHook(g_pSurface, 0, 13, (void*)pVFTable[13], (void**)&m_pfnDrawSetTextFont);
+		g_phook_CSurface[15] = g_pMetaHookAPI->VFTHook(g_pSurface, 0, 15, (void*)pVFTable[15], (void**)&m_pfnDrawSetTextColor);
+		g_phook_CSurface[14] = g_pMetaHookAPI->VFTHook(g_pSurface, 0, 14, (void*)pVFTable[14], (void**)&m_pfnDrawSetTextColor2);
+		g_phook_CSurface[19] = g_pMetaHookAPI->VFTHook(g_pSurface, 0, 19, (void*)pVFTable[19], (void**)&m_pfnDrawUnicodeChar);
+		g_phook_CSurface[20] = g_pMetaHookAPI->VFTHook(g_pSurface, 0, 20, (void*)pVFTable[20], (void**)&m_pfnDrawUnicodeCharAdd);
+		//g_phook_CSurface[45] = g_pMetaHookAPI->VFTHook(g_pSurface, 0, 45, (void*)pVFTable[45], (void**)&m_pfnSetCursor);
+		g_phook_CSurface[50] = g_pMetaHookAPI->VFTHook(g_pSurface, 0, 50, (void*)pVFTable[50], (void**)&m_pfnSupportsFeature);
+		g_phook_CSurface[kSurfaceVTableIndex_GetScreenSize] = g_pMetaHookAPI->VFTHook(g_pSurface, 0, kSurfaceVTableIndex_GetScreenSize, (void*)pVFTable[kSurfaceVTableIndex_GetScreenSize], (void**)&m_pfnGetScreenSize);
+		//g_phook_CSurface[54] = g_pMetaHookAPI->VFTHook(g_pSurface, 0, 54, (void*)pVFTable[54], (void**)&m_pfnUnlockCursor);
+		//g_phook_CSurface[55] = g_pMetaHookAPI->VFTHook(g_pSurface, 0, 55, (void*)pVFTable[55], (void**)&m_pfnLockCursor);
+		g_phook_CSurface[59] = g_pMetaHookAPI->VFTHook(g_pSurface, 0, 59, (void*)pVFTable[59], (void**)&m_pfnCreateFont);
+		g_phook_CSurface[60] = g_pMetaHookAPI->VFTHook(g_pSurface, 0, 60, (void*)pVFTable[60], (void**)&m_pfnAddGlyphSetToFont);
+		g_phook_CSurface[61] = g_pMetaHookAPI->VFTHook(g_pSurface, 0, 61, (void*)pVFTable[61], (void**)&m_pfnAddCustomFontFile);
+		g_phook_CSurface[62] = g_pMetaHookAPI->VFTHook(g_pSurface, 0, 62, (void*)pVFTable[62], (void**)&m_pfnGetFontTall);
+		g_phook_CSurface[63] = g_pMetaHookAPI->VFTHook(g_pSurface, 0, 63, (void*)pVFTable[63], (void**)&m_pfnGetCharABCwide);
+		g_phook_CSurface[64] = g_pMetaHookAPI->VFTHook(g_pSurface, 0, 64, (void*)pVFTable[64], (void**)&m_pfnGetCharacterWidth);
+		g_phook_CSurface[65] = g_pMetaHookAPI->VFTHook(g_pSurface, 0, 65, (void*)pVFTable[65], (void**)&m_pfnGetTextSize);
+		g_phook_CSurface[82] = g_pMetaHookAPI->VFTHook(g_pSurface, 0, 82, (void*)pVFTable[82], (void**)&m_pfnGetProportionalBase);
+		//g_phook_CSurface[83] = g_pMetaHookAPI->VFTHook(g_pSurface, 0, 83, (void*)pVFTable[83], (void**)&m_pfnCalculateMouseVisible);
+		g_phook_CSurface[89] = g_pMetaHookAPI->VFTHook(g_pSurface, 0, 89, (void*)pVFTable[89], (void**)&m_pfnGetFontAscent);
+		g_phook_CSurface[91] = g_pMetaHookAPI->VFTHook(g_pSurface, 0, 91, (void*)pVFTable[91], (void**)&m_pfnSetLanguage);
 	}
 }
 
 void Surface_UninstallHooks(void)
 {
-	//TODO unhook VFTHooks
+	//Restores the ISurface / ISurface_HL25 vftable entries the matching proxy
+	//replaced. g_pSurface and g_pSurface_HL25 stay cached; only the hooks are
+	//dropped.
+	for (int i = 1; i < _ARRAYSIZE(g_phook_CSurface); ++i)
+	{
+		if (g_phook_CSurface[i])
+		{
+			g_pMetaHookAPI->UnHook(g_phook_CSurface[i]);
+			g_phook_CSurface[i] = NULL;
+		}
+	}
 }

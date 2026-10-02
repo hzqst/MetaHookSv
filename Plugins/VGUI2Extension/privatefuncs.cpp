@@ -1,5 +1,4 @@
 #include <metahook.h>
-#include <capstone.h>
 #include "plugins.h"
 #include "exportfuncs.h"
 #include "privatefuncs.h"
@@ -20,14 +19,17 @@ char m_szCurrentGameLanguage[128] = { 0 };
 
 private_funcs_t gPrivateFuncs = { 0 };
 
-static hook_t* g_phook_LanguageRegistry = nullptr;
-
 HMODULE g_hGameUI = NULL;
 HMODULE g_hServerBrowser = NULL;
+HMODULE g_hVGUI2 = NULL;
+
 bool g_bIsServerBrowserHooked = false;
 
 mh_dll_info_t g_GameUIDllInfo = { 0 };
 mh_dll_info_t g_ServerBrowserDllInfo = { 0 };
+mh_dll_info_t g_VGUI2DllInfo = { 0 };
+
+static hook_t* g_phook_LanguageRegistry = nullptr;
 
 const char* GetCurrentGameLanguage()
 {
@@ -54,212 +56,24 @@ void SDL2_FillAddress(void)
 	}
 }
 
-PVOID *VGUI2_FindMenuVFTable(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	const char sigs[] = "MenuScrollBar";
-	auto MenuScrollBar_String = Search_Pattern_From_Size(DllInfo.RdataBase, DllInfo.RdataSize, sigs);
-	if (!MenuScrollBar_String)
-		MenuScrollBar_String = Search_Pattern_From_Size(DllInfo.DataBase, DllInfo.DataSize, sigs);
-
-	if (!MenuScrollBar_String)
-		return NULL;
-
-	char pattern[] = "\x6A\x01\x68\x2A\x2A\x2A\x2A";
-	*(DWORD*)(pattern + 3) = (DWORD)MenuScrollBar_String;
-	auto MenuScrollBar_PushString = Search_Pattern(pattern, DllInfo);
-
-	if (!MenuScrollBar_PushString)
-		return NULL;
-
-	typedef struct Menu_SearchContext_s
-	{
-		const mh_dll_info_t& DllInfo;
-
-		PVOID Menu_ctor{};
-		PVOID* Menu_vftable{};
-
-	}Menu_SearchContext;
-
-	Menu_SearchContext ctx = { DllInfo };
-
-	ctx.Menu_ctor = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(MenuScrollBar_PushString, 0x500, [](PUCHAR Candidate) {
-
-		if (Candidate[0] == 0x55 &&
-			Candidate[1] == 0x8B &&
-			Candidate[2] == 0xEC)
-			return TRUE;
-
-		//.text:10027EC0 53                                                  push    ebx
-		//.text : 10027EC1 8B DC                                               mov     ebx, esp
-		if (Candidate[0] == 0x53 &&
-			Candidate[1] == 0x8B &&
-			Candidate[2] == 0xDC)
-			return TRUE;
-
-		//.text:1006A220 8B 44 24 08                                         mov     eax, [esp+arg_4]
-		//.text:1006A224 83 EC 08                                            sub     esp, 8
-		if (Candidate[0] == 0x8B &&
-			Candidate[1] == 0x44 &&
-			Candidate[2] == 0x24 &&
-			Candidate[4] == 0x83 &&
-			Candidate[5] == 0xEC)
-		{
-			return TRUE;
-		}
-
-		return FALSE;
-	});
-
-	if (!ctx.Menu_ctor)
-		return NULL;
-
-	g_pMetaHookAPI->DisasmRanges(ctx.Menu_ctor, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (Menu_SearchContext*)context;
-
-		if (!ctx->Menu_vftable)
-		{
-			if (pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.disp == 0 &&
-				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				((PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->DllInfo.RdataBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.RdataBase + ctx->DllInfo.RdataSize))
-			{
-				auto candidate = (PVOID*)pinst->detail->x86.operands[1].imm;
-
-				if (candidate[0] >= (PUCHAR)ctx->DllInfo.TextBase && candidate[0] < (PUCHAR)ctx->DllInfo.TextBase + ctx->DllInfo.TextSize)
-				{
-					ctx->Menu_vftable = candidate;
-				}
-			}
-		}
-
-		if(ctx->Menu_vftable)
-			return TRUE;
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-	}, 0, & ctx);
-
-	return (PVOID*)ConvertDllInfoSpace((PVOID)ctx.Menu_vftable, DllInfo, RealDllInfo);
-}
-
-PVOID *VGUI2_FindKeyValueVFTable(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	const char sigs[] = "CursorEnteredMenuButton\0";
-	auto CursorEnteredMenuButton_String = Search_Pattern_From_Size(DllInfo.RdataBase, DllInfo.RdataSize, sigs);
-	if (!CursorEnteredMenuButton_String)
-		CursorEnteredMenuButton_String = Search_Pattern_From_Size(DllInfo.DataBase, DllInfo.DataSize, sigs);
-
-	if (!CursorEnteredMenuButton_String)
-		return NULL;
-
-	char pattern[] = "\x74\x2A\x68\x2A\x2A\x2A\x2A";
-	*(DWORD*)(pattern + 3) = (DWORD)CursorEnteredMenuButton_String;
-	auto CursorEnteredMenuButton_PushString = Search_Pattern(pattern, DllInfo);
-
-	if (!CursorEnteredMenuButton_PushString)
-		return NULL;
-
-	typedef struct KeyValues_SearchContext_s
-	{
-		const mh_dll_info_t& DllInfo;
-
-		PVOID KeyValues_ctor{};
-		PVOID* KeyValues_vftable{};
-
-	}KeyValues_SearchContext;
-
-	KeyValues_SearchContext ctx = { DllInfo };
-
-	g_pMetaHookAPI->DisasmRanges(CursorEnteredMenuButton_PushString, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (KeyValues_SearchContext*)context;
-
-		if (address[0] == 0xE8 && instCount <= 5)
-		{
-			ctx->KeyValues_ctor = (decltype(ctx->KeyValues_ctor))GetCallAddress(address);
-
-			g_pMetaHookAPI->DisasmRanges(ctx->KeyValues_ctor, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-				auto pinst = (cs_insn*)inst;
-				auto ctx = (KeyValues_SearchContext*)context;
-
-				if (!ctx->KeyValues_vftable)
-				{
-					if (pinst->id == X86_INS_MOV &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-						pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-						((PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->DllInfo.RdataBase &&
-							(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.RdataBase + ctx->DllInfo.RdataSize))
-					{
-						auto candidate = (PVOID*)pinst->detail->x86.operands[1].imm;
-
-						if (candidate[0] >= (PUCHAR)ctx->DllInfo.TextBase && candidate[0] < (PUCHAR)ctx->DllInfo.TextBase + ctx->DllInfo.TextSize)
-						{
-							ctx->KeyValues_vftable = candidate;
-						}
-					}
-				}
-
-				if (ctx->KeyValues_vftable)
-					return TRUE;
-
-				if (address[0] == 0xCC)
-					return TRUE;
-
-				if (pinst->id == X86_INS_RET)
-					return TRUE;
-
-				return FALSE;
-
-				}, 0, ctx);
-
-			return TRUE;
-		}
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-	}, 0, &ctx);
-
-	return (PVOID *)ConvertDllInfoSpace((PVOID)ctx.KeyValues_vftable, DllInfo, RealDllInfo);
-}
-
 void Engine_FillAddress_PanelInit(const mh_dll_info_t& RealDllInfo)
 {
 	gPrivateFuncs.EngineVGUI2_Panel_Init = (decltype(gPrivateFuncs.EngineVGUI2_Panel_Init))
-		GamedataResolvePtr(RealDllInfo.ImageBase, "vgui2::Panel::Init(int, int, int, int)", MH_GAMESYMBOL_KIND_FUNCTION);
+		GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "vgui2::Panel::Init(int, int, int, int)", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void Engine_FillAddress_GetClientTime(const mh_dll_info_t& RealDllInfo)
 {
-	cl_time = (decltype(cl_time))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_time", MH_GAMESYMBOL_KIND_GLOBAL);
-	cl_oldtime = (decltype(cl_oldtime))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_oldtime", MH_GAMESYMBOL_KIND_GLOBAL);
+	cl_time = (decltype(cl_time))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "cl_time", MH_GAMESYMBOL_KIND_GLOBAL);
+	cl_oldtime = (decltype(cl_oldtime))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "cl_oldtime", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Engine_FillAddress_HostParms(const mh_dll_info_t& RealDllInfo)
 {
-	host_parms = (decltype(host_parms))GamedataResolvePtr(RealDllInfo.ImageBase, "host_parms", MH_GAMESYMBOL_KIND_GLOBAL);
+	host_parms = (decltype(host_parms))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "host_parms", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
-void Engine_PatchAddress_VGUIClient001(const mh_dll_info_t&, const mh_dll_info_t& RealDllInfo)
+void Engine_PatchAddress_VGUIClient001(const mh_dll_info_t& RealDllInfo)
 {
 	const char* patchName = "VGUIClient001_CreateInterface";
 	const auto status = g_pMetaHookAPI->IsGameSymbolAvailable(RealDllInfo.ImageBase, patchName);
@@ -267,7 +81,7 @@ void Engine_PatchAddress_VGUIClient001(const mh_dll_info_t&, const mh_dll_info_t
 	{
 		// Legacy engines obtain the factory through the zero-argument ClientFactory callback.
 		g_pClientFactory = (decltype(g_pClientFactory))GamedataResolvePtr(
-			RealDllInfo.ImageBase, "g_pClientFactory", MH_GAMESYMBOL_KIND_GLOBAL);
+			RealDllInfo.ImageBase, "engine", "g_pClientFactory", MH_GAMESYMBOL_KIND_GLOBAL);
 		return;
 	}
 	if (status != MH_GAMESYMBOL_OK)
@@ -278,12 +92,14 @@ void Engine_PatchAddress_VGUIClient001(const mh_dll_info_t&, const mh_dll_info_t
 	}
 
 	// The PATCH is the Sys_GetFactory(hClientDLL) CALL, not the interface query.
-	auto address = (PUCHAR)GamedataResolvePtr(RealDllInfo.ImageBase, patchName, MH_GAMESYMBOL_KIND_PATCH);
-	gPrivateFuncs.VGUIClient001_CreateInterface = (decltype(gPrivateFuncs.VGUIClient001_CreateInterface))GetCallAddress(address);
-	g_pMetaHookAPI->InlinePatchRedirectBranch(address, VGUIClient001_CreateInterface, NULL);
+	{
+		auto address = (PUCHAR)GamedataResolvePtr(RealDllInfo.ImageBase, "engine", patchName, MH_GAMESYMBOL_KIND_PATCH);
+		gPrivateFuncs.VGUIClient001_CreateInterface = (decltype(gPrivateFuncs.VGUIClient001_CreateInterface))GetCallAddress(address);
+		g_pMetaHookAPI->InlinePatchRedirectBranch(address, VGUIClient001_CreateInterface, NULL);
+	}
 }
 
-void Engine_PatchAddress_LanguageStrncpy(const mh_dll_info_t&, const mh_dll_info_t& RealDllInfo)
+void Engine_PatchAddress_LanguageStrncpy(const mh_dll_info_t& RealDllInfo)
 {
 	// Old engines read the registry directly instead of copying an English literal.
 	if (gPrivateFuncs.Sys_GetRegKeyValueUnderRoot)
@@ -297,7 +113,7 @@ void Engine_PatchAddress_LanguageStrncpy(const mh_dll_info_t&, const mh_dll_info
 	PVOID patchSites[_countof(patchNames)] = {};
 	for (size_t i = 0; i < _countof(patchNames); ++i)
 	{
-		patchSites[i] = GamedataResolvePtr(RealDllInfo.ImageBase, patchNames[i], MH_GAMESYMBOL_KIND_PATCH);
+		patchSites[i] = GamedataResolvePtr(RealDllInfo.ImageBase, "engine", patchNames[i], MH_GAMESYMBOL_KIND_PATCH);
 	}
 
 	for (size_t i = 0; i < _countof(patchNames); ++i)
@@ -313,14 +129,14 @@ void Engine_PatchAddress_LanguageStrncpy(const mh_dll_info_t&, const mh_dll_info
 
 void Engine_FillAddress_StaticEngineSurface(const mh_dll_info_t& RealDllInfo)
 {
-	staticEngineSurface = (decltype(staticEngineSurface))GamedataResolvePtr(RealDllInfo.ImageBase, "staticEngineSurface", MH_GAMESYMBOL_KIND_GLOBAL);
+	staticEngineSurface = (decltype(staticEngineSurface))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "staticEngineSurface", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Engine_FillAddress_Sys_GetRegKeyValueUnderRoot(const mh_dll_info_t& RealDllInfo)
 {
 	// For blob engine only
 	gPrivateFuncs.Sys_GetRegKeyValueUnderRoot = (decltype(gPrivateFuncs.Sys_GetRegKeyValueUnderRoot))
-		GamedataResolvePtrIfAvailable(RealDllInfo.ImageBase, "Sys_GetRegKeyValueUnderRoot", MH_GAMESYMBOL_KIND_FUNCTION);
+		GamedataResolvePtrIfAvailable(RealDllInfo.ImageBase, "engine", "Sys_GetRegKeyValueUnderRoot", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void Engine_FillAddress(const mh_dll_info_t& RealDllInfo)
@@ -340,7 +156,7 @@ void Client_FillAddress_VisibleMouse(const mh_dll_info_t& RealDllInfo)
 	if (!g_IsNativeClientVGUI2)
 	{
 		g_iVisibleMouse = (decltype(g_iVisibleMouse))GamedataResolvePtrIfAvailable(
-			RealDllInfo.ImageBase, "g_iVisibleMouse", MH_GAMESYMBOL_KIND_GLOBAL);
+			RealDllInfo.ImageBase, "client", "g_iVisibleMouse", MH_GAMESYMBOL_KIND_GLOBAL);
 	}
 }
 
@@ -364,7 +180,7 @@ void Client_FillAddress(const mh_dll_info_t& RealDllInfo)
 	Client_FillAddress_VisibleMouse(RealDllInfo);
 }
 
-void Engine_InstallHooks(void)
+void Engine_InstallHook_Sys_GetRegKeyValueUnderRoot()
 {
 	if (gPrivateFuncs.Sys_GetRegKeyValueUnderRoot && !g_phook_LanguageRegistry)
 	{
@@ -374,6 +190,13 @@ void Engine_InstallHooks(void)
 		if (!g_phook_LanguageRegistry)
 			Sys_Error("Could not install the engine language registry hook.");
 	}
+}
+
+void Engine_InstallHooks(void)
+{
+	Engine_PatchAddress_VGUIClient001(g_EngineDLLInfo);
+	Engine_PatchAddress_LanguageStrncpy(g_EngineDLLInfo);
+	Engine_InstallHook_Sys_GetRegKeyValueUnderRoot();
 }
 
 void Engine_UninstallHooks(void)
@@ -404,8 +227,6 @@ static HMODULE WINAPI NewLoadLibraryA_GameUI(LPCSTR lpLibFileName)
 	{
 		ServerBrowser_FillAddress();
 		ServerBrowser_InstallHooks();
-
-		g_bIsServerBrowserHooked = true;
 	}
 	
 	return result;
@@ -437,10 +258,24 @@ void DllLoadNotification(mh_load_dll_notification_context_t* ctx)
 			g_ServerBrowserDllInfo.RdataBase = g_pMetaHookAPI->GetSectionByName(g_ServerBrowserDllInfo.ImageBase, ".rdata\0\0", &g_ServerBrowserDllInfo.RdataSize);
 			g_ServerBrowserDllInfo.DataBase = g_pMetaHookAPI->GetSectionByName(g_ServerBrowserDllInfo.ImageBase, ".data\0\0\0", &g_ServerBrowserDllInfo.DataSize);
 		}
+		else if (ctx->BaseDllName && ctx->hModule && !_wcsicmp(ctx->BaseDllName, L"vgui2.dll"))
+		{
+			g_hVGUI2 = ctx->hModule;
+
+			g_VGUI2DllInfo.ImageBase = g_pMetaHookAPI->GetModuleBase(g_hVGUI2);
+			g_VGUI2DllInfo.ImageSize = g_pMetaHookAPI->GetModuleSize(g_VGUI2DllInfo.ImageBase);
+			g_VGUI2DllInfo.TextBase = g_pMetaHookAPI->GetSectionByName(g_VGUI2DllInfo.ImageBase, ".text\0\0\0", &g_VGUI2DllInfo.TextSize);
+			g_VGUI2DllInfo.RdataBase = g_pMetaHookAPI->GetSectionByName(g_VGUI2DllInfo.ImageBase, ".rdata\0\0", &g_VGUI2DllInfo.RdataSize);
+			g_VGUI2DllInfo.DataBase = g_pMetaHookAPI->GetSectionByName(g_VGUI2DllInfo.ImageBase, ".data\0\0\0", &g_VGUI2DllInfo.DataSize);
+		}
 	}
 	else if (ctx->flags & LOAD_DLL_NOTIFICATION_IS_UNLOAD)
 	{
-		if (ctx->hModule == g_hGameUI)
+		if (ctx->hModule == g_hVGUI2)
+		{
+			g_hVGUI2 = NULL;
+		}
+		else if (ctx->hModule == g_hGameUI)
 		{
 			g_hGameUI = NULL;
 		}
@@ -448,7 +283,6 @@ void DllLoadNotification(mh_load_dll_notification_context_t* ctx)
 		{
 			ServerBrowser_UninstallHooks();
 			g_hServerBrowser = NULL;
-			g_bIsServerBrowserHooked = false;
 		}
 	}
 }

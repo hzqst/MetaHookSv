@@ -1,5 +1,4 @@
 #include <metahook.h>
-#include <capstone.h>
 #include <vgui/IInput.h>
 #include <vgui/IVGui.h>
 #include <vgui/IInputInternal.h>
@@ -17,6 +16,7 @@
 #pragma comment(lib, "Imm32.lib")
 
 #include "plugins.h"
+#include "privatefuncs.h"
 
 extern vgui::IVGui *g_pVGui;
 extern vgui::IInput* g_pVGuiInput;
@@ -30,61 +30,16 @@ static CANDIDATELIST* _imeCandidatesWin32{};
 //static std::vector<std::wstring> _imeCandidateList;
 //static std::wstring _imeCompositionStr;
 
-static bool(__fastcall* g_pfnCWin32Input_PostKeyMessage)(void* pthis, int, KeyValues* message);
+static void(__fastcall* g_pfnCInputWin32_PostKeyMessage)(void* pthis, int, KeyValues* message);
 
 void InputWin32_FillAddress(void)
 {
-	HMODULE hVGUI2 = GetModuleHandleA("vgui2.dll");
-
-	if (1)
+	if (g_hVGUI2 && g_VGUI2DllInfo.ImageBase)
 	{
-		const char sigs1[] = "KeyCodeReleased";
-		auto KeyCodeRelease_String = g_pMetaHookAPI->SearchPattern(hVGUI2, g_pMetaHookAPI->GetModuleSize(hVGUI2), sigs1, sizeof(sigs1) - 1);
-		Sig_VarNotFound(KeyCodeRelease_String);
-		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\x8B\xC8";
-		*(DWORD*)(pattern + 6) = (DWORD)KeyCodeRelease_String;
-		auto KeyCodeRelease_PushString = g_pMetaHookAPI->SearchPattern(hVGUI2, g_pMetaHookAPI->GetModuleSize(hVGUI2), pattern, sizeof(pattern) - 1);
-		Sig_VarNotFound(KeyCodeRelease_PushString);
-
-		typedef struct
-		{
-			int iFoundPushEax;
-		}KeyCodeRelease_ctx;
-
-		KeyCodeRelease_ctx ctx = { 0 };
-
-		g_pMetaHookAPI->DisasmRanges(KeyCodeRelease_PushString, 0x250, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-			{
-				auto pinst = (cs_insn*)inst;
-				KeyCodeRelease_ctx* ctx = (KeyCodeRelease_ctx*)context;
-				if (!ctx->iFoundPushEax && pinst->id == X86_INS_PUSH &&
-					pinst->detail->x86.op_count == 1 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					pinst->detail->x86.operands[0].reg == X86_REG_EAX)
-				{//.text:01D87E55 C7 01 B8 94 37 02                                   mov     dword ptr [ecx], offset pbodypart
-					ctx->iFoundPushEax = 1;
-					return FALSE;
-				}
-
-				if (ctx->iFoundPushEax)
-				{
-					if (address[0] == 0xE8 && instLen == 5)
-					{
-						g_pfnCWin32Input_PostKeyMessage = (decltype(g_pfnCWin32Input_PostKeyMessage))pinst->detail->x86.operands[0].imm;
-					}
-				}
-
-				if (g_pfnCWin32Input_PostKeyMessage)
-					return TRUE;
-
-				if (address[0] == 0xCC)
-					return TRUE;
-
-				if (pinst->id == X86_INS_RET)
-					return TRUE;
-
-				return FALSE;
-			}, 0, &ctx);
+		//The private CInputWin32::PostKeyMessage is published for every vgui2.dll identity;
+		//the CS/CZ/CZDS clients load the shared hl vgui2.dll and resolve against its records.
+		g_pfnCInputWin32_PostKeyMessage = (decltype(g_pfnCInputWin32_PostKeyMessage))
+			GamedataResolvePtr(g_VGUI2DllInfo.ImageBase, "vgui2", "CInputWin32::PostKeyMessage(KeyValues*)", MH_GAMESYMBOL_KIND_FUNCTION);
 	}
 }
 
@@ -451,8 +406,8 @@ static void SpewIMEInfo(int langid)
 	if (info)
 	{
 		wchar_t const *name = info->shortcode ? info->shortcode : L"???";
-		wchar_t outstr[512];
-		_snwprintf(outstr, sizeof(outstr) / sizeof(wchar_t), L"IME language changed to:  %s", name);
+		wchar_t outstr[512] = {0};
+		_snwprintf(outstr, sizeof(outstr) / sizeof(wchar_t) - 1, L"IME language changed to:  %s", name);
 		OutputDebugStringW(outstr);
 		OutputDebugStringW(L"\n");
 	}
@@ -1372,9 +1327,9 @@ public:
 		keybd_event(nVirtKey, 0, KEYEVENTF_KEYUP, 0);
 	}
 
-	bool PostKeyMessage(KeyValues* message) override
+	void PostKeyMessage(KeyValues* message) override
 	{
-		return g_pfnCWin32Input_PostKeyMessage(g_pVGuiInput, 0, message);
+		g_pfnCInputWin32_PostKeyMessage(g_pVGuiInput, 0, message);
 	}
 
 	bool IsIMEComposing() const override

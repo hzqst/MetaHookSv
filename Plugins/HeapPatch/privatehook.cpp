@@ -1,7 +1,7 @@
 #include <metahook.h>
-#include <capstone.h>
 #include <string>
 #include <vector>
+#include <capstone.h>
 #include "plugins.h"
 #include "privatehook.h"
 
@@ -16,25 +16,25 @@ struct HeapLimitPatchSite
 static std::vector<HeapLimitPatchSite> g_Sys_InitMemory_HeapLimitPatches;
 
 // On gamedata failure, print diagnostics (symbol / buildnum / CRC64 / status string) and abort via Sys_Error.
-static void ReportSymbolFailure(const char* symbolName, mh_gamesymbol_status_t status)
+static void ReportSymbolFailure(const char* moduleName, const char* symbolName, mh_gamesymbol_status_t status)
 {
 	uint64_t crc64 = 0;
 	mh_gamesymbol_status_t crcSt = g_pMetaHookAPI->GetModuleCRC64(g_EngineDLLInfo.ImageBase, &crc64);
 
 	if (crcSt == MH_GAMESYMBOL_OK)
 	{
-		Sys_Error("Failed to resolve \"%s\"\nEngine buildnum: %d\nCRC64: %016llx\nReason: %s",
-			symbolName, g_dwEngineBuildnum, (unsigned long long)crc64, g_pMetaHookAPI->GetGameSymbolStatusString(status));
+		Sys_Error("Failed to resolve \"%s\" (module %s)\nEngine buildnum: %d\nCRC64: %016llx\nReason: %s",
+			symbolName, moduleName, g_dwEngineBuildnum, (unsigned long long)crc64, g_pMetaHookAPI->GetGameSymbolStatusString(status));
 	}
 	else
 	{
-		Sys_Error("Failed to resolve \"%s\"\nEngine buildnum: %d\nReason: %s",
-			symbolName, g_dwEngineBuildnum, g_pMetaHookAPI->GetGameSymbolStatusString(status));
+		Sys_Error("Failed to resolve \"%s\" (module %s)\nEngine buildnum: %d\nReason: %s",
+			symbolName, moduleName, g_dwEngineBuildnum, g_pMetaHookAPI->GetGameSymbolStatusString(status));
 	}
 }
 
 // The return value is the real-image VA of the gamedata record.
-static PVOID ResolveGameSymbolOrError(const char* symbolName, mh_gamesymbol_kind_t expectedKind)
+static PVOID ResolveGameSymbolOrError(const char* moduleName, const char* symbolName, mh_gamesymbol_kind_t expectedKind)
 {
 	PVOID va = NULL;
 	mh_gamesymbol_status_t st = g_pMetaHookAPI->ResolveGameSymbol(g_EngineDLLInfo.ImageBase, symbolName, expectedKind, &va);
@@ -42,7 +42,7 @@ static PVOID ResolveGameSymbolOrError(const char* symbolName, mh_gamesymbol_kind
 	if (st == MH_GAMESYMBOL_OK)
 		return va;
 
-	ReportSymbolFailure(symbolName, st);
+	ReportSymbolFailure(moduleName, symbolName, st);
 	return NULL;
 }
 
@@ -62,18 +62,18 @@ void Engine_FillAddress(void)
 			// Only the first index may legitimately be absent as an enumeration end;
 			// without index 0 the required patch set is missing.
 			if (index == 0)
-				ReportSymbolFailure(symbolName, st);
+				ReportSymbolFailure("engine", symbolName, st);
 
 			return;
 		}
 
 		if (st != MH_GAMESYMBOL_OK)
 		{
-			ReportSymbolFailure(symbolName, st);
+			ReportSymbolFailure("engine", symbolName, st);
 			return;
 		}
 
-		PVOID instructionAddress = ResolveGameSymbolOrError(symbolName, MH_GAMESYMBOL_KIND_PATCH);
+		PVOID instructionAddress = ResolveGameSymbolOrError("engine", symbolName, MH_GAMESYMBOL_KIND_PATCH);
 
 		if (!instructionAddress)
 			return;

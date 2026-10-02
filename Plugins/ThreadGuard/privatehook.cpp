@@ -62,7 +62,7 @@ void Engine_FillAddress(void)
 {
 	// gamedata provides the address of the engine module's global IEngine* slot,
 	// so GetEngineDLLState keeps dereferencing it exactly once.
-	eng = (decltype(eng))GamedataResolvePtr(g_EngineDLLInfo.ImageBase, "eng", MH_GAMESYMBOL_KIND_GLOBAL);
+	eng = (decltype(eng))GamedataResolvePtr(g_EngineDLLInfo.ImageBase, "engine", "eng", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Engine_InstallHook(HMODULE hModule, BlobHandle_t hBlobModule)

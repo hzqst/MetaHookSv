@@ -145,32 +145,35 @@ public:
 				FILESYSTEM_ANY_ADDSEARCHPATH(temp, "SKIN");
 			}
 
-			//TODO: hook FileSystem_AddFallbackGameDir ?
 			if (g_bIsCZero)
 			{
 #if 1
-				snprintf(temp, sizeof(temp), "%s\\cstrike_dpi%.0f", GetBaseDirectory(), DpiManagerInternal()->GetDpiScaling() * 100.0f);
-				COM_FixSlashes(temp);
+				{
+					snprintf(temp, sizeof(temp), "%s\\cstrike_dpi%.0f", GetBaseDirectory(), DpiManagerInternal()->GetDpiScaling() * 100.0f);
+					COM_FixSlashes(temp);
 
-				if (g_dwEngineBuildnum >= 6153)
-				{
-					FILESYSTEM_ANY_ADDSEARCHPATHNOWRITE(temp, "SKIN");
-				}
-				else
-				{
-					FILESYSTEM_ANY_ADDSEARCHPATH(temp, "SKIN");
+					if (g_dwEngineBuildnum >= 6153)
+					{
+						FILESYSTEM_ANY_ADDSEARCHPATHNOWRITE(temp, "SKIN");
+					}
+					else
+					{
+						FILESYSTEM_ANY_ADDSEARCHPATH(temp, "SKIN");
+					}
 				}
 #endif
-				snprintf(temp, sizeof(temp), "%s\\cstrike_hidpi", GetBaseDirectory());
-				COM_FixSlashes(temp);
+				{
+					snprintf(temp, sizeof(temp), "%s\\cstrike_hidpi", GetBaseDirectory());
+					COM_FixSlashes(temp);
 
-				if (g_dwEngineBuildnum >= 6153)
-				{
-					FILESYSTEM_ANY_ADDSEARCHPATHNOWRITE(temp, "SKIN");
-				}
-				else
-				{
-					FILESYSTEM_ANY_ADDSEARCHPATH(temp, "SKIN");
+					if (g_dwEngineBuildnum >= 6153)
+					{
+						FILESYSTEM_ANY_ADDSEARCHPATHNOWRITE(temp, "SKIN");
+					}
+					else
+					{
+						FILESYSTEM_ANY_ADDSEARCHPATH(temp, "SKIN");
+					}
 				}
 			}
 		}

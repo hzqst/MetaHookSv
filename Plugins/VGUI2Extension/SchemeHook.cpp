@@ -300,45 +300,63 @@ int CSchemeManagerProxy_HL25::GetHDProportionalNormalizedValue(int normalizedVal
 
 static CSchemeManagerProxy_HL25 g_SchemeProxy_HL25;
 
+//One VFTHook per ISchemeManager slot installed by Scheme_InstallHooks; kept so
+//Scheme_UninstallHooks can UnHook them. The HL25 and legacy branches hook
+//different objects (g_pSchemeManager_HL25 / g_pSchemeManager) and only one
+//branch runs, so they share this slot-indexed array.
+static hook_t* g_phook_CSchemeManager[14] = { NULL };
+
 void Scheme_InstallHooks(void)
 {
 	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
 		DWORD* pVFTable = *(DWORD**)&g_SchemeProxy_HL25;
 
-		g_pMetaHookAPI->VFTHook(g_pSchemeManager_HL25, 0, 1, (void *)pVFTable[1], (void **)&m_pfnLoadSchemeFromFile); //Assert (IsValidIndex(i))
-		g_pMetaHookAPI->VFTHook(g_pSchemeManager_HL25, 0, 2, (void*)pVFTable[2], (void**)&m_pfnReloadSchemes);
-		g_pMetaHookAPI->VFTHook(g_pSchemeManager_HL25, 0, 3, (void*)pVFTable[3], (void**)&m_pfnGetDefaultScheme);
-		g_pMetaHookAPI->VFTHook(g_pSchemeManager_HL25, 0, 4, (void*)pVFTable[4], (void**)&m_pfnGetScheme);
-		g_pMetaHookAPI->VFTHook(g_pSchemeManager_HL25, 0, 5, (void *)pVFTable[5], (void **)&m_pfnGetImage);
-		g_pMetaHookAPI->VFTHook(g_pSchemeManager_HL25, 0, 6, (void*)pVFTable[6], (void**)&m_pfnGetImageID);
-		g_pMetaHookAPI->VFTHook(g_pSchemeManager_HL25, 0, 7, (void *)pVFTable[7], (void **)&m_pfnGetIScheme);
-		g_pMetaHookAPI->VFTHook(g_pSchemeManager_HL25, 0, 8, (void*)pVFTable[8], (void**)&m_pfnShutdown);
-		g_pMetaHookAPI->VFTHook(g_pSchemeManager_HL25, 0, 9, (void*)pVFTable[9], (void**)&m_pfnGetProportionalScaledValue);
-		g_pMetaHookAPI->VFTHook(g_pSchemeManager_HL25, 0, 10, (void*)pVFTable[10], (void**)&m_pfnGetProportionalNormalizedValue);
-		g_pMetaHookAPI->VFTHook(g_pSchemeManager_HL25, 0, 11, (void*)pVFTable[11], (void**)&m_pfnGetProportionalScale);
-		g_pMetaHookAPI->VFTHook(g_pSchemeManager_HL25, 0, 12, (void*)pVFTable[12], (void**)&m_pfnGetHDProportionalScaledValue);
-		g_pMetaHookAPI->VFTHook(g_pSchemeManager_HL25, 0, 13, (void*)pVFTable[13], (void**)&m_pfnGetHDProportionalNormalizedValue);
+		//Each installed hook is saved so Scheme_UninstallHooks can restore the vftable.
+		g_phook_CSchemeManager[1] = g_pMetaHookAPI->VFTHook(g_pSchemeManager_HL25, 0, 1, (void *)pVFTable[1], (void **)&m_pfnLoadSchemeFromFile);
+		g_phook_CSchemeManager[2] = g_pMetaHookAPI->VFTHook(g_pSchemeManager_HL25, 0, 2, (void*)pVFTable[2], (void**)&m_pfnReloadSchemes);
+		g_phook_CSchemeManager[3] = g_pMetaHookAPI->VFTHook(g_pSchemeManager_HL25, 0, 3, (void*)pVFTable[3], (void**)&m_pfnGetDefaultScheme);
+		g_phook_CSchemeManager[4] = g_pMetaHookAPI->VFTHook(g_pSchemeManager_HL25, 0, 4, (void*)pVFTable[4], (void**)&m_pfnGetScheme);
+		g_phook_CSchemeManager[5] = g_pMetaHookAPI->VFTHook(g_pSchemeManager_HL25, 0, 5, (void *)pVFTable[5], (void **)&m_pfnGetImage);
+		g_phook_CSchemeManager[6] = g_pMetaHookAPI->VFTHook(g_pSchemeManager_HL25, 0, 6, (void*)pVFTable[6], (void**)&m_pfnGetImageID);
+		g_phook_CSchemeManager[7] = g_pMetaHookAPI->VFTHook(g_pSchemeManager_HL25, 0, 7, (void *)pVFTable[7], (void **)&m_pfnGetIScheme);
+		g_phook_CSchemeManager[8] = g_pMetaHookAPI->VFTHook(g_pSchemeManager_HL25, 0, 8, (void*)pVFTable[8], (void**)&m_pfnShutdown);
+		g_phook_CSchemeManager[9] = g_pMetaHookAPI->VFTHook(g_pSchemeManager_HL25, 0, 9, (void*)pVFTable[9], (void**)&m_pfnGetProportionalScaledValue);
+		g_phook_CSchemeManager[10] = g_pMetaHookAPI->VFTHook(g_pSchemeManager_HL25, 0, 10, (void*)pVFTable[10], (void**)&m_pfnGetProportionalNormalizedValue);
+		g_phook_CSchemeManager[11] = g_pMetaHookAPI->VFTHook(g_pSchemeManager_HL25, 0, 11, (void*)pVFTable[11], (void**)&m_pfnGetProportionalScale);
+		g_phook_CSchemeManager[12] = g_pMetaHookAPI->VFTHook(g_pSchemeManager_HL25, 0, 12, (void*)pVFTable[12], (void**)&m_pfnGetHDProportionalScaledValue);
+		g_phook_CSchemeManager[13] = g_pMetaHookAPI->VFTHook(g_pSchemeManager_HL25, 0, 13, (void*)pVFTable[13], (void**)&m_pfnGetHDProportionalNormalizedValue);
 
 	}
 	else
 	{
 		DWORD* pVFTable = *(DWORD**)&g_SchemeProxy;
 
-		g_pMetaHookAPI->VFTHook(g_pSchemeManager, 0, 1, (void*)pVFTable[1], (void**)&m_pfnLoadSchemeFromFile);
-		g_pMetaHookAPI->VFTHook(g_pSchemeManager, 0, 2, (void*)pVFTable[2], (void**)&m_pfnReloadSchemes);
-		g_pMetaHookAPI->VFTHook(g_pSchemeManager, 0, 3, (void*)pVFTable[3], (void**)&m_pfnGetDefaultScheme);
-		g_pMetaHookAPI->VFTHook(g_pSchemeManager, 0, 4, (void*)pVFTable[4], (void**)&m_pfnGetScheme);
-		g_pMetaHookAPI->VFTHook(g_pSchemeManager, 0, 5, (void*)pVFTable[5], (void**)&m_pfnGetImage);
-		g_pMetaHookAPI->VFTHook(g_pSchemeManager, 0, 6, (void*)pVFTable[6], (void**)&m_pfnGetImageID);
-		g_pMetaHookAPI->VFTHook(g_pSchemeManager, 0, 7, (void*)pVFTable[7], (void**)&m_pfnGetIScheme);
-		g_pMetaHookAPI->VFTHook(g_pSchemeManager, 0, 8, (void*)pVFTable[8], (void**)&m_pfnShutdown);
-		g_pMetaHookAPI->VFTHook(g_pSchemeManager, 0, 9, (void*)pVFTable[9], (void**)&m_pfnGetProportionalScaledValue);
-		g_pMetaHookAPI->VFTHook(g_pSchemeManager, 0, 10, (void*)pVFTable[10], (void**)&m_pfnGetProportionalNormalizedValue);
+		//Each installed hook is saved so Scheme_UninstallHooks can restore the vftable.
+		g_phook_CSchemeManager[1] = g_pMetaHookAPI->VFTHook(g_pSchemeManager, 0, 1, (void*)pVFTable[1], (void**)&m_pfnLoadSchemeFromFile);
+		g_phook_CSchemeManager[2] = g_pMetaHookAPI->VFTHook(g_pSchemeManager, 0, 2, (void*)pVFTable[2], (void**)&m_pfnReloadSchemes);
+		g_phook_CSchemeManager[3] = g_pMetaHookAPI->VFTHook(g_pSchemeManager, 0, 3, (void*)pVFTable[3], (void**)&m_pfnGetDefaultScheme);
+		g_phook_CSchemeManager[4] = g_pMetaHookAPI->VFTHook(g_pSchemeManager, 0, 4, (void*)pVFTable[4], (void**)&m_pfnGetScheme);
+		g_phook_CSchemeManager[5] = g_pMetaHookAPI->VFTHook(g_pSchemeManager, 0, 5, (void*)pVFTable[5], (void**)&m_pfnGetImage);
+		g_phook_CSchemeManager[6] = g_pMetaHookAPI->VFTHook(g_pSchemeManager, 0, 6, (void*)pVFTable[6], (void**)&m_pfnGetImageID);
+		g_phook_CSchemeManager[7] = g_pMetaHookAPI->VFTHook(g_pSchemeManager, 0, 7, (void*)pVFTable[7], (void**)&m_pfnGetIScheme);
+		g_phook_CSchemeManager[8] = g_pMetaHookAPI->VFTHook(g_pSchemeManager, 0, 8, (void*)pVFTable[8], (void**)&m_pfnShutdown);
+		g_phook_CSchemeManager[9] = g_pMetaHookAPI->VFTHook(g_pSchemeManager, 0, 9, (void*)pVFTable[9], (void**)&m_pfnGetProportionalScaledValue);
+		g_phook_CSchemeManager[10] = g_pMetaHookAPI->VFTHook(g_pSchemeManager, 0, 10, (void*)pVFTable[10], (void**)&m_pfnGetProportionalNormalizedValue);
 	}
 }
 
 void Scheme_UninstallHooks(void)
 {
-
+	//Restores the ISchemeManager / ISchemeManager_HL25 vftable entries the
+	//matching proxy replaced; g_pSchemeManager and g_pSchemeManager_HL25 stay
+	//cached. Only the hooks are dropped.
+	for (int i = 1; i < _ARRAYSIZE(g_phook_CSchemeManager); ++i)
+	{
+		if (g_phook_CSchemeManager[i])
+		{
+			g_pMetaHookAPI->UnHook(g_phook_CSchemeManager[i]);
+			g_phook_CSchemeManager[i] = NULL;
+		}
+	}
 }

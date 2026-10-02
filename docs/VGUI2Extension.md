@@ -14,6 +14,25 @@
 
 * Note that since [BugFixedHL](https://github.com/tmp64/BugfixedHL-Rebased) uses a different VGUI2 component layout, it's not gonna be working with `VGUI2Extension.dll`
 
+GameUI private-symbol resolution requires a gamedata catalog containing the records from
+GoldSrc_VibeSignatures PR #317. These include the PropertySheet methods and `_activePage`,
+FocusNavGroup `GetCurrentFocus` and `_currentFocus`, the three options pages' `OnApplyChanges`,
+and `CBasePanel::ApplySchemeSettings`. ServerBrowser also requires its KeyValues
+`LoadFromFile` record. Update gamedata together with the plugin; older catalogs cannot
+resolve these required symbols. PropertySheet virtual calls still dispatch through the
+current object, using the slot queried from gamedata.
+
+Menu resolution additionally requires the records from GoldSrc_VibeSignatures PR #318:
+`vgui2::Menu.m_pScroller` and `vgui2::Menu::MakeItemsVisibleInScrollRange()`.
+The method is resolved directly, without an intermediate Menu vtable or a slot scan,
+and has no explicit arguments in the target GameUI binaries.
+The Menu hook still relies on the Legacy/HL25 layout of members adjacent to `m_pScroller`;
+PropertySheet `_pageTabs` also retains its legacy array layout dependency.
+
+`IInput2::PostKeyMessage` additionally requires the vgui2 record from GoldSrc_VibeSignatures
+PR #321: `CInputWin32::PostKeyMessage(KeyValues*)`, resolved directly against `vgui2.dll`
+instead of the former `KeyCodeReleased` string and push-pattern scan.
+
 ## Features
 
 ### VGUI2 modding framework

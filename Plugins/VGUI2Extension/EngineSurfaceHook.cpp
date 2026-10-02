@@ -79,7 +79,7 @@ public:
 
 extern CEngineSurfaceProxy_HL25 g_EngineSurfaceProxy_HL25;
 
-void EngineSurface_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void EngineSurface_FillAddress(const mh_dll_info_t& RealDllInfo);
 void EngineSurface_InstallHooks(void);
 void EngineSurface_UninstallHooks(void);
 
@@ -348,18 +348,19 @@ static CEngineSurfaceProxy_HL25 g_EngineSurfaceProxy_HL25;
 
 void EngineSurface_FillAddress_pushMakeCurrent(const mh_dll_info_t& RealDllInfo)
 {
-	pmainwindow = (decltype(pmainwindow))GamedataResolvePtr(RealDllInfo.ImageBase, "pmainwindow", MH_GAMESYMBOL_KIND_GLOBAL);
-	g_bScissor = (decltype(g_bScissor))GamedataResolvePtr(RealDllInfo.ImageBase, "g_bScissor", MH_GAMESYMBOL_KIND_GLOBAL);
-	g_ScissorRect = (decltype(g_ScissorRect))GamedataResolvePtr(RealDllInfo.ImageBase, "g_ScissorRect", MH_GAMESYMBOL_KIND_GLOBAL);
+	pmainwindow = (decltype(pmainwindow))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "pmainwindow", MH_GAMESYMBOL_KIND_GLOBAL);
+	g_bScissor = (decltype(g_bScissor))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "g_bScissor", MH_GAMESYMBOL_KIND_GLOBAL);
+	g_ScissorRect = (decltype(g_ScissorRect))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "g_ScissorRect", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
-void EngineSurface_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+#define ENGINE_SURFACE_VERSION "EngineSurface007"
+
+void EngineSurface_FillAddress(const mh_dll_info_t& RealDllInfo)
 {
 	auto engineFactory = g_pMetaHookAPI->GetEngineFactory();
 
 	if (engineFactory)
 	{
-#define ENGINE_SURFACE_VERSION "EngineSurface007"
 		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
 			staticSurface_HL25 = (decltype(staticSurface_HL25))engineFactory(ENGINE_SURFACE_VERSION, NULL);

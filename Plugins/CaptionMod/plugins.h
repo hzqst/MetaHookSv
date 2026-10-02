@@ -39,15 +39,16 @@ extern bool g_bIsCounterStrike;
 
 //Resolve a required gamedata symbol; a missing symbol is fatal, mirroring the
 //Sig_FuncNotFound/Sig_VarNotFound policy of the signature-scan locators.
-inline PVOID GamedataResolvePtr(PVOID moduleBase, const char* symbolName, mh_gamesymbol_kind_t kind)
+//moduleName identifies the module owning the symbol and is echoed by the diagnostic.
+inline PVOID GamedataResolvePtr(PVOID moduleBase, const char* moduleName, const char* symbolName, mh_gamesymbol_kind_t kind)
 {
 	PVOID address = nullptr;
 	mh_gamesymbol_status_t status = g_pMetaHookAPI->ResolveGameSymbol(moduleBase, symbolName, kind, &address);
 
 	if (status != MH_GAMESYMBOL_OK)
 	{
-		Sys_Error("Could not resolve gamedata symbol: %s (%s)\nEngine buildnum: %d",
-			symbolName, g_pMetaHookAPI->GetGameSymbolStatusString(status), g_dwEngineBuildnum);
+		Sys_Error("Could not resolve gamedata symbol: %s (module %s, %s)\nEngine buildnum: %d",
+			symbolName, moduleName, g_pMetaHookAPI->GetGameSymbolStatusString(status), g_dwEngineBuildnum);
 	}
 
 	return address;
@@ -57,25 +58,26 @@ inline PVOID GamedataResolvePtr(PVOID moduleBase, const char* symbolName, mh_gam
 //current binary identity publishes no record, so callers can keep an explicitly
 //isolated legacy branch; a symbol that is present but fails to resolve is fatal,
 //mirroring GamedataResolvePtr.
-inline PVOID GamedataResolvePtrIfAvailable(PVOID moduleBase, const char* symbolName, mh_gamesymbol_kind_t kind)
+inline PVOID GamedataResolvePtrIfAvailable(PVOID moduleBase, const char* moduleName, const char* symbolName, mh_gamesymbol_kind_t kind)
 {
 	if (g_pMetaHookAPI->IsGameSymbolAvailable(moduleBase, symbolName) != MH_GAMESYMBOL_OK)
 		return nullptr;
 
-	return GamedataResolvePtr(moduleBase, symbolName, kind);
+	return GamedataResolvePtr(moduleBase, moduleName, symbolName, kind);
 }
 
 //Query a required gamedata structMember byte offset; a missing record is fatal,
 //mirroring GamedataResolvePtr.
-inline uint32_t GamedataQueryStructMember(PVOID moduleBase, const char* symbolName)
+//moduleName identifies the module owning the symbol and is echoed by the diagnostic.
+inline uint32_t GamedataQueryStructMember(PVOID moduleBase, const char* moduleName, const char* symbolName)
 {
 	uint32_t offset = 0;
 	mh_gamesymbol_status_t status = g_pMetaHookAPI->QueryGameSymbolStructMember(moduleBase, symbolName, &offset);
 
 	if (status != MH_GAMESYMBOL_OK)
 	{
-		Sys_Error("Could not query gamedata struct member: %s (%s)\nEngine buildnum: %d",
-			symbolName, g_pMetaHookAPI->GetGameSymbolStatusString(status), g_dwEngineBuildnum);
+		Sys_Error("Could not query gamedata struct member: %s (module %s, %s)\nEngine buildnum: %d",
+			symbolName, moduleName, g_pMetaHookAPI->GetGameSymbolStatusString(status), g_dwEngineBuildnum);
 	}
 
 	return offset;

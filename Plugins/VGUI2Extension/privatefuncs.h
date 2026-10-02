@@ -67,6 +67,13 @@ typedef struct
 	void (__fastcall* CWorldMap_PaintBackground)(void* pthis, int dummy);
 	void(__fastcall* CWorldMapMissionSelect_PaintBackground)(void* pthis, int dummy);
 
+	//Vtable slots resolved once in ClientUIProxy_Start_FillAddress. vgui2::Frame::Activate()
+	//is the base slot the background panel and the buy menu both override.
+	int vfunc_index_Frame_Activate;
+	int vfunc_index_CCSBackGroundPanel_Activate;
+	int vfunc_index_CWorldMap_PaintBackground;
+	int vfunc_index_CWorldMapMissionSelect_PaintBackground;
+
 	//void* (__fastcall* CClientMOTD_ctor)(void* pthis, int, void* parent);
 	//void (__fastcall* CClientMOTD_PerformLayout)(void* pthis, int dummy);
 	//void (__fastcall* CClientMOTD_ApplySettings)(void* pthis, int dummy, void* inResourceData);
@@ -88,26 +95,23 @@ typedef struct
 	//void (__fastcall* CBaseGamesPage_OnButtonToggled)(void* pthis, int dummy, void* a2, int state);
 	void(__fastcall* ServerBrowser_Panel_SetSize)(void* pthis, int dummy, int width, int height);
 	void(__fastcall* ServerBrowser_Panel_SetMinimumSize)(void* pthis, int dummy, int width, int height);
-	void ** ServerBrowser_KeyValues_vftable;
 	bool(__fastcall* ServerBrowser_KeyValues_LoadFromFile)(void* pthis, int dummy, IFileSystem* pFileSystem, const char* resourceName, const char* pathId);
 	//void* (__fastcall* CServerBrowserDialog_ctor)(void* pthis, int dummy, void* parent);
 	//GameUI
 	void(__fastcall* GameUI_Panel_Init)(void* pthis, int dummy, int x, int y, int w, int h);
 	void(__fastcall* GameUI_LoadControlSettings)(void* pthis, int dummy, const char* controlResourceName, const char* pathID);
 	void(__fastcall* GameUI_LoadControlSettingsAndUserConfig)(void* pthis, int dummy, const char* dialogResourceName, int dialogID);
-	void*(__fastcall* GameUI_KeyValues_ctor)(void* pthis, int dummy, const char* name);
-	void** GameUI_KeyValues_vftable;
 	bool(__fastcall* GameUI_KeyValues_LoadFromFile)(void* pthis, int dummy, IFileSystem* pFileSystem, const char* resourceName, const char* pathId);
 	void(__fastcall* GameUI_Panel_SetSize)(void* pthis, int dummy, int width, int height);
-	void** GameUI_Menu_vftable;
+	void(__fastcall* GameUI_Panel_SetBounds)(void* pthis, int dummy, int x, int y, int width, int height);
+	void(__fastcall* GameUI_Panel_SetMinimumSize)(void* pthis, int dummy, int width, int height);
 	void(__fastcall* GameUI_Menu_MakeItemsVisibleInScrollRange)(void* pthis, int dummy);
-	void *(__fastcall* GameUI_Sheet_ctor)(void* pthis, int dummy, void* parent, const char *panelName);
-	int offset_ScrollBar;
-	void** GameUI_Sheet_vftable;
-	int offset_propertySheet;
+	int offset_Menu_m_pScroller;
+	int offset_PropertyDialog_propertySheet;
+	int offset_PropertySheet_activePage;
+	int offset_FocusNavGroup_currentFocus;
 	void *(__fastcall*MessageBox_ctor)(void* pthis, int dummy, const char *title, const char *text, void *parent);
 	void (__fastcall*MessageBox_ApplySchemeSettings)(void* pthis, int dummy, void *pScheme);
-	void** MessageBox_vftable;
 	void *(__fastcall*CCreateMultiplayerGameDialog_ctor)(void* pthis, int dummy, void* parent);
 	void *(__fastcall*CGameConsoleDialog_ctor)(void* pthis, int dummy);
 	void *(__fastcall*COptionsDialog_ctor)(void *pthis, int dummy, void *parent);
@@ -123,21 +127,36 @@ typedef struct
 
 	void(__fastcall *COptionsSubVideo_ApplyVidSettings)(void *pthis, int dummy, bool bForceRestart);
 
-	void** CTaskBar_vftable;
 	void*(__fastcall*CTaskBar_ctor)(void* pthis, int dummy, void* parent, const char* panelName);
 	void(__fastcall* CTaskBar_OnCommand)(void* pthis, int dummy, const char* command);
 	void(__fastcall* CTaskBar_CreateGameMenu)(void* pthis, int dummy);
 
 	void* (__fastcall* CBasePanel_ctor)(void* pthis, int dummy);
 	void(__fastcall* CBasePanel_ApplySchemeSettings)(void* pthis, int dummy, void* pScheme);
-	void** CBasePanel_vftable;
 
 	void(__fastcall* GameUI_PropertySheet_PerformLayout)(void* pthis, int dummy);
 	void* (__fastcall *GameUI_PropertySheet_HasHotkey)(void* pthis, int dummy, wchar_t key);
 	void* (__fastcall *GameUI_FocusNavGroup_GetCurrentFocus)(void* pthis, int dummy);
 
-	void(__fastcall* GameUI_RichText_Print)(void* pthis, int dummy, const char* msg);
-	void (__fastcall* GameUI_RichText_InsertStringA)(void* pthis, int dummy, const char* msg);
+	//vgui2::PropertySheet vtable slots read by the Options-dialog proxy callback.
+	//Resolved once in GameUI_FillAddress_PropertySheet instead of at each call.
+	int vfunc_index_PropertySheet_AddPage;
+	int vfunc_index_PropertySheet_SetActivePage;
+	int vfunc_index_PropertySheet_SetTabWidth;
+	int vfunc_index_PropertySheet_GetActivePage;
+	int vfunc_index_PropertySheet_ResetAllData;
+	int vfunc_index_PropertySheet_ApplyChanges;
+	int vfunc_index_PropertySheet_GetPage;
+	int vfunc_index_PropertySheet_DeletePage;
+	int vfunc_index_PropertySheet_GetActiveTab;
+	int vfunc_index_PropertySheet_GetActiveTabTitle;
+	int vfunc_index_PropertySheet_GetTabTitle;
+	int vfunc_index_PropertySheet_GetActivePageNum;
+	int vfunc_index_PropertySheet_GetNumPages;
+	int vfunc_index_PropertySheet_DisablePage;
+	int vfunc_index_PropertySheet_EnablePage;
+	int vfunc_index_PropertySheet_ChangeActiveTab;
+
 	void(__fastcall* GameUI_RichText_InsertStringW)(void* pthis, int dummy, const wchar_t* msg);
 	void(__fastcall* GameUI_RichText_InsertChar)(void* pthis, int dummy, wchar_t ch);
 	void (__fastcall* GameUI_RichText_OnThink)(void* pthis, int dummy);//virtual 0x158
@@ -189,25 +208,24 @@ const char* GetCurrentGameLanguage();
 
 extern HMODULE g_hGameUI;
 extern HMODULE g_hServerBrowser;
+extern HMODULE g_hVGUI2;
 extern bool g_bIsServerBrowserHooked;
 extern mh_dll_info_t g_GameUIDllInfo;
 extern mh_dll_info_t g_ServerBrowserDllInfo;
+extern mh_dll_info_t g_VGUI2DllInfo;
 
 PVOID VGUIClient001_CreateInterface(HINTERFACEMODULE hModule);
 
 void* Sys_GetMainWindow();
-
-PVOID *VGUI2_FindKeyValueVFTable(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
-PVOID* VGUI2_FindMenuVFTable(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 
 void Client_FillAddress(const mh_dll_info_t& RealDllInfo);
 void Client_InstallHooks(void);
 void Client_UninstallHooks(void);
 void SDL2_FillAddress(void);
 void Engine_FillAddress(const mh_dll_info_t& RealDllInfo);
-void Engine_PatchAddress_VGUIClient001(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
-void Engine_PatchAddress_LanguageStrncpy(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
-void EngineSurface_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void Engine_PatchAddress_VGUIClient001(const mh_dll_info_t& RealDllInfo);
+void Engine_PatchAddress_LanguageStrncpy(const mh_dll_info_t& RealDllInfo);
+void EngineSurface_FillAddress(const mh_dll_info_t& RealDllInfo);
 void Engine_InstallHooks(void);
 void Engine_UninstallHooks(void);
 void BaseUI_InstallHooks(void);

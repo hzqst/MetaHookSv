@@ -63,6 +63,11 @@ static void(__fastcall* m_pfnCClientVGUI_HideAllVGUIMenu)(void* pthis, int) = NU
 static void(__fastcall* m_pfnCClientVGUI_ActivateClientUI)(void* pthis, int) = NULL;
 static void(__fastcall* m_pfnCClientVGUI_HideClientUI)(void* pthis, int) = NULL;
 
+//One VFTHook per IClientVGUI slot installed by ClientVGUI_InstallHooks; kept so
+//ClientVGUI_UninstallHooks can UnHook them instead of leaving the proxy vftable
+//written into IClientVGUI after HUD_Shutdown.
+static hook_t* g_phook_CClientVGUI[9] = { NULL };
+
 bool ClientVGUI_NativeClientHasVGUI1()
 {
 	return g_NativeClientHasVGUI1;
@@ -177,9 +182,8 @@ void __fastcall ClientVGUI_Panel_Init(vgui::Panel* pthis, int dummy, int x, int 
 
 	if (DpiManagerInternal()->IsHighDpiSupportEnabled())
 	{
-		PVOID* PanelVFTable = *(PVOID**)pthis;
-		void(__fastcall * pfnSetProportional)(vgui::Panel * pthis, int dummy, bool state) = (decltype(pfnSetProportional))PanelVFTable[113];
-		pfnSetProportional(pthis, 0, true);
+		auto pPanel = (vgui::IClientPanel*)pthis;
+		pPanel->SetProportional(true);
 	}
 }
 
@@ -251,10 +255,9 @@ void __fastcall ClientVGUI_LoadControlSettings(vgui::Panel* pthis, int dummy, co
 			gPrivateFuncs.CSBuyMenu_vftable = *(PVOID**)pthis;
 
 			//Frame::Activate's slot; CSBuyMenu keeps its own override in place, so
-			//the base slot index also addresses CSBuyMenu's vtable.
-			int index = (int)GamedataResolveVFuncIndex(g_ClientDLLInfo.ImageBase, "vgui2::Frame::Activate()");
-
-			g_pMetaHookAPI->VFTHookEx(gPrivateFuncs.CSBuyMenu_vftable, index, CSBuyMenu_Activate, (void**)&gPrivateFuncs.CSBuyMenu_Activate);
+			//the base slot index also addresses CSBuyMenu's vtable. The slot was
+			//resolved in ClientUIProxy_Start_FillAddress.
+			g_pMetaHookAPI->VFTHookEx(gPrivateFuncs.CSBuyMenu_vftable, gPrivateFuncs.vfunc_index_Frame_Activate, CSBuyMenu_Activate, (void**)&gPrivateFuncs.CSBuyMenu_Activate);
 
 			Sig_FuncNotFound(CSBuyMenu_Activate);
 		}
@@ -886,35 +889,43 @@ EXPOSE_SINGLE_INTERFACE(NewClientVGUI, IClientVGUI, CLIENTVGUI_INTERFACE_VERSION
 
 void ClientUIProxy_Start_FillAddress(CClientVGUIProxy *pthis ,const mh_dll_info_t& RealDllInfo)
 {
+	//vgui2::Frame::Activate's slot, shared by the background panel and by CSBuyMenu
+	//(hooked later, when the buy menu resource loads). Published on every CS-family
+	//client, CZDS included, so it resolves outside the background-panel guard.
+	if (g_bIsCounterStrike)
+	{
+		gPrivateFuncs.vfunc_index_Frame_Activate = GamedataResolveVFuncIndex(g_ClientDLLInfo.ImageBase, "client", "vgui2::Frame::Activate()");
+	}
+
 	if (g_bIsCounterStrike && !g_bIsCZDS)
 	{
-		DWORD offset_CSBackGroundPanel = GamedataResolveStructMember(g_ClientDLLInfo.ImageBase, "CounterStrikeViewport.m_pCSBackGround");
+		DWORD offset_CSBackGroundPanel = GamedataResolveStructMember(g_ClientDLLInfo.ImageBase, "client", "CounterStrikeViewport.m_pCSBackGround");
 
 		g_pCSBackGroundPanel = *(vgui::Panel**)((PUCHAR)pthis + offset_CSBackGroundPanel);
 
 		//CCSBackGroundPanel keeps its own Activate override; the field its body
 		//zeroes is published as a member offset, so no vtable walk is needed.
-		int index = (int)GamedataResolveVFuncIndex(g_ClientDLLInfo.ImageBase, "CounterStrikeViewport::CCSBackGroundPanel::Activate()");
+		gPrivateFuncs.vfunc_index_CCSBackGroundPanel_Activate = GamedataResolveVFuncIndex(g_ClientDLLInfo.ImageBase, "client", "CounterStrikeViewport::CCSBackGroundPanel::Activate()");
 
-		gPrivateFuncs.CCSBackGroundPanel_m_offsetX = (int)GamedataResolveStructMember(g_ClientDLLInfo.ImageBase, "CounterStrikeViewport::CCSBackGroundPanel.m_offsetX");
-		gPrivateFuncs.CCSBackGroundPanel_m_offsetY = (int)GamedataResolveStructMember(g_ClientDLLInfo.ImageBase, "CounterStrikeViewport::CCSBackGroundPanel.m_offsetY");
+		gPrivateFuncs.CCSBackGroundPanel_m_offsetX = (int)GamedataResolveStructMember(g_ClientDLLInfo.ImageBase, "client", "CounterStrikeViewport::CCSBackGroundPanel.m_offsetX");
+		gPrivateFuncs.CCSBackGroundPanel_m_offsetY = (int)GamedataResolveStructMember(g_ClientDLLInfo.ImageBase, "client", "CounterStrikeViewport::CCSBackGroundPanel.m_offsetY");
 
-		g_pMetaHookAPI->VFTHook(g_pCSBackGroundPanel, 0, index, CCSBackGroundPanel_Activate, (void**)&gPrivateFuncs.CCSBackGroundPanel_Activate);
+		g_pMetaHookAPI->VFTHook(g_pCSBackGroundPanel, 0, gPrivateFuncs.vfunc_index_CCSBackGroundPanel_Activate, CCSBackGroundPanel_Activate, (void**)&gPrivateFuncs.CCSBackGroundPanel_Activate);
 
 		Sig_FuncNotFound(CCSBackGroundPanel_Activate);
 	}
 
 	if (g_bIsCZDS)
 	{
-		DWORD offset_WorldMapPanel = GamedataResolveStructMember(g_ClientDLLInfo.ImageBase, "CZEROViewPort.m_pWorldMapPanel");
+		DWORD offset_WorldMapPanel = GamedataResolveStructMember(g_ClientDLLInfo.ImageBase, "client", "CZEROViewPort.m_pWorldMapPanel");
 
 		g_pWorldMapPanel = *(vgui::Panel**)((PUCHAR)pthis + offset_WorldMapPanel);
 
 		//The handler raises g_bIsPaintWorldMapBackground around the original call, so
 		//the ISurface::GetScreenSize override applies only to this paint pass.
-		int index = (int)GamedataResolveVFuncIndex(g_ClientDLLInfo.ImageBase, "CWorldMap::PaintBackground()");
+		gPrivateFuncs.vfunc_index_CWorldMap_PaintBackground = GamedataResolveVFuncIndex(g_ClientDLLInfo.ImageBase, "client", "CWorldMap::PaintBackground()");
 
-		g_pMetaHookAPI->VFTHook(g_pWorldMapPanel, 0, index, CWorldMap_PaintBackground, (void**)&gPrivateFuncs.CWorldMap_PaintBackground);
+		g_pMetaHookAPI->VFTHook(g_pWorldMapPanel, 0, gPrivateFuncs.vfunc_index_CWorldMap_PaintBackground, CWorldMap_PaintBackground, (void**)&gPrivateFuncs.CWorldMap_PaintBackground);
 
 		Sig_FuncNotFound(CWorldMap_PaintBackground);
 	}
@@ -928,9 +939,9 @@ void ClientUIProxy_Start_FillAddress(CClientVGUIProxy *pthis ,const mh_dll_info_
 			Sig_NotFound("WorldMapMissionSelectPanel");
 		}
 
-		int index = (int)GamedataResolveVFuncIndex(g_ClientDLLInfo.ImageBase, "CWorldMapMissionSelect::PaintBackground()");
+		gPrivateFuncs.vfunc_index_CWorldMapMissionSelect_PaintBackground = GamedataResolveVFuncIndex(g_ClientDLLInfo.ImageBase, "client", "CWorldMapMissionSelect::PaintBackground()");
 
-		g_pMetaHookAPI->VFTHook(g_pWorldMapMissionSelectPanel, 0, index, CWorldMapMissionSelect_PaintBackground, (void**)&gPrivateFuncs.CWorldMapMissionSelect_PaintBackground);
+		g_pMetaHookAPI->VFTHook(g_pWorldMapMissionSelectPanel, 0, gPrivateFuncs.vfunc_index_CWorldMapMissionSelect_PaintBackground, CWorldMapMissionSelect_PaintBackground, (void**)&gPrivateFuncs.CWorldMapMissionSelect_PaintBackground);
 
 		Sig_FuncNotFound(CWorldMapMissionSelect_PaintBackground);
 	}
@@ -943,22 +954,25 @@ void ClientUIProxy_Start_FillAddress(CClientVGUIProxy *pthis ,const mh_dll_info_
 void NativeClientUI_FillAddress(const mh_dll_info_t& RealDllInfo)
 {
 	gPrivateFuncs.ClientVGUI_Panel_Init = (decltype(gPrivateFuncs.ClientVGUI_Panel_Init))GamedataResolvePtrIfAvailable(
-		RealDllInfo.ImageBase, "vgui2::Panel::Init(int, int, int, int)", MH_GAMESYMBOL_KIND_FUNCTION);
-	gPrivateFuncs.ClientVGUI_KeyValues_LoadFromFile = (decltype(gPrivateFuncs.ClientVGUI_KeyValues_LoadFromFile))GamedataResolvePtrIfAvailable(
-		RealDllInfo.ImageBase, "KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
+		RealDllInfo.ImageBase, "client", "vgui2::Panel::Init(int, int, int, int)", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.ClientVGUI_KeyValues_LoadFromFile = (decltype(gPrivateFuncs.ClientVGUI_KeyValues_LoadFromFile))
+		GamedataResolveIfAvailable(RealDllInfo.ImageBase, "client",
+			{ "vgui2::KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)",
+			  "KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)" },
+			MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 
 	if (g_bIsCounterStrike)
 	{
 		gPrivateFuncs.ClientVGUI_LoadControlSettings = (decltype(gPrivateFuncs.ClientVGUI_LoadControlSettings))GamedataResolvePtr(
-			RealDllInfo.ImageBase, "vgui2::Frame::LoadControlSettings(char const*, char const*)", MH_GAMESYMBOL_KIND_FUNCTION);
+			RealDllInfo.ImageBase, "client", "vgui2::Frame::LoadControlSettings(char const*, char const*)", MH_GAMESYMBOL_KIND_FUNCTION);
 	}
 
 	if (g_bIsCounterStrike)
 	{
 		gPrivateFuncs.TeamMenu_LoadMapPage = (decltype(gPrivateFuncs.TeamMenu_LoadMapPage))GamedataResolvePtr(
-			RealDllInfo.ImageBase, "CTeamMenu::LoadMapPage(char const*)", MH_GAMESYMBOL_KIND_FUNCTION);
+			RealDllInfo.ImageBase, "client", "CTeamMenu::LoadMapPage(char const*)", MH_GAMESYMBOL_KIND_FUNCTION);
 		gPrivateFuncs.ClientVGUI_RichText_SetTextW = (decltype(gPrivateFuncs.ClientVGUI_RichText_SetTextW))GamedataResolvePtr(
-			RealDllInfo.ImageBase, "vgui2::RichText::SetText(wchar_t const*)", MH_GAMESYMBOL_KIND_FUNCTION);
+			RealDllInfo.ImageBase, "client", "vgui2::RichText::SetText(wchar_t const*)", MH_GAMESYMBOL_KIND_FUNCTION);
 	}
 }
 
@@ -1022,14 +1036,16 @@ void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc)
 		{
 			PVOID* ProxyVFTable = *(PVOID**)&s_ClientVGUIProxy;
 
-			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 1, (void*)ProxyVFTable[1], (void**)&m_pfnCClientVGUI_Initialize);
-			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 2, (void*)ProxyVFTable[2], (void**)&m_pfnCClientVGUI_Start);
-			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 3, (void*)ProxyVFTable[3], (void**)&m_pfnCClientVGUI_SetParent);
-			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 4, (void*)ProxyVFTable[4], (void**)&m_pfnCClientVGUI_UseVGUI1);
-			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 5, (void*)ProxyVFTable[5], (void**)&m_pfnCClientVGUI_HideScoreBoard);
-			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 6, (void*)ProxyVFTable[6], (void**)&m_pfnCClientVGUI_HideAllVGUIMenu);
-			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 7, (void*)ProxyVFTable[7], (void**)&m_pfnCClientVGUI_ActivateClientUI);
-			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 8, (void*)ProxyVFTable[8], (void**)&m_pfnCClientVGUI_HideClientUI);
+			//Slot 0 is IClientVGUI's Unknown() and is left untouched. Slots 1..8
+			//are proxied and unhooked again in ClientVGUI_UninstallHooks.
+			g_phook_CClientVGUI[1] = g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 1, (void*)ProxyVFTable[1], (void**)&m_pfnCClientVGUI_Initialize);
+			g_phook_CClientVGUI[2] = g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 2, (void*)ProxyVFTable[2], (void**)&m_pfnCClientVGUI_Start);
+			g_phook_CClientVGUI[3] = g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 3, (void*)ProxyVFTable[3], (void**)&m_pfnCClientVGUI_SetParent);
+			g_phook_CClientVGUI[4] = g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 4, (void*)ProxyVFTable[4], (void**)&m_pfnCClientVGUI_UseVGUI1);
+			g_phook_CClientVGUI[5] = g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 5, (void*)ProxyVFTable[5], (void**)&m_pfnCClientVGUI_HideScoreBoard);
+			g_phook_CClientVGUI[6] = g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 6, (void*)ProxyVFTable[6], (void**)&m_pfnCClientVGUI_HideAllVGUIMenu);
+			g_phook_CClientVGUI[7] = g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 7, (void*)ProxyVFTable[7], (void**)&m_pfnCClientVGUI_ActivateClientUI);
+			g_phook_CClientVGUI[8] = g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 8, (void*)ProxyVFTable[8], (void**)&m_pfnCClientVGUI_HideClientUI);
 
 			NativeClientUI_FillAddress(g_ClientDLLInfo);
 			NativeClientUI_InstallHooks();
@@ -1046,7 +1062,16 @@ void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc)
 
 void ClientVGUI_UninstallHooks()
 {
-	//TODO uninstall VFTHooks
+	//Restores the IClientVGUI vftable entries the proxy replaced. g_pClientVGUI
+	//stays cached for the rest of the process; only the hooks are dropped.
+	for (int i = 1; i < _ARRAYSIZE(g_phook_CClientVGUI); ++i)
+	{
+		if (g_phook_CClientVGUI[i])
+		{
+			g_pMetaHookAPI->UnHook(g_phook_CClientVGUI[i]);
+			g_phook_CClientVGUI[i] = NULL;
+		}
+	}
 }
 
 PVOID VGUIClient001_CreateInterface(HINTERFACEMODULE hModule)

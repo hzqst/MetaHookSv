@@ -9,7 +9,7 @@ private_funcs_t gPrivateFuncs = {0};
 void EngineStudio_FillAddress(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	//Engine Studio global slots resolved from gamedata
-	r_model = (decltype(r_model))GamedataResolvePtr(RealDllInfo.ImageBase, "r_model", MH_GAMESYMBOL_KIND_GLOBAL);
+	r_model = (decltype(r_model))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "r_model", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void EngineStudio_InstalHooks()

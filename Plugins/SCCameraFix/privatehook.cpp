@@ -19,8 +19,8 @@ void Client_FillAddress_CL_IsThirdPerson(const mh_dll_info_t& DllInfo, const mh_
 	//The old locator disassembled the client's exported CL_IsThirdPerson and
 	//picked the last two adjacent .data references out of it; the catalog
 	//publishes those two globals directly for both SvEngine clients.
-	g_iUser1 = (decltype(g_iUser1))GamedataResolvePtr(RealDllInfo.ImageBase, "g_iUser1", MH_GAMESYMBOL_KIND_GLOBAL);
-	g_iUser2 = (decltype(g_iUser2))GamedataResolvePtr(RealDllInfo.ImageBase, "g_iUser2", MH_GAMESYMBOL_KIND_GLOBAL);
+	g_iUser1 = (decltype(g_iUser1))GamedataResolvePtr(RealDllInfo.ImageBase, "client", "g_iUser1", MH_GAMESYMBOL_KIND_GLOBAL);
+	g_iUser2 = (decltype(g_iUser2))GamedataResolvePtr(RealDllInfo.ImageBase, "client", "g_iUser2", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -33,7 +33,7 @@ void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealD
 		//eax,[eax+EventAPI]; jmp eax` sequence and took the loaded .data operand
 		//as the EventAPI slot; the catalog publishes the `gEngfuncs` global, so
 		//the slot is its `pEventAPI` member.
-		auto pEngfuncs = (cl_enginefunc_t*)GamedataResolvePtr(RealDllInfo.ImageBase, "gEngfuncs", MH_GAMESYMBOL_KIND_GLOBAL);
+		auto pEngfuncs = (cl_enginefunc_t*)GamedataResolvePtr(RealDllInfo.ImageBase, "client", "gEngfuncs", MH_GAMESYMBOL_KIND_GLOBAL);
 		g_pClientDLLEventAPI = &pEngfuncs->pEventAPI;
 	}
 	else
@@ -42,10 +42,10 @@ void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealD
 		return;
 	}
 
-	v_origin = (decltype(v_origin))GamedataResolvePtr(RealDllInfo.ImageBase, "v_origin", MH_GAMESYMBOL_KIND_GLOBAL);
+	v_origin = (decltype(v_origin))GamedataResolvePtr(RealDllInfo.ImageBase, "client", "v_origin", MH_GAMESYMBOL_KIND_GLOBAL);
 
-	gPrivateFuncs.V_CalcNormalRefdef = (decltype(gPrivateFuncs.V_CalcNormalRefdef))GamedataResolvePtr(RealDllInfo.ImageBase, "V_CalcNormalRefdef", MH_GAMESYMBOL_KIND_FUNCTION);
-	g_vVecViewangles = (decltype(g_vVecViewangles))GamedataResolvePtr(RealDllInfo.ImageBase, "g_vVecViewangles", MH_GAMESYMBOL_KIND_GLOBAL);
+	gPrivateFuncs.V_CalcNormalRefdef = (decltype(gPrivateFuncs.V_CalcNormalRefdef))GamedataResolvePtr(RealDllInfo.ImageBase, "client", "V_CalcNormalRefdef", MH_GAMESYMBOL_KIND_FUNCTION);
+	g_vVecViewangles = (decltype(g_vVecViewangles))GamedataResolvePtr(RealDllInfo.ImageBase, "client", "g_vVecViewangles", MH_GAMESYMBOL_KIND_GLOBAL);
 
 	Client_FillAddress_CL_IsThirdPerson(DllInfo, RealDllInfo);
 }

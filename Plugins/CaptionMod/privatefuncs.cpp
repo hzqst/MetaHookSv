@@ -57,51 +57,51 @@ bool SCR_IsLoadingVisible(void)
 
 void Engine_FillAddress_GetClientTime(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	cl_time = (double*)GamedataResolvePtr(RealDllInfo.ImageBase, "cl_time", MH_GAMESYMBOL_KIND_GLOBAL);
-	cl_oldtime = (double*)GamedataResolvePtr(RealDllInfo.ImageBase, "cl_oldtime", MH_GAMESYMBOL_KIND_GLOBAL);
+	cl_time = (double*)GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "cl_time", MH_GAMESYMBOL_KIND_GLOBAL);
+	cl_oldtime = (double*)GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "cl_oldtime", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Engine_FillAddress_S_FindName(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	gPrivateFuncs.S_FindName = (decltype(gPrivateFuncs.S_FindName))GamedataResolvePtr(RealDllInfo.ImageBase, "S_FindName", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.S_FindName = (decltype(gPrivateFuncs.S_FindName))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "S_FindName", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void Engine_FillAddress_S_StartDynamicSound(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	gPrivateFuncs.S_StartDynamicSound = (decltype(gPrivateFuncs.S_StartDynamicSound))GamedataResolvePtr(RealDllInfo.ImageBase, "S_StartDynamicSound", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.S_StartDynamicSound = (decltype(gPrivateFuncs.S_StartDynamicSound))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "S_StartDynamicSound", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void Engine_FillAddress_S_StartStaticSound(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	gPrivateFuncs.S_StartStaticSound = (decltype(gPrivateFuncs.S_StartStaticSound))GamedataResolvePtr(RealDllInfo.ImageBase, "S_StartStaticSound", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.S_StartStaticSound = (decltype(gPrivateFuncs.S_StartStaticSound))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "S_StartStaticSound", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void Engine_FillAddress_S_LoadSound(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	gPrivateFuncs.S_LoadSound = (decltype(gPrivateFuncs.S_LoadSound))GamedataResolvePtr(RealDllInfo.ImageBase, "S_LoadSound", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.S_LoadSound = (decltype(gPrivateFuncs.S_LoadSound))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "S_LoadSound", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void Engine_FillAddress_TextMessageParse(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	gPrivateFuncs.TextMessageParse = (decltype(gPrivateFuncs.TextMessageParse))GamedataResolvePtr(RealDllInfo.ImageBase, "TextMessageParse", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.TextMessageParse = (decltype(gPrivateFuncs.TextMessageParse))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "TextMessageParse", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 // End of Selection
 
 
 void Engine_FillAddress_COM_ExplainDisconnection(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	gPrivateFuncs.COM_ExplainDisconnection = (decltype(gPrivateFuncs.COM_ExplainDisconnection))GamedataResolvePtr(RealDllInfo.ImageBase, "COM_ExplainDisconnection", MH_GAMESYMBOL_KIND_FUNCTION);
-	gPrivateFuncs.COM_ExtendedExplainDisconnection = (decltype(gPrivateFuncs.COM_ExtendedExplainDisconnection))GamedataResolvePtr(RealDllInfo.ImageBase, "COM_ExtendedExplainDisconnection", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.COM_ExplainDisconnection = (decltype(gPrivateFuncs.COM_ExplainDisconnection))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "COM_ExplainDisconnection", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.COM_ExtendedExplainDisconnection = (decltype(gPrivateFuncs.COM_ExtendedExplainDisconnection))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "COM_ExtendedExplainDisconnection", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void Engine_FillAddress_SequenceGetSentenceByIndex(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	gPrivateFuncs.SequenceGetSentenceByIndex = (decltype(gPrivateFuncs.SequenceGetSentenceByIndex))GamedataResolvePtr(RealDllInfo.ImageBase, "SequenceGetSentenceByIndex", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.SequenceGetSentenceByIndex = (decltype(gPrivateFuncs.SequenceGetSentenceByIndex))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "SequenceGetSentenceByIndex", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void Engine_FillAddress_SCR_BeginLoadingPlaque(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	scr_drawloading = (decltype(scr_drawloading))GamedataResolvePtr(RealDllInfo.ImageBase, "scr_drawloading", MH_GAMESYMBOL_KIND_GLOBAL);
+	scr_drawloading = (decltype(scr_drawloading))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "scr_drawloading", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Engine_FillAddress_CL_ViewEntityVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -111,12 +111,12 @@ void Engine_FillAddress_CL_ViewEntityVars(const mh_dll_info_t& DllInfo, const mh
 		int *cl_viewentity = NULL;
 	*/
 
-	cl_viewentity = (decltype(cl_viewentity))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_viewentity", MH_GAMESYMBOL_KIND_GLOBAL);
+	cl_viewentity = (decltype(cl_viewentity))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "cl_viewentity", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Engine_FillAddress_ListenerOrigin(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	listener_origin = (decltype(listener_origin))GamedataResolvePtr(RealDllInfo.ImageBase, "listener_origin", MH_GAMESYMBOL_KIND_GLOBAL);
+	listener_origin = (decltype(listener_origin))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "listener_origin", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Engine_FillAddress_VOX_LookupString(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -127,8 +127,8 @@ void Engine_FillAddress_VOX_LookupString(const mh_dll_info_t& DllInfo, const mh_
 		int *cszrawsentences = NULL;
 	*/
 
-	cszrawsentences = (decltype(cszrawsentences))GamedataResolvePtr(RealDllInfo.ImageBase, "cszrawsentences", MH_GAMESYMBOL_KIND_GLOBAL);
-	rgpszrawsentence = (decltype(rgpszrawsentence))GamedataResolvePtr(RealDllInfo.ImageBase, "rgpszrawsentence", MH_GAMESYMBOL_KIND_GLOBAL);
+	cszrawsentences = (decltype(cszrawsentences))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "cszrawsentences", MH_GAMESYMBOL_KIND_GLOBAL);
+	rgpszrawsentence = (decltype(rgpszrawsentence))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "rgpszrawsentence", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -152,7 +152,7 @@ void Client_FillAddress_SCClient_SoundEngine(const mh_dll_info_t& DllInfo, const
 	//The catalog publishes the backing singleton pointer, not the engine's
 	//lazy-construction accessor; consumers dereference it through
 	//SCClient_SoundEngine_GetInstance and tolerate a null value.
-	gPrivateFuncs.SCClient_soundengine = (decltype(gPrivateFuncs.SCClient_soundengine))GamedataResolvePtr(RealDllInfo.ImageBase, "CClient_SoundEngine_m_pSoundEngine", MH_GAMESYMBOL_KIND_GLOBAL);
+	gPrivateFuncs.SCClient_soundengine = (decltype(gPrivateFuncs.SCClient_soundengine))GamedataResolvePtr(RealDllInfo.ImageBase, "client", "CClient_SoundEngine_m_pSoundEngine", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Client_FillAddress_SCClient_SoundEngine_maxsentences(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -160,32 +160,32 @@ void Client_FillAddress_SCClient_SoundEngine_maxsentences(const mh_dll_info_t& D
 	//`CClient_SoundEngine.m_iSentenceCount` is the sentence-handle count at
 	//object offset; the old locator re-derived exactly this offset by
 	//disassembling the `Sentence length too long` write-back in LoadSoundList.
-	gPrivateFuncs.SCClient_soundengine_maxsentences = GamedataQueryStructMember(RealDllInfo.ImageBase, "CClient_SoundEngine.m_iSentenceCount");
+	gPrivateFuncs.SCClient_soundengine_maxsentences = GamedataQueryStructMember(RealDllInfo.ImageBase, "client", "CClient_SoundEngine.m_iSentenceCount");
 }
 
 void Client_FillAddress_SCClient_SoundEngine_LoadSoundList(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	gPrivateFuncs.SCClient_SoundEngine_LoadSoundList = (decltype(gPrivateFuncs.SCClient_SoundEngine_LoadSoundList))GamedataResolvePtr(RealDllInfo.ImageBase, "CClient_SoundEngine_LoadSoundList", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.SCClient_SoundEngine_LoadSoundList = (decltype(gPrivateFuncs.SCClient_SoundEngine_LoadSoundList))GamedataResolvePtr(RealDllInfo.ImageBase, "client", "CClient_SoundEngine_LoadSoundList", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void Client_FillAddress_SCClient_SoundEngine_PlayFMODSound(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	gPrivateFuncs.SCClient_SoundEngine_PlayFMODSound = (decltype(gPrivateFuncs.SCClient_SoundEngine_PlayFMODSound))GamedataResolvePtr(RealDllInfo.ImageBase, "CClient_SoundEngine_PlayFMODSound", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.SCClient_SoundEngine_PlayFMODSound = (decltype(gPrivateFuncs.SCClient_SoundEngine_PlayFMODSound))GamedataResolvePtr(RealDllInfo.ImageBase, "client", "CClient_SoundEngine_PlayFMODSound", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void Client_FillAddress_SCClient_SoundEngine_LookupSoundBySentenceIndex(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	gPrivateFuncs.SCClient_SoundEngine_LookupSoundBySentenceIndex = (decltype(gPrivateFuncs.SCClient_SoundEngine_LookupSoundBySentenceIndex))GamedataResolvePtr(RealDllInfo.ImageBase, "CClient_SoundEngine_LookupSoundBySentenceIndex", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.SCClient_SoundEngine_LookupSoundBySentenceIndex = (decltype(gPrivateFuncs.SCClient_SoundEngine_LookupSoundBySentenceIndex))GamedataResolvePtr(RealDllInfo.ImageBase, "client", "CClient_SoundEngine_LookupSoundBySentenceIndex", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void Client_FillAddress_SCClient_SoundEngine_LookupSoundBySample(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	gPrivateFuncs.SCClient_SoundEngine_LookupSoundBySample = (decltype(gPrivateFuncs.SCClient_SoundEngine_LookupSoundBySample))GamedataResolvePtr(RealDllInfo.ImageBase, "CClient_SoundEngine_LookupSoundBySample", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.SCClient_SoundEngine_LookupSoundBySample = (decltype(gPrivateFuncs.SCClient_SoundEngine_LookupSoundBySample))GamedataResolvePtr(RealDllInfo.ImageBase, "client", "CClient_SoundEngine_LookupSoundBySample", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void Client_FillAddress_SCClient_GetClientColor(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	gPrivateFuncs.GetClientColor = (decltype(gPrivateFuncs.GetClientColor))GamedataResolvePtr(RealDllInfo.ImageBase, "GetClientColor", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.GetClientColor = (decltype(gPrivateFuncs.GetClientColor))GamedataResolvePtr(RealDllInfo.ImageBase, "client", "GetClientColor", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void Client_FillAddress_SCClient_GameViewport_AllowedToPrintText(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -194,24 +194,24 @@ void Client_FillAddress_SCClient_GameViewport_AllowedToPrintText(const mh_dll_in
 		//Global pointers that link into client dll vars.
 	*/
 
-	gViewport = (decltype(gViewport))GamedataResolvePtr(RealDllInfo.ImageBase, "gViewPort", MH_GAMESYMBOL_KIND_GLOBAL);
-	gPrivateFuncs.GameViewport_AllowedToPrintText = (decltype(gPrivateFuncs.GameViewport_AllowedToPrintText))GamedataResolvePtr(RealDllInfo.ImageBase, "TeamFortressViewport_AllowedToPrintText", MH_GAMESYMBOL_KIND_FUNCTION);
+	gViewport = (decltype(gViewport))GamedataResolvePtr(RealDllInfo.ImageBase, "client", "gViewPort", MH_GAMESYMBOL_KIND_GLOBAL);
+	gPrivateFuncs.GameViewport_AllowedToPrintText = (decltype(gPrivateFuncs.GameViewport_AllowedToPrintText))GamedataResolvePtr(RealDllInfo.ImageBase, "client", "TeamFortressViewport_AllowedToPrintText", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void Client_FillAddress_SCClient_GameViewport_IsScoreBoardVisible(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	gPrivateFuncs.GameViewport_IsScoreBoardVisible = (decltype(gPrivateFuncs.GameViewport_IsScoreBoardVisible))GamedataResolvePtr(RealDllInfo.ImageBase, "TeamFortressViewport_IsScoreBoardVisible", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.GameViewport_IsScoreBoardVisible = (decltype(gPrivateFuncs.GameViewport_IsScoreBoardVisible))GamedataResolvePtr(RealDllInfo.ImageBase, "client", "TeamFortressViewport_IsScoreBoardVisible", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void Client_FillAddress_SCClient_WeaponsResource_SelectSlot(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	gPrivateFuncs.WeaponsResource_SelectSlot = (decltype(gPrivateFuncs.WeaponsResource_SelectSlot))GamedataResolvePtr(RealDllInfo.ImageBase, "WeaponsResource_SelectSlot", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.WeaponsResource_SelectSlot = (decltype(gPrivateFuncs.WeaponsResource_SelectSlot))GamedataResolvePtr(RealDllInfo.ImageBase, "client", "WeaponsResource_SelectSlot", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void Client_FillAddress_SCClient_CHud_GetBorderSize(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	gHud = (decltype(gHud))GamedataResolvePtr(RealDllInfo.ImageBase, "gHUD", MH_GAMESYMBOL_KIND_GLOBAL);
-	gPrivateFuncs.CHud_GetBorderSize = (decltype(gPrivateFuncs.CHud_GetBorderSize))GamedataResolvePtr(RealDllInfo.ImageBase, "CHud_GetBorderSize", MH_GAMESYMBOL_KIND_FUNCTION);
+	gHud = (decltype(gHud))GamedataResolvePtr(RealDllInfo.ImageBase, "client", "gHUD", MH_GAMESYMBOL_KIND_GLOBAL);
+	gPrivateFuncs.CHud_GetBorderSize = (decltype(gPrivateFuncs.CHud_GetBorderSize))GamedataResolvePtr(RealDllInfo.ImageBase, "client", "CHud_GetBorderSize", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void Client_FillAddress_SCClient(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -252,8 +252,8 @@ void Client_FillAddress_CounterStrike_GetTextColor(const mh_dll_info_t& DllInfo,
 	//for cstrike-10210, czero-10210 or the czeror family - the same builds on
 	//which the old signature locator found nothing. `GetClientColor` is published
 	//for every cstrike / czero / czeror client.
-	gPrivateFuncs.GetTextColor = (decltype(gPrivateFuncs.GetTextColor))GamedataResolvePtrIfAvailable(RealDllInfo.ImageBase, "GetTextColor", MH_GAMESYMBOL_KIND_FUNCTION);
-	gPrivateFuncs.GetClientColor = (decltype(gPrivateFuncs.GetClientColor))GamedataResolvePtrIfAvailable(RealDllInfo.ImageBase, "GetClientColor", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.GetTextColor = (decltype(gPrivateFuncs.GetTextColor))GamedataResolvePtrIfAvailable(RealDllInfo.ImageBase, "client", "GetTextColor", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.GetClientColor = (decltype(gPrivateFuncs.GetClientColor))GamedataResolvePtrIfAvailable(RealDllInfo.ImageBase, "client", "GetClientColor", MH_GAMESYMBOL_KIND_FUNCTION);
 
 	if (0 != strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror"))
 	{
@@ -266,7 +266,7 @@ void Client_FillAddress_CounterStrike_GetTextColor(const mh_dll_info_t& DllInfo,
 			//clients that publish no `GetTextColor` - and both publish it, so the
 			//resolve stays required. `czeror` publishes neither symbol, which is why
 			//the game-directory guard above is still needed.
-			gPrivateFuncs.LocationColor = (decltype(gPrivateFuncs.LocationColor))GamedataResolvePtr(RealDllInfo.ImageBase, "g_LocationColor", MH_GAMESYMBOL_KIND_GLOBAL);
+			gPrivateFuncs.LocationColor = (decltype(gPrivateFuncs.LocationColor))GamedataResolvePtr(RealDllInfo.ImageBase, "client", "g_LocationColor", MH_GAMESYMBOL_KIND_GLOBAL);
 		}
 	}
 }

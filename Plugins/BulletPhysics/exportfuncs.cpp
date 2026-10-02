@@ -500,11 +500,11 @@ void ClientStudio_FillAddress(PVOID clientBase)
 {
 	//The client studio renderer is optional: clients without these virtuals keep the engine-side hooks only.
 	gPrivateFuncs.GameStudioRenderer_StudioDrawModel = (decltype(gPrivateFuncs.GameStudioRenderer_StudioDrawModel))
-		GamedataResolvePtr(clientBase, "GameStudioRenderer_StudioDrawModel", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION, false);
+		GamedataResolvePtr(clientBase, "client", "GameStudioRenderer_StudioDrawModel", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION, false);
 	gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer = (decltype(gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer))
-		GamedataResolvePtr(clientBase, "GameStudioRenderer_StudioDrawPlayer", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION, false);
+		GamedataResolvePtr(clientBase, "client", "GameStudioRenderer_StudioDrawPlayer", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION, false);
 	gPrivateFuncs.GameStudioRenderer_StudioSetupBones = (decltype(gPrivateFuncs.GameStudioRenderer_StudioSetupBones))
-		GamedataResolvePtr(clientBase, "GameStudioRenderer_StudioSetupBones", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION, false);
+		GamedataResolvePtr(clientBase, "client", "GameStudioRenderer_StudioSetupBones", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION, false);
 }
 
 

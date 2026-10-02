@@ -13,6 +13,12 @@ static void (__fastcall *g_pfnGetANSIFromLocalized)(void *pthis, int edx, const 
 static void (__fastcall *g_pfnAddKeyValuesToMemoryLeakList)(void *pthis, int edx, void *pMem, HKeySymbol name) = NULL;
 static void (_fastcall *g_pfnRemoveKeyValuesFromMemoryLeakList)(void *pthis, int edx, void *pMem) = NULL;
 
+//One VFTHook per IKeyValuesSystem slot installed by KeyValuesSystem_InstallHooks;
+//kept so KeyValuesSystem_UninstallHooks can UnHook them. Only the alloc/free slots
+//are proxied today; the array is sized for the full interface so the remaining
+//slots can be enabled without resizing it.
+static hook_t* g_phook_CKeyValuesSystem[10] = { NULL };
+
 class CKeyValuesSystemProxy : public IKeyValuesSystem
 {
 public:
@@ -78,18 +84,30 @@ void KeyValuesSystem_InstallHooks(void)
 {
 	PVOID *pVFTable = *(PVOID **)&s_KeyValuesSystemProxy;
 
-	//g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 1, (void *)pVFTable[1], (void **)&g_pfnRegisterSizeofKeyValues);
-	g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 2, (void *)pVFTable[2], (void **)&g_pfnAllocKeyValuesMemory);
-	g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 3, (void *)pVFTable[3], (void **)&g_pfnFreeKeyValuesMemory);
-	//g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 4, (void *)pVFTable[4], (void **)&g_pfnGetSymbolForString);
-	//g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 5, (void *)pVFTable[5], (void **)&g_pfnGetStringForSymbol);
-	//g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 6, (void *)pVFTable[6], (void **)&g_pfnGetLocalizedFromANSI);
-	//g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 7, (void *)pVFTable[7], (void **)&g_pfnGetANSIFromLocalized);
-	//g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 8, (void *)pVFTable[8], (void **)&g_pfnAddKeyValuesToMemoryLeakList);
-	//g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 9, (void *)pVFTable[9], (void **)&g_pfnRemoveKeyValuesFromMemoryLeakList);
+	//Only the alloc/free slots are proxied today; the other entries stay commented
+	//out and keep the engine's originals. Each installed hook is saved so
+	//KeyValuesSystem_UninstallHooks can restore the vftable.
+	//g_phook_CKeyValuesSystem[1] = g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 1, (void *)pVFTable[1], (void **)&g_pfnRegisterSizeofKeyValues);
+	g_phook_CKeyValuesSystem[2] = g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 2, (void *)pVFTable[2], (void **)&g_pfnAllocKeyValuesMemory);
+	g_phook_CKeyValuesSystem[3] = g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 3, (void *)pVFTable[3], (void **)&g_pfnFreeKeyValuesMemory);
+	//g_phook_CKeyValuesSystem[4] = g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 4, (void *)pVFTable[4], (void **)&g_pfnGetSymbolForString);
+	//g_phook_CKeyValuesSystem[5] = g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 5, (void *)pVFTable[5], (void **)&g_pfnGetStringForSymbol);
+	//g_phook_CKeyValuesSystem[6] = g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 6, (void *)pVFTable[6], (void **)&g_pfnGetLocalizedFromANSI);
+	//g_phook_CKeyValuesSystem[7] = g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 7, (void *)pVFTable[7], (void **)&g_pfnGetANSIFromLocalized);
+	//g_phook_CKeyValuesSystem[8] = g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 8, (void *)pVFTable[8], (void **)&g_pfnAddKeyValuesToMemoryLeakList);
+	//g_phook_CKeyValuesSystem[9] = g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 9, (void *)pVFTable[9], (void **)&g_pfnRemoveKeyValuesFromMemoryLeakList);
 }
 
 void KeyValuesSystem_UninstallHooks(void)
 {
-	//TODO unhook VFTHooks
+	//Restores the IKeyValuesSystem vftable entries the proxy replaced.
+	//g_pKeyValuesSystem stays cached; only the hooks are dropped.
+	for (int i = 1; i < _ARRAYSIZE(g_phook_CKeyValuesSystem); ++i)
+	{
+		if (g_phook_CKeyValuesSystem[i])
+		{
+			g_pMetaHookAPI->UnHook(g_phook_CKeyValuesSystem[i]);
+			g_phook_CKeyValuesSystem[i] = NULL;
+		}
+	}
 }
