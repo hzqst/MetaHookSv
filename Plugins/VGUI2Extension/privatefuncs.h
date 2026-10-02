@@ -96,6 +96,7 @@ typedef struct
 	void(__fastcall* GameUI_LoadControlSettingsAndUserConfig)(void* pthis, int dummy, const char* dialogResourceName, int dialogID);
 	bool(__fastcall* GameUI_KeyValues_LoadFromFile)(void* pthis, int dummy, IFileSystem* pFileSystem, const char* resourceName, const char* pathId);
 	void(__fastcall* GameUI_Panel_SetSize)(void* pthis, int dummy, int width, int height);
+	void(__fastcall* GameUI_Panel_SetMinimumSize)(void* pthis, int dummy, int width, int height);
 	void(__fastcall* GameUI_Menu_MakeItemsVisibleInScrollRange)(void* pthis, int dummy);
 	int offset_ScrollBar;
 	int offset_propertySheet;

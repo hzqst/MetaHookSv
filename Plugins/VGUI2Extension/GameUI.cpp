@@ -111,206 +111,27 @@ int GetPatchedGetFontTall(int fontTall)
 	return fontTall;
 }
 
-bool VGUI2_IsPanelSetSize(PVOID Candidate)
+// Numbered callsites are contiguous within each module's gamedata.
+static void PatchPanelSizeCallsites(PVOID moduleBase, const char* moduleName, const char* prefix, PVOID replacement, PVOID* original)
 {
-	typedef struct VGUI2_IsPanelSetSize_SearchContext_s
+	for (int index = 0; ; ++index)
 	{
-		bool bFoundCall10h{};
-		bool bAdd10h{};
-		bool bMov10h{};
-		int instCount_Add10h{};
-		int instCount_Mov10h{};
-		int reg_Add10h{};
-		int reg_Mov10h{};
-	}VGUI2_IsPanelSetSize_SearchContext;
+		char symbolName[128];
+		snprintf(symbolName, sizeof(symbolName), "%s%d", prefix, index);
 
-	VGUI2_IsPanelSetSize_SearchContext ctx = { };
+		// Every pre-HL25 module publishes at least one call for each sizing method.
+		auto address = index == 0
+			? GamedataResolvePtr(moduleBase, symbolName, MH_GAMESYMBOL_KIND_PATCH)
+			: GamedataResolvePtrIfAvailable(moduleBase, symbolName, MH_GAMESYMBOL_KIND_PATCH);
+		if (!address)
+			return;
 
-	g_pMetaHookAPI->DisasmRanges(Candidate, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (VGUI2_IsPanelSetSize_SearchContext*)context;
-
-		//call  [exx+10h]
-		if (!ctx->bFoundCall10h &&
-			pinst->id == X86_INS_CALL &&
-			pinst->detail->x86.op_count == 1 &&
-			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[0].mem.base &&
-			pinst->detail->x86.operands[0].mem.base != X86_REG_ESP &&
-			pinst->detail->x86.operands[0].mem.base != X86_REG_EBP &&
-			pinst->detail->x86.operands[0].mem.disp == 0x10)
+		if (!g_pMetaHookAPI->InlinePatchRedirectBranch(address, replacement, original))
 		{
-			ctx->bFoundCall10h = true;
-			return TRUE;
+			Sys_Error("Could not redirect gamedata patch: %s (module %s)\nEngine buildnum: %d", symbolName, moduleName, g_dwEngineBuildnum);
+			return;
 		}
-
-		//mov     exx, [exx+10h]
-		if (!ctx->bMov10h &&
-			pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[1].mem.base &&
-			pinst->detail->x86.operands[1].mem.base != X86_REG_ESP &&
-			pinst->detail->x86.operands[1].mem.base != X86_REG_EBP &&
-			pinst->detail->x86.operands[1].mem.disp == 0x10)
-		{
-			ctx->bMov10h = true;
-			ctx->instCount_Mov10h = instCount;
-			ctx->reg_Mov10h = pinst->detail->x86.operands[0].reg;
-		}
-
-		//add     exx, 10
-		if (!ctx->bAdd10h &&
-			pinst->id == X86_INS_ADD &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-			pinst->detail->x86.operands[1].imm == 0x10)
-		{
-			ctx->bAdd10h = true;
-			ctx->instCount_Add10h = instCount;
-			ctx->reg_Add10h = pinst->detail->x86.operands[0].reg;
-		}
-
-		//mov     exx, [exx]
-		if (ctx->bAdd10h &&
-			!ctx->bMov10h &&
-			pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[1].mem.base == ctx->reg_Add10h)
-		{
-			ctx->bMov10h = true;
-			ctx->instCount_Mov10h = instCount;
-			ctx->reg_Mov10h = pinst->detail->x86.operands[0].reg;
-		}
-
-		//call     exx
-		if (ctx->bMov10h &&
-			instCount > ctx->instCount_Mov10h &&
-			instCount < ctx->instCount_Mov10h + 10 &&
-			pinst->id == X86_INS_CALL &&
-			pinst->detail->x86.op_count == 1 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[0].reg == ctx->reg_Mov10h)
-		{
-			ctx->bFoundCall10h = true;
-			return TRUE;
-		}
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-	}, 0, &ctx);
-
-	return ctx.bFoundCall10h;
-}
-
-bool VGUI2_IsPanelSetMinimumSize(PVOID Candidate)
-{
-	typedef struct VGUI2_IsPanelSetMinimumSize_SearchContext_s
-	{
-		bool bFoundCall18h{};
-		bool bAdd18h{};
-		bool bMov18h{};
-		int instCount_Add18h{};
-		int instCount_Mov18h{};
-		int reg_Add18h{};
-		int reg_Mov18h{};
-	}VGUI2_IsPanelSetMinimumSize_SearchContext;
-
-	VGUI2_IsPanelSetMinimumSize_SearchContext ctx = { };
-
-	g_pMetaHookAPI->DisasmRanges(Candidate, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (VGUI2_IsPanelSetMinimumSize_SearchContext*)context;
-
-		if (!ctx->bFoundCall18h &&
-			pinst->id == X86_INS_CALL &&
-			pinst->detail->x86.op_count == 1 &&
-			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[0].mem.base &&
-			pinst->detail->x86.operands[0].mem.base != X86_REG_ESP &&
-			pinst->detail->x86.operands[0].mem.base != X86_REG_EBP &&
-			pinst->detail->x86.operands[0].mem.disp == 0x18)
-		{
-			ctx->bFoundCall18h = true;
-			return TRUE;
-		}
-
-		//mov     exx, [exx+18h]
-		if (!ctx->bMov18h &&
-			pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[1].mem.base &&
-			pinst->detail->x86.operands[1].mem.base != X86_REG_ESP &&
-			pinst->detail->x86.operands[1].mem.base != X86_REG_EBP &&
-			pinst->detail->x86.operands[1].mem.disp == 0x18)
-		{
-			ctx->bMov18h = true;
-			ctx->instCount_Mov18h = instCount;
-			ctx->reg_Mov18h = pinst->detail->x86.operands[0].reg;
-		}
-
-		if (!ctx->bAdd18h &&
-			pinst->id == X86_INS_ADD &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-			pinst->detail->x86.operands[1].imm == 0x18)
-		{
-			ctx->bAdd18h = true;
-			ctx->instCount_Add18h = instCount;
-			ctx->reg_Add18h = pinst->detail->x86.operands[0].reg;
-		}
-
-		if (ctx->bAdd18h &&
-			!ctx->bMov18h &&
-			pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[1].mem.base == ctx->reg_Add18h)
-		{
-			ctx->bMov18h = true;
-			ctx->instCount_Mov18h = instCount;
-			ctx->reg_Mov18h = pinst->detail->x86.operands[0].reg;
-		}
-
-		if (ctx->bMov18h &&
-			instCount > ctx->instCount_Mov18h &&
-			instCount < ctx->instCount_Mov18h + 12 &&
-			pinst->id == X86_INS_CALL &&
-			pinst->detail->x86.op_count == 1 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[0].reg == ctx->reg_Mov18h)
-		{
-			ctx->bFoundCall18h = true;
-			return TRUE;
-		}
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-	}, 0, &ctx);
-
-	return ctx.bFoundCall18h;
+	}
 }
 
 /*
@@ -562,6 +383,28 @@ void __fastcall GameUI_Panel_Init(vgui::Panel* pthis, int dummy, int x, int y, i
 		auto pPanel = (vgui::IClientPanel*)pthis;
 		pPanel->SetProportional(true);
 	}
+}
+
+void __fastcall GameUI_Panel_SetSize(vgui::Panel* pthis, int dummy, int width, int height)
+{
+	auto pPanel = (vgui::IClientPanel*)pthis;
+	if (pPanel->IsProportional())
+	{
+		width = g_pVGuiSchemeManager2->GetProportionalScaledValue(width);
+		height = g_pVGuiSchemeManager2->GetProportionalScaledValue(height);
+	}
+	gPrivateFuncs.GameUI_Panel_SetSize(pthis, 0, width, height);
+}
+
+void __fastcall GameUI_Panel_SetMinimumSize(vgui::Panel* pthis, int dummy, int width, int height)
+{
+	auto pPanel = (vgui::IClientPanel*)pthis;
+	if (pPanel->IsProportional())
+	{
+		width = g_pVGuiSchemeManager2->GetProportionalScaledValue(width);
+		height = g_pVGuiSchemeManager2->GetProportionalScaledValue(height);
+	}
+	gPrivateFuncs.GameUI_Panel_SetMinimumSize(pthis, 0, width, height);
 }
 
 void __fastcall GameUI_MessageBox_ApplySchemeSettings_Panel_SetSize(vgui::Panel* pthis, int dummy, int width, int height)
@@ -2576,78 +2419,25 @@ void GameUI_FillAddress_MessageBox(const mh_dll_info_t&, const mh_dll_info_t&)
 		GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "vgui2::MessageBox::ApplySchemeSettings(vgui2::IScheme*)", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 }
 
-void GameUI_PatchAddress_MessageBox_ApplySchemeSettings(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void GameUI_PatchPanelSize(void)
 {
-	if (g_iEngineType != ENGINE_GOLDSRC_HL25)
+	// HL25 already scales these dimensions. SvEngine still uses raw constants.
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		return;
+
+	PatchPanelSizeCallsites(g_GameUIDllInfo.ImageBase, "gameui", "vgui2_Panel_SetSize_Const_callsite_",
+		GameUI_Panel_SetSize, (PVOID*)&gPrivateFuncs.GameUI_Panel_SetSize);
+	PatchPanelSizeCallsites(g_GameUIDllInfo.ImageBase, "gameui", "vgui2_Panel_SetMinimumSize_Const_callsite_",
+		GameUI_Panel_SetMinimumSize, (PVOID*)&gPrivateFuncs.GameUI_Panel_SetMinimumSize);
+
+	// MessageBox adds a fixed margin to measured content; scale only that margin.
+	const char* symbolName = "GameUI_MessageBox_ApplySchemeSettings_to_Panel_SetSize_callsite_0";
+	auto address = GamedataResolvePtr(g_GameUIDllInfo.ImageBase, symbolName, MH_GAMESYMBOL_KIND_PATCH);
+	if (!g_pMetaHookAPI->InlinePatchRedirectBranch(address,
+		GameUI_MessageBox_ApplySchemeSettings_Panel_SetSize, (PVOID*)&gPrivateFuncs.GameUI_Panel_SetSize))
 	{
-		PVOID MessageBox_ApplySchemeSettings_VA = ConvertDllInfoSpace(gPrivateFuncs.MessageBox_ApplySchemeSettings, RealDllInfo, DllInfo);
-
-		typedef struct MessageBox_ApplySchemeSettings_SearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-			std::set<PVOID> addr_SetSize;
-			int instCount_Add64h{};
-		}MessageBox_ApplySchemeSettings_SearchContext;
-
-		MessageBox_ApplySchemeSettings_SearchContext ctx = { DllInfo, RealDllInfo };
-
-		g_pMetaHookAPI->DisasmRanges(MessageBox_ApplySchemeSettings_VA, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (MessageBox_ApplySchemeSettings_SearchContext*)context;
-
-			if (!ctx->instCount_Add64h &&
-				pinst->id == X86_INS_ADD &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				pinst->detail->x86.operands[1].imm == 0x64)
-			{
-				ctx->instCount_Add64h = instCount;
-			}
-
-			if (address[0] == 0xE8 && ctx->instCount_Add64h && instCount > ctx->instCount_Add64h && instCount < ctx->instCount_Add64h + 15)
-			{
-				auto address_RealDllBased = ConvertDllInfoSpace(address, ctx->DllInfo, ctx->RealDllInfo);
-
-				auto Candidate = GetCallAddress(address);
-
-				auto Candidate_RealDllBased = ConvertDllInfoSpace(Candidate, ctx->DllInfo, ctx->RealDllInfo);
-
-				if (Candidate_RealDllBased)
-				{
-					if (Candidate_RealDllBased == gPrivateFuncs.GameUI_Panel_SetSize)
-					{
-						ctx->addr_SetSize.emplace(address_RealDllBased);
-					}
-					else if (!gPrivateFuncs.GameUI_Panel_SetSize && VGUI2_IsPanelSetSize(Candidate))
-					{
-						gPrivateFuncs.GameUI_Panel_SetSize = (decltype(gPrivateFuncs.GameUI_Panel_SetSize))Candidate_RealDllBased;
-
-						ctx->addr_SetSize.emplace(address_RealDllBased);
-					}
-				}
-
-				return TRUE;
-			}
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-
-			}, 0, &ctx);
-
-		Sig_FuncNotFound(GameUI_Panel_SetSize);
-
-		for (auto addr : ctx.addr_SetSize)
-		{
-			g_pMetaHookAPI->InlinePatchRedirectBranch(addr, GameUI_MessageBox_ApplySchemeSettings_Panel_SetSize, NULL);
-		}
+		Sys_Error("Could not redirect gamedata patch: %s\nEngine buildnum: %d", symbolName, g_dwEngineBuildnum);
+		return;
 	}
 }
 
@@ -2714,8 +2504,6 @@ void GameUI_FillAddress(void)
 	GameUI_FillAddress_PropertySheet(g_GameUIDllInfo, g_GameUIDllInfo);
 
 	GameUI_FillAddress_MessageBox(g_GameUIDllInfo, g_GameUIDllInfo);
-
-	GameUI_PatchAddress_MessageBox_ApplySchemeSettings(g_GameUIDllInfo, g_GameUIDllInfo);
 
 	GameUI_FillAddress_CBasePanel(g_GameUIDllInfo);
 
@@ -2897,6 +2685,8 @@ void GameUI_InstallHooks(void)
 	{
 		Install_InlineHook(CCareerBotFrame_ctor);
 	}
+
+	GameUI_PatchPanelSize();
 }
 
 void GameUI_UninstallHooks(void)
@@ -2937,243 +2727,16 @@ void GameUI_UninstallHooks(void)
 
 }
 
-void ServerBrowser_PatchAddress_BaseGamesPage(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealDllInfo)
+void ServerBrowser_PatchPanelSize(void)
 {
-	if (g_iEngineType != ENGINE_GOLDSRC_HL25)
-	{
-		const char sigs1[] = "servers/%sPage_Filters.res";
-		auto sPage_Filters_String = Search_Pattern_From_Size(DllInfo.RdataBase, DllInfo.RdataSize, sigs1);
-		if (!sPage_Filters_String)
-			sPage_Filters_String = Search_Pattern_From_Size(DllInfo.DataBase, DllInfo.DataSize, sigs1);
-		if (sPage_Filters_String)
-		{
-			char pattern[] = "\x68\x16\x01\x00\x00\x68\x70\x02\x00";
-			auto CBaseGamesPage_OnButtonToggled_SetSizeImm = Search_Pattern(pattern, DllInfo);
-			Sig_VarNotFound(CBaseGamesPage_OnButtonToggled_SetSizeImm);
+	// HL25 already scales these dimensions. SvEngine still uses raw constants.
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		return;
 
-			//gPrivateFuncs.CServerBrowserDialog_ctor = (decltype(gPrivateFuncs.CServerBrowserDialog_ctor))g_pMetaHookAPI->ReverseSearchFunctionBegin(DialogServerBrowser_Call, 0x800);
-			//Sig_FuncNotFound(CServerBrowserDialog_ctor);
-
-			typedef struct OnButtonToggled_SearchContext_s
-			{
-				const mh_dll_info_t& DllInfo;
-				const mh_dll_info_t& RealDllInfo;
-				std::set<PVOID> addrSets_SetSize;
-				int instCount_push270h{};
-			}OnButtonToggled_SearchContext;
-
-			OnButtonToggled_SearchContext ctx = { DllInfo, RealDllInfo };
-
-			ctx.instCount_push270h = 0;
-
-			g_pMetaHookAPI->DisasmRanges(CBaseGamesPage_OnButtonToggled_SetSizeImm, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-				auto pinst = (cs_insn*)inst;
-				auto ctx = (OnButtonToggled_SearchContext*)context;
-
-				if (address[0] == 0xE8 && instCount <= 8)
-				{
-					auto Candidate = GetCallAddress(address);
-
-					if (VGUI2_IsPanelSetSize(Candidate))
-					{
-						gPrivateFuncs.ServerBrowser_Panel_SetSize = (decltype(gPrivateFuncs.ServerBrowser_Panel_SetSize))
-							ConvertDllInfoSpace(Candidate, ctx->DllInfo, ctx->RealDllInfo);
-
-						ctx->addrSets_SetSize.emplace(address);
-					}
-
-					return TRUE;
-				}
-
-				if (address[0] == 0xCC)
-					return TRUE;
-
-				if (pinst->id == X86_INS_RET)
-					return TRUE;
-
-				return FALSE;
-
-				}, 0, &ctx);
-
-			Sig_FuncNotFound(ServerBrowser_Panel_SetSize);
-
-			char pattern2[] = "\x68\x16\x01\x00\x00";
-			PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
-			PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
-			while (SearchBegin < SearchLimit)
-			{
-				PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern2);
-				if (pFound)
-				{
-					if (ctx.addrSets_SetSize.find(pFound) == ctx.addrSets_SetSize.end())
-					{
-						ctx.instCount_push270h = 0;
-						g_pMetaHookAPI->DisasmRanges(pFound, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-							auto pinst = (cs_insn*)inst;
-							auto ctx = (OnButtonToggled_SearchContext*)context;
-
-							if (!ctx->instCount_push270h &&
-								pinst->id == X86_INS_PUSH &&
-								pinst->detail->x86.op_count == 1 &&
-								pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-								pinst->detail->x86.operands[0].imm == 0x270)
-							{
-								ctx->instCount_push270h = instCount;
-							}
-
-							if (address[0] == 0xE8 && instCount > ctx->instCount_push270h && instCount <= ctx->instCount_push270h + 5)
-							{
-								PVOID callTarget = GetCallAddress(address);
-								PVOID callTarget_RealDllInfoBased = ConvertDllInfoSpace(callTarget, ctx->DllInfo, ctx->RealDllInfo);
-
-								if (callTarget_RealDllInfoBased == gPrivateFuncs.ServerBrowser_Panel_SetSize)
-								{
-									ctx->addrSets_SetSize.emplace(address);
-									return TRUE;
-								}
-
-								if (!gPrivateFuncs.ServerBrowser_Panel_SetSize && VGUI2_IsPanelSetSize(callTarget))
-								{
-									gPrivateFuncs.ServerBrowser_Panel_SetSize = (decltype(gPrivateFuncs.ServerBrowser_Panel_SetSize))callTarget_RealDllInfoBased;
-
-									ctx->addrSets_SetSize.emplace(address);
-
-									return TRUE;
-								}
-							}
-
-							if (address[0] == 0xCC)
-								return TRUE;
-
-							if (pinst->id == X86_INS_RET)
-								return TRUE;
-
-							return FALSE;
-
-						}, 0, &ctx);
-					}
-
-					SearchBegin = pFound + Sig_Length(pattern2);
-				}
-				else
-				{
-					break;
-				}
-			}
-
-			for (auto addr : ctx.addrSets_SetSize)
-			{
-				g_pMetaHookAPI->InlinePatchRedirectBranch(addr, ServerBrowser_Panel_SetSize, NULL);
-			}
-		}
-	}
-}
-
-void ServerBrowser_PatchAddress_ServerBrowserDialog(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (g_iEngineType != ENGINE_GOLDSRC_HL25)
-	{
-		typedef struct CServerBrowserDialog_ctor_SearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-			std::set<PVOID> addrSets_SetSize;
-			std::set<PVOID> addrSets_SetMinimumSize;
-			int instCount_push280h{};
-		}CServerBrowserDialog_ctor_SearchContext;
-
-		CServerBrowserDialog_ctor_SearchContext ctx = { DllInfo, RealDllInfo };
-
-		char pattern[] = "\x68\x80\x01\x00\x00\x68\x80\x02\x00\x00";
-		PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
-		PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
-		while (SearchBegin < SearchLimit)
-		{
-			PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
-			if (pFound)
-			{
-				if (ctx.addrSets_SetSize.find(pFound) == ctx.addrSets_SetSize.end() &&
-					ctx.addrSets_SetMinimumSize.find(pFound) == ctx.addrSets_SetMinimumSize.end())
-				{
-					ctx.instCount_push280h = 0;
-
-					g_pMetaHookAPI->DisasmRanges(pFound, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-						auto pinst = (cs_insn*)inst;
-						auto ctx = (CServerBrowserDialog_ctor_SearchContext*)context;
-
-						if (!ctx->instCount_push280h &&
-							pinst->id == X86_INS_PUSH &&
-							pinst->detail->x86.op_count == 1 &&
-							pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-							pinst->detail->x86.operands[0].imm == 0x280)
-						{
-							ctx->instCount_push280h = instCount;
-						}
-
-						if (address[0] == 0xE8 && instCount > ctx->instCount_push280h && instCount <= ctx->instCount_push280h + 5)
-						{
-							PVOID callTarget = GetCallAddress(address);
-							PVOID callTarget_RealDllInfoBased = ConvertDllInfoSpace(callTarget, ctx->DllInfo, ctx->RealDllInfo);
-
-							if (gPrivateFuncs.ServerBrowser_Panel_SetSize == callTarget_RealDllInfoBased)
-							{
-								ctx->addrSets_SetSize.emplace(address);
-								return TRUE;
-							}
-
-							if (gPrivateFuncs.ServerBrowser_Panel_SetMinimumSize == callTarget_RealDllInfoBased)
-							{
-								ctx->addrSets_SetMinimumSize.emplace(address);
-								return TRUE;
-							}
-
-							if (!gPrivateFuncs.ServerBrowser_Panel_SetSize && VGUI2_IsPanelSetSize(callTarget))
-							{
-								gPrivateFuncs.ServerBrowser_Panel_SetSize = (decltype(gPrivateFuncs.ServerBrowser_Panel_SetSize))callTarget_RealDllInfoBased;
-								ctx->addrSets_SetSize.emplace(address);
-								return TRUE;
-							}
-
-							if (!gPrivateFuncs.ServerBrowser_Panel_SetMinimumSize && VGUI2_IsPanelSetMinimumSize(callTarget))
-							{
-								gPrivateFuncs.ServerBrowser_Panel_SetMinimumSize = (decltype(gPrivateFuncs.ServerBrowser_Panel_SetMinimumSize))callTarget_RealDllInfoBased;
-								ctx->addrSets_SetMinimumSize.emplace(address);
-								return TRUE;
-							}
-						}
-
-						if (address[0] == 0xCC)
-							return TRUE;
-
-						if (pinst->id == X86_INS_RET)
-							return TRUE;
-
-						return FALSE;
-
-					}, 0, &ctx);
-				}
-
-				SearchBegin = pFound + Sig_Length(pattern);
-			}
-			else
-			{
-				break;
-			}
-		}
-
-		for (auto insn : ctx.addrSets_SetSize)
-		{
-			g_pMetaHookAPI->InlinePatchRedirectBranch(insn, ServerBrowser_Panel_SetSize, NULL);
-		}
-
-		for (auto insn : ctx.addrSets_SetMinimumSize)
-		{
-			g_pMetaHookAPI->InlinePatchRedirectBranch(insn, ServerBrowser_Panel_SetMinimumSize, NULL);
-		}
-	}
+	PatchPanelSizeCallsites(g_ServerBrowserDllInfo.ImageBase, "serverbrowser", "vgui2_Panel_SetSize_Const_callsite_",
+		ServerBrowser_Panel_SetSize, (PVOID*)&gPrivateFuncs.ServerBrowser_Panel_SetSize);
+	PatchPanelSizeCallsites(g_ServerBrowserDllInfo.ImageBase, "serverbrowser", "vgui2_Panel_SetMinimumSize_Const_callsite_",
+		ServerBrowser_Panel_SetMinimumSize, (PVOID*)&gPrivateFuncs.ServerBrowser_Panel_SetMinimumSize);
 }
 
 void ServerBrowser_FillAddress_KeyValues(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -3197,10 +2760,6 @@ void ServerBrowser_FillAddress(void)
 		return;
 	}
 
-	ServerBrowser_PatchAddress_BaseGamesPage(g_ServerBrowserDllInfo, g_ServerBrowserDllInfo);
-
-	ServerBrowser_PatchAddress_ServerBrowserDialog(g_ServerBrowserDllInfo, g_ServerBrowserDllInfo);
-
 	ServerBrowser_FillAddress_KeyValues(g_ServerBrowserDllInfo, g_ServerBrowserDllInfo);
 
 	ServerBrowser_FillAddress_PanelInit();
@@ -3208,6 +2767,8 @@ void ServerBrowser_FillAddress(void)
 
 void ServerBrowser_InstallHooks(void)
 {
+	ServerBrowser_PatchPanelSize();
+
 	Install_InlineHook(ServerBrowser_Panel_Init);
 	Install_InlineHook(ServerBrowser_KeyValues_LoadFromFile);
 }
