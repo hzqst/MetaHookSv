@@ -2430,6 +2430,21 @@ void GameUI_FillAddress_KeyValues(const mh_dll_info_t& RealDllInfo)
 	Sig_FuncNotFound(GameUI_KeyValues_LoadFromFile);
 }
 
+void GameUI_FillAddress_Panel_Init(const mh_dll_info_t& RealDllInfo)
+{
+	gPrivateFuncs.GameUI_Panel_Init = (decltype(gPrivateFuncs.GameUI_Panel_Init))
+		GamedataResolvePtr(RealDllInfo.ImageBase, "gameui", "vgui2::Panel::Init(int, int, int, int)", MH_GAMESYMBOL_KIND_FUNCTION);
+}
+
+void GameUI_FillAddress_Menu(const mh_dll_info_t& RealDllInfo)
+{
+	gPrivateFuncs.offset_Menu_m_pScroller = GamedataResolveStructMember(RealDllInfo.ImageBase, "gameui", "vgui2::Menu.m_pScroller");
+
+	//The target GameUI method has no explicit arguments, unlike the newer SDK overload.
+	gPrivateFuncs.GameUI_Menu_MakeItemsVisibleInScrollRange = (decltype(gPrivateFuncs.GameUI_Menu_MakeItemsVisibleInScrollRange))
+		GamedataResolvePtr(RealDllInfo.ImageBase, "gameui", "vgui2::Menu::MakeItemsVisibleInScrollRange()", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
+}
+
 void GameUI_FillAddress(void)
 {
 	if (!g_GameUIDllInfo.ImageBase)
@@ -2476,13 +2491,9 @@ void GameUI_FillAddress(void)
 
 	GameUI_FillAddress_KeyValues(g_GameUIDllInfo);
 
-	gPrivateFuncs.GameUI_Panel_Init = (decltype(gPrivateFuncs.GameUI_Panel_Init))
-		GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::Panel::Init(int, int, int, int)", MH_GAMESYMBOL_KIND_FUNCTION);
+	GameUI_FillAddress_Panel_Init(g_GameUIDllInfo);
 
-	gPrivateFuncs.offset_Menu_m_pScroller = GamedataResolveStructMember(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::Menu.m_pScroller");
-	//The target GameUI method has no explicit arguments, unlike the newer SDK overload.
-	gPrivateFuncs.GameUI_Menu_MakeItemsVisibleInScrollRange = (decltype(gPrivateFuncs.GameUI_Menu_MakeItemsVisibleInScrollRange))
-		GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "gameui", "vgui2::Menu::MakeItemsVisibleInScrollRange()", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
+	GameUI_FillAddress_Menu(g_GameUIDllInfo);
 }
 
 bool GameUI_HasExclusiveInput()
