@@ -875,6 +875,10 @@ void BuildGroup::PanelAdded(Panel *panel)
 	_panelDar.AddToTail(temp);
 }
 
+//Fuck COF
+extern int g_iEngineType;
+#define ENGINE_GOLDSRC_COF 5
+
 //-----------------------------------------------------------------------------
 // Purpose: loads the control settings from file
 //-----------------------------------------------------------------------------
@@ -900,7 +904,10 @@ void BuildGroup::LoadControlSettings(const char *controlResourceName, const char
 		{
 			bSuccess = rDat->LoadFromFile(g_pFullFileSystem, controlResourceName, pathID);
 		}
-
+		if (!g_iEngineType && pathID && g_iEngineType == ENGINE_GOLDSRC_COF)
+		{
+			bSuccess = rDat->LoadFromFile(g_pFullFileSystem, controlResourceName);
+		}
 		if ( bSuccess )
 		{
 			if ( IsX360() )

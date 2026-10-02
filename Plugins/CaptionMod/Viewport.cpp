@@ -521,17 +521,23 @@ void CViewport::LoadBaseDictionary(void)
     const char* kBaseDictPath = "captionmod/dictionary.csv";
 
     auto hFile = FILESYSTEM_ANY_OPEN(kBaseDictPath, "rb", "GAME");
-    if (hFile == FILESYSTEM_INVALID_HANDLE)
-    {
-        g_pMetaHookAPI->SysError("LoadBaseDictionary: failed to open %s\n", kBaseDictPath);
-        return;
+
+	if (hFile == FILESYSTEM_INVALID_HANDLE && g_iEngineType == ENGINE_GOLDSRC_COF)
+	{
+		hFile = FILESYSTEM_ANY_OPEN(kBaseDictPath, "rb");
     }
+
+	if (hFile == FILESYSTEM_INVALID_HANDLE)
+	{
+		Sys_Error("LoadBaseDictionary: failed to open %s\n", kBaseDictPath);
+		return;
+	}
 
     unsigned int fileSize = FILESYSTEM_ANY_SIZE(hFile);
     if (fileSize == 0)
     {
         FILESYSTEM_ANY_CLOSE(hFile);
-        gEngfuncs.Con_Printf("LoadBaseDictionary: too few lines in the dictionary file.\n");
+        Sys_Error("LoadBaseDictionary: too few lines in the dictionary file.\n");
         return;
     }
 
@@ -542,7 +548,7 @@ void CViewport::LoadBaseDictionary(void)
 
     if (nRead <= 0)
     {
-        g_pMetaHookAPI->SysError("LoadBaseDictionary: failed to read %s\n", kBaseDictPath);
+        Sys_Error("LoadBaseDictionary: failed to read %s\n", kBaseDictPath);
         return;
     }
 

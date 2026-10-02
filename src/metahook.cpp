@@ -3702,6 +3702,12 @@ HMEMORYMODULE MH_LoadMirrorDLL_FileSystem(const char* szFileName)
 	HMEMORYMODULE hMemoryModuleHandle = NULL;
 
 	auto hFileHandle = FILESYSTEM_ANY_OPEN(szFileName, "rb", "GAME");
+
+	if (hFileHandle == FILESYSTEM_INVALID_HANDLE  && g_iEngineType == ENGINE_GOLDSRC_COF)
+	{
+		hFileHandle = FILESYSTEM_ANY_OPEN(szFileName, "rb");
+	}
+
 	if (hFileHandle)
 	{
 		FILESYSTEM_ANY_SEEK(hFileHandle, 0, FILESYSTEM_SEEK_TAIL);
