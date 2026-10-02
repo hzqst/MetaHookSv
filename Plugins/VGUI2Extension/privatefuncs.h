@@ -42,6 +42,7 @@ typedef struct
 
 	//Engine init
 	PVOID (*VGUIClient001_CreateInterface)(HINTERFACEMODULE hModule);
+	LRESULT (__fastcall* CGame_WindowProc)(void* pthis, int dummy, HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
 
 	//ClientVGUI
 	void(__fastcall* ClientVGUI_Panel_Init)(void* pthis, int dummy, int x, int y, int w, int h);

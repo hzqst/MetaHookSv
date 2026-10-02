@@ -151,3 +151,18 @@ Common calling pattern:
 - `Register*Callbacks(...)` during initialization
 - `Unregister*Callbacks(...)` on shutdown
 - `VGUI2Extension()->GetCurrentLanguage()` when reading the language
+
+
+## Native Win32 IME ownership (2026-10-02)
+- Trigger: CoF 5936 committed Chinese text appears twice, followed by extra characters.
+- Root cause / constraint: `CBaseUILegacyProxy::CallEngineSurfaceWndProc` dispatches both pre and post callbacks; the former IME callback processed both. CoF `CGame::WindowProc` also calls `DefWindowProcA` before the BaseUI dispatch, so BaseUI SUPERCEDE cannot suppress default IME processing.
+- Correct approach: `InitWindowStuffs` installs a non-SDL-only inline hook on gamedata FUNCTION `CGame::WindowProc`; the fastcall adapter preserves x86 thiscall ECX and the LRESULT return. `IMEWindowMessage.h` consumes composition/result and IME_CHAR before the original procedure, forwards ordinary input, and clears native composition/candidate UI flags before forwarding IME_SETCONTEXT. The BaseUI Win32 callback no longer submits IME text; the SDL callback ignores IsPost. `ShutdownWindowStuffs` removes the hook and unregisters callbacks during HUD_Shutdown and ExitGame.
+- Scope: CoF 5936 and native hl-3248/3266/3329/3647/4554. The gamedata release gate requires CGame::WindowProc on these six engine identities; SDL engines keep their event path.
+- Verification: Win32 Release and Debug plugin builds exited 0. Standalone MSVC x86 `scripts/tests/ime_window_message_test.cpp` compiled and ran with exit 0 (single commit, consumed/default message routing, composition state, candidate notifications, context flags, null input). `python -m pytest scripts/tests -q`: 189 passed, 2 skipped, 1695 subtests passed. Packaged gamedata validation passed for 21 snapshots / 5 families. CoF runtime IME verification remains outstanding: the available halflife MCP launcher rejected cof.exe because it expects svencoop.exe; synthetic message tests do not exercise a real IME.
+
+
+### Cancel old composition when opening chat (2026-10-02)
+- Trigger: the key bound to messagemode can leave an existing IME composition visible when CaptionMod opens chat.
+- Constraint: clearing TextEntry does not cancel the OS input context. Chat code must not depend on IMM calls; normal OnIMEEndComposition notifications must not initiate cancellation (ImmNotifyIME can synchronously reenter window-message handlers).
+- Implementation: IInput2 appends CancelIMEComposition and becomes VGUI_Input2_006; VGUI2Extension keeps a VGUI_Input2_005 factory alias for existing callers. InputWin32.cpp obtains/releases HIMC around ImmNotifyIME(NI_COMPOSITIONSTR, CPS_CANCEL, 0), then resets composing state/time, clears composition text, hides candidates and frees the candidate list even when HWND/HIMC is absent. CaptionMod CChatDialog::StartMessageMode calls this after RequestFocus, covering normal and team chat.
+- Validation: VGUI2Extension and CaptionMod Release/Debug Win32 builds exited 0; git diff --check passed. Real CoF IME behavior remains unverified in this turn. This only cancels existing composition; it does not gate later input from a still-held activation key. Deploy the rebuilt CaptionMod together with VGUI2Extension providing interface 006.

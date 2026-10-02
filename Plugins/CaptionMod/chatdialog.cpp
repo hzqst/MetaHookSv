@@ -530,6 +530,7 @@ void CChatDialog::StartMessageMode(int iMessageModeType)
 	vgui::surface()->CalculateMouseVisible();
 
 	m_pChatInput->RequestFocus();
+	input()->CancelIMEComposition();
 	m_pChatInput->SetPaintBorderEnabled(true);
 	m_pChatInput->SetMouseInputEnabled(true);
 

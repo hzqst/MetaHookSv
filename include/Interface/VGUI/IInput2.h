@@ -114,6 +114,8 @@ public:
 	virtual VPANEL GetModalSubTree(void) = 0;
 	virtual bool IsIMEComposing() const = 0;
 	virtual double GetImeComposingTime() const = 0;
+	// Discard the current IME composition without committing any text.
+	virtual void CancelIMEComposition() = 0;
 };
 
 #define VGUI_INPUT2_INTERFACE_VERSION "VGUI_Input2_005"

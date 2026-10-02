@@ -1124,6 +1124,30 @@ public:
 		PostKeyMessage(new KeyValues("DoCompositionString", "string", L""));
 	}
 
+	void CancelIMEComposition() override
+	{
+		const auto hwnd = (HWND)GetIMEWindow();
+		if (hwnd)
+		{
+			const auto hIMC = ImmGetContext(hwnd);
+			if (hIMC)
+			{
+				// Cancellation can synchronously deliver IME end/notify messages.
+				// Keep it separate from OnIMEEndComposition to avoid recursion.
+				ImmNotifyIME(hIMC, NI_COMPOSITIONSTR, CPS_CANCEL, 0);
+				ImmReleaseContext(hwnd, hIMC);
+			}
+		}
+
+		// Clear stale UI state even when the OS already ended the composition
+		// or there is no associated input context.
+		g_bIMEComposing = false;
+		g_flImeComposingTime = gEngfuncs.GetAbsoluteTime();
+		InternalSetCompositionString(L"");
+		InternalHideCandidateWindow();
+		DestroyCandidateList();
+	}
+
 	void OnKeyCodeUnhandled(int keyCode) override
 	{
 

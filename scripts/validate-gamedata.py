@@ -1094,6 +1094,9 @@ VGUI2EXTENSION_MODULE_FACTORY_GAMES = (
     "hl-6153", "hl-8684", "hl-10210", "svencoop-8948", "svencoop-10257",
 )
 VGUI2EXTENSION_MODULE_FACTORY_PATCH = "VGUIClient001_CreateInterface"
+VGUI2EXTENSION_NATIVE_WINDOW_GAMES = (
+    "cof-5936", "hl-3248", "hl-3266", "hl-3329", "hl-3647", "hl-4554",
+)
 
 
 def _keyvalues_loadfromfile_check(symbols, game_version, module):
@@ -1117,6 +1120,9 @@ def validate_vgui2extension(symbols, game_version, include_engine=True):
     """
     errors = []
     if include_engine:
+        if game_version in VGUI2EXTENSION_NATIVE_WINDOW_GAMES:
+            errors += _consumer_check(symbols, game_version, ("CGame::WindowProc",),
+                                      "function", "engine", "VGUI2Extension")
         errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_GAMEUI_FUNCTIONS,
                                   "function", "gameui", "VGUI2Extension")
         errors += _consumer_check(symbols, game_version, VGUI2EXTENSION_GAMEUI_VIRTUAL_FUNCTIONS,

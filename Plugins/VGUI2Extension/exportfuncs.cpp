@@ -3,6 +3,7 @@
 #include "privatefuncs.h"
 #include "DpiManagerInternal.h"
 #include "LanguageRegistry.h"
+#include "IMEWindowMessage.h"
 
 //VGUI2
 #include <vgui/VGUI.h>
@@ -145,6 +146,7 @@ int HUD_Redraw(float time, int intermission)
 
 void HUD_Shutdown(void)
 {
+	ShutdownWindowStuffs();
 	NativeClientUI_UninstallHooks();
 	Client_UninstallHooks();
 	ClientVGUI_UninstallHooks();
@@ -408,6 +410,9 @@ public:
 
 	void CallEngineSurfaceAppProc(void*& pevent, void*& userData, VGUI2Extension_CallbackContext* CallbackContext) override
 	{
+		if (CallbackContext->IsPost)
+			return;
+
 		const auto pSDLEvent = (const SDL_Event *)pevent;
 
 		switch (pSDLEvent->type)
@@ -505,131 +510,8 @@ public:
 
 	void CallEngineSurfaceWndProc(void*& hwnd, unsigned int& msg, unsigned int& wparam, long& lparam, VGUI2Extension_CallbackContext* CallbackContext) override
 	{
-		switch (msg)
-		{
-		case WM_SYSCHAR:
-		case WM_CHAR:
-		{
-			if (vgui::input()->IsIMEComposing())
-			{
-				CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
-				break;
-			}
-
-			break;
-		}
-		case WM_KEYDOWN:
-		case WM_KEYUP:
-		{
-			if (wparam == VK_BACK)
-			{
-				if (vgui::input()->IsIMEComposing())
-				{
-					CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
-					break;
-				}
-			}
-
-			break;
-		}
-		case WM_INPUTLANGCHANGE:
-		{
-			vgui::input()->SetIMEWindow(hwnd);
-			vgui::input()->OnInputLanguageChanged();
-			CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
-			break;
-		}
-
-		case WM_IME_STARTCOMPOSITION:
-		{
-			vgui::input()->SetIMEWindow(hwnd);
-			vgui::input()->OnIMEStartComposition();
-			CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
-			break;
-		}
-
-		case WM_IME_COMPOSITION:
-		{
-			vgui::input()->SetIMEWindow(hwnd);
-			vgui::input()->OnIMECompositionWin32(lparam);
-			CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
-			break;
-		}
-
-		case WM_IME_ENDCOMPOSITION:
-		{
-			vgui::input()->SetIMEWindow(hwnd);
-			vgui::input()->OnIMEEndComposition();
-			CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
-			break;
-		}
-
-		case WM_IME_NOTIFY:
-		{
-			switch (wparam)
-			{
-			case IMN_OPENCANDIDATE:
-			{
-				vgui::input()->SetIMEWindow(hwnd);
-				vgui::input()->OnIMEShowCandidates();
-				CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
-				break;
-			}
-
-			case IMN_CHANGECANDIDATE:
-			{
-				vgui::input()->SetIMEWindow(hwnd);
-				vgui::input()->OnIMEChangeCandidates();
-				CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
-				break;
-			}
-
-			case IMN_CLOSECANDIDATE:
-			{
-				vgui::input()->SetIMEWindow(hwnd);
-				vgui::input()->OnIMECloseCandidates();
-				CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
-				break;
-			}
-
-			case IMN_SETCONVERSIONMODE:
-			case IMN_SETSENTENCEMODE:
-			case IMN_SETOPENSTATUS:
-			{
-				vgui::input()->SetIMEWindow(hwnd);
-				vgui::input()->OnIMERecomputeModes();
-				CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
-				break;
-			}
-
-			case IMN_CLOSESTATUSWINDOW:
-			case IMN_GUIDELINE:
-			case IMN_OPENSTATUSWINDOW:
-			case IMN_SETCANDIDATEPOS:
-			case IMN_SETCOMPOSITIONFONT:
-			case IMN_SETCOMPOSITIONWINDOW:
-			case IMN_SETSTATUSWINDOWPOS:
-			{
-				break;
-			}
-			}
-
-			break;
-		}
-
-		case WM_IME_SETCONTEXT:
-		{
-			lparam &= ~ISC_SHOWUICOMPOSITIONWINDOW;
-			lparam &= ~ISC_SHOWUIGUIDELINE;
-			lparam &= ~ISC_SHOWUIALLCANDIDATEWINDOW;
-			break;
-		}
-
-		case WM_IME_CHAR:
-		{
-			CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
-		}
-		}
+		// Native IME messages are consumed once, before CGame::WindowProc.
+		// Neither the pre nor the post BaseUI callback may submit them again.
 	}
 
 	void Paint(int& x, int& y, int& right, int& bottom, VGUI2Extension_CallbackContext* CallbackContext) override
@@ -660,6 +542,27 @@ public:
 
 static CVGUI2Extension_BaseUICallbacks s_BaseUICallbacks_IMEHandler;
 
+static hook_t* s_WindowProcHook = nullptr;
+
+static LRESULT __fastcall NewCGame_WindowProc(void* pthis, int, HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
+{
+	if (HandleIMEWindowMessage(vgui::input(), hwnd, msg, wparam, lparam))
+		return 0;
+
+	return gPrivateFuncs.CGame_WindowProc(pthis, 0, hwnd, msg, wparam, lparam);
+}
+
+void ShutdownWindowStuffs(void)
+{
+	if (s_WindowProcHook)
+	{
+		g_pMetaHookAPI->UnHook(s_WindowProcHook);
+		s_WindowProcHook = nullptr;
+		gPrivateFuncs.CGame_WindowProc = nullptr;
+	}
+	VGUI2ExtensionInternal()->UnregisterBaseUICallbacks(&s_BaseUICallbacks_IMEHandler);
+}
+
 BOOL WINAPI NewSystemParametersInfoA(_In_ UINT uiAction, _In_ UINT uiParam, _Pre_maybenull_ _Post_valid_ PVOID pvParam, _In_ UINT fWinIni)
 {
 	if (SPI_SETMOUSE == uiParam)
@@ -683,6 +586,14 @@ void InitWindowStuffs(void)
 	{
 		//non-SDL2 branch
 		Win32Hwnd = (decltype(Win32Hwnd))Sys_GetMainWindow();
+		if (!s_WindowProcHook)
+		{
+			auto address = GamedataResolvePtr(g_EngineDLLInfo.ImageBase, "engine", "CGame::WindowProc", MH_GAMESYMBOL_KIND_FUNCTION);
+			s_WindowProcHook = g_pMetaHookAPI->InlineHook(address, NewCGame_WindowProc,
+				(void**)&gPrivateFuncs.CGame_WindowProc);
+			if (!s_WindowProcHook)
+				Sys_Error("Could not install the native IME window procedure hook.");
+		}
 	}
 
 	DpiManagerInternal()->InitFromHwnd(Win32Hwnd);

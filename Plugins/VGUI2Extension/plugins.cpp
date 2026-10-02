@@ -125,6 +125,7 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 void IPluginsV4::ExitGame(int iResult)
 {
+	ShutdownWindowStuffs();
 	VGUI1_Shutdown();
 	BaseUI_UninstallHooks();
 	Engine_UninstallHooks();

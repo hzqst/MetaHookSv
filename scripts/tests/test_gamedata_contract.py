@@ -1502,6 +1502,8 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
     def complete_engine_symbols(self, game_version=None):
         symbols = {("engine", name): {"kind": kind, "module": "engine"}
                    for name, kind in self.engine_records.items()}
+        if game_version in ("cof-5936", "hl-3248", "hl-3266", "hl-3329", "hl-3647", "hl-4554"):
+            symbols[("engine", "CGame::WindowProc")] = {"kind": "function", "module": "engine"}
         symbols.update({("engine", name): {"kind": kind, "module": "engine"}
                         for name, kind in self.engine_functions.items()})
         symbols.update({("gameui", name): {"kind": kind, "module": "gameui"}
@@ -1867,6 +1869,19 @@ class VGUI2ExtensionGateTests(unittest.TestCase):
                 symbols = {("client", name): {"kind": "global", "module": "client"}}
                 errors = validate.validate_vgui2extension(symbols, "svencoop-10257", include_engine=False)
                 self.assertTrue(any(name in e for e in errors), errors)
+
+    def test_native_ime_window_proc_is_required_only_without_sdl(self):
+        name = "CGame::WindowProc"
+        native_games = ("cof-5936", "hl-3248", "hl-3266", "hl-3329", "hl-3647", "hl-4554")
+        for gv in self.engine_games:
+            symbols = self.complete_engine_symbols(gv)
+            self.assertEqual([], validate.validate_vgui2extension(symbols, gv))
+            symbols.pop(("engine", name), None)
+            errors = validate.validate_vgui2extension(symbols, gv)
+            self.assertEqual(gv in native_games, any(name in error for error in errors))
+            if gv in native_games:
+                symbols[("engine", name)] = {"kind": "global", "module": "engine"}
+                self.assertTrue(any(name in error for error in validate.validate_vgui2extension(symbols, gv)))
 
     def test_engine_entries_are_required_on_engine_snapshots(self):
         for name in self.engine_records:
