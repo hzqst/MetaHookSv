@@ -629,9 +629,9 @@ void Engine_FillAddress_LegacyMultiTextureInit(const mh_dll_info_t& DllInfo, con
 void Engine_FillAddress_DrawStartupGraphic(const mh_dll_info_t& RealDllInfo)
 {
 	gPrivateFuncs.CVideoMode_Common_DrawStartupGraphic = (decltype(gPrivateFuncs.CVideoMode_Common_DrawStartupGraphic))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "CVideoMode_Common_DrawStartupGraphic", MH_GAMESYMBOL_KIND_FUNCTION);
-	gPrivateFuncs.offset_CVideoMode_Common_m_ImageID = GamedataQueryStructMember(RealDllInfo.ImageBase, "CVideoMode_Common.m_ImageID");
-	gPrivateFuncs.offset_CVideoMode_Common_m_iBaseResX = GamedataQueryStructMember(RealDllInfo.ImageBase, "CVideoMode_Common.m_iBaseResX");
-	gPrivateFuncs.offset_CVideoMode_Common_m_iBaseResY = GamedataQueryStructMember(RealDllInfo.ImageBase, "CVideoMode_Common.m_iBaseResY");
+	gPrivateFuncs.offset_CVideoMode_Common_m_ImageID = GamedataQueryStructMember(RealDllInfo.ImageBase, "engine", "CVideoMode_Common.m_ImageID");
+	gPrivateFuncs.offset_CVideoMode_Common_m_iBaseResX = GamedataQueryStructMember(RealDllInfo.ImageBase, "engine", "CVideoMode_Common.m_iBaseResX");
+	gPrivateFuncs.offset_CVideoMode_Common_m_iBaseResY = GamedataQueryStructMember(RealDllInfo.ImageBase, "engine", "CVideoMode_Common.m_iBaseResY");
 }
 
 void Engine_FillAddress_DrawStartupVideo(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -1484,14 +1484,14 @@ void Client_FillAddress_CoreProfile(const mh_dll_info_t& RealDllInfo)
 	gPrivateFuncs.CParticleSystem_ParticleDraw = (decltype(gPrivateFuncs.CParticleSystem_ParticleDraw))
 		GamedataResolvePtr(base, "client", "CParticleSystem_ParticleDraw", MH_GAMESYMBOL_KIND_FUNCTION);
 	gPrivateFuncs.offset_ClientPortalManager_m_bShadersAvailable =
-		GamedataQueryStructMember(base, "ClientPortalManager.m_bShadersAvailable");
+		GamedataQueryStructMember(base, "client", "ClientPortalManager.m_bShadersAvailable");
 
 	auto queryOffset = [base](const char* name)
 	{
 		uint32_t offset = 0;
 		auto status = g_pMetaHookAPI->QueryGameSymbolScalar(base, name, &offset);
 		if (status != MH_GAMESYMBOL_OK)
-			Sys_Error("Could not query Sven client layout: %s (%s)", name, g_pMetaHookAPI->GetGameSymbolStatusString(status));
+			Sys_Error("Could not resolve gamedata layout: %s (%s)", name, g_pMetaHookAPI->GetGameSymbolStatusString(status));
 		return offset;
 	};
 	g_SCClientPortalLayout.vectorBegin = queryOffset("ClientPortalManager_vector_begin_offset");

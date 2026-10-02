@@ -46,15 +46,17 @@ inline PVOID GamedataResolvePtr(PVOID moduleBase, const char* moduleName, const 
 	return address;
 }
 
-inline uint32_t GamedataQueryStructMember(PVOID moduleBase, const char* symbolName)
+//Query a required gamedata structMember byte offset; a missing record is fatal.
+//moduleName identifies the module owning the symbol and is echoed by the diagnostic.
+inline uint32_t GamedataQueryStructMember(PVOID moduleBase, const char* moduleName, const char* symbolName)
 {
 	uint32_t offset = 0;
 	mh_gamesymbol_status_t status = g_pMetaHookAPI->QueryGameSymbolStructMember(moduleBase, symbolName, &offset);
 
 	if (status != MH_GAMESYMBOL_OK)
 	{
-		Sys_Error("Could not query gamedata struct member: %s (%s)\nEngine buildnum: %d",
-			symbolName, g_pMetaHookAPI->GetGameSymbolStatusString(status), g_dwEngineBuildnum);
+		Sys_Error("Could not query gamedata struct member: %s (module %s, %s)\nEngine buildnum: %d",
+			symbolName, moduleName, g_pMetaHookAPI->GetGameSymbolStatusString(status), g_dwEngineBuildnum);
 	}
 
 	return offset;

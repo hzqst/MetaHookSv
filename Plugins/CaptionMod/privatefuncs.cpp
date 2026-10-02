@@ -160,7 +160,7 @@ void Client_FillAddress_SCClient_SoundEngine_maxsentences(const mh_dll_info_t& D
 	//`CClient_SoundEngine.m_iSentenceCount` is the sentence-handle count at
 	//object offset; the old locator re-derived exactly this offset by
 	//disassembling the `Sentence length too long` write-back in LoadSoundList.
-	gPrivateFuncs.SCClient_soundengine_maxsentences = GamedataQueryStructMember(RealDllInfo.ImageBase, "CClient_SoundEngine.m_iSentenceCount");
+	gPrivateFuncs.SCClient_soundengine_maxsentences = GamedataQueryStructMember(RealDllInfo.ImageBase, "client", "CClient_SoundEngine.m_iSentenceCount");
 }
 
 void Client_FillAddress_SCClient_SoundEngine_LoadSoundList(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
