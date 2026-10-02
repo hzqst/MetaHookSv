@@ -344,6 +344,17 @@ void __fastcall GameUI_Panel_SetSize(vgui::Panel* pthis, int dummy, int width, i
 	gPrivateFuncs.GameUI_Panel_SetSize(pthis, 0, width, height);
 }
 
+void __fastcall GameUI_Panel_SetBounds(vgui::Panel* pthis, int dummy, int x, int y, int width, int height)
+{
+	auto pPanel = (vgui::IClientPanel*)pthis;
+	if (pPanel->IsProportional())
+	{
+		width = g_pVGuiSchemeManager2->GetProportionalScaledValue(width);
+		height = g_pVGuiSchemeManager2->GetProportionalScaledValue(height);
+	}
+	gPrivateFuncs.GameUI_Panel_SetBounds(pthis, 0, x, y, width, height);
+}
+
 void __fastcall GameUI_Panel_SetMinimumSize(vgui::Panel* pthis, int dummy, int width, int height)
 {
 	auto pPanel = (vgui::IClientPanel*)pthis;
@@ -2392,22 +2403,29 @@ void GameUI_PatchPanelSize(void)
 {
 	// HL25 already scales these dimensions. SvEngine still uses raw constants.
 	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-		return;
-
-	PatchPanelSizeCallsites(g_GameUIDllInfo.ImageBase, "gameui", "vgui2_Panel_SetSize_Const_callsite_",
-		GameUI_Panel_SetSize, (PVOID*)&gPrivateFuncs.GameUI_Panel_SetSize);
-	PatchPanelSizeCallsites(g_GameUIDllInfo.ImageBase, "gameui", "vgui2_Panel_SetMinimumSize_Const_callsite_",
-		GameUI_Panel_SetMinimumSize, (PVOID*)&gPrivateFuncs.GameUI_Panel_SetMinimumSize);
-
-	// MessageBox adds a fixed margin to measured content; scale only that margin.
 	{
-		const char* symbolName = "vgui2::MessageBox::ApplySchemeSettings to vgui2::Panel::SetSize callsite";
-		auto address = GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "gameui", symbolName, MH_GAMESYMBOL_KIND_PATCH);
-		if (!g_pMetaHookAPI->InlinePatchRedirectBranch(address,
-			GameUI_MessageBox_ApplySchemeSettings_Panel_SetSize, (PVOID*)&gPrivateFuncs.GameUI_Panel_SetSize))
+		//PatchPanelSizeCallsites(g_GameUIDllInfo.ImageBase, "gameui", "vgui2_Panel_SetBounds_Const_callsite_",
+		//	GameUI_Panel_SetBounds, (PVOID*)&gPrivateFuncs.GameUI_Panel_SetBounds);
+	}
+	else
+	{
+		PatchPanelSizeCallsites(g_GameUIDllInfo.ImageBase, "gameui", "vgui2_Panel_SetSize_Const_callsite_",
+			GameUI_Panel_SetSize, (PVOID*)&gPrivateFuncs.GameUI_Panel_SetSize);
+		PatchPanelSizeCallsites(g_GameUIDllInfo.ImageBase, "gameui", "vgui2_Panel_SetMinimumSize_Const_callsite_",
+			GameUI_Panel_SetMinimumSize, (PVOID*)&gPrivateFuncs.GameUI_Panel_SetMinimumSize);
+		PatchPanelSizeCallsites(g_GameUIDllInfo.ImageBase, "gameui", "vgui2_Panel_SetBounds_Const_callsite_",
+			GameUI_Panel_SetBounds, (PVOID*)&gPrivateFuncs.GameUI_Panel_SetBounds);
+
+		// MessageBox adds a fixed margin to measured content; scale only that margin.
 		{
-			Sys_Error("Could not redirect gamedata patch: %s\nEngine buildnum: %d", symbolName, g_dwEngineBuildnum);
-			return;
+			const char* symbolName = "vgui2::MessageBox::ApplySchemeSettings to vgui2::Panel::SetSize callsite";
+			auto address = GamedataResolvePtr(g_GameUIDllInfo.ImageBase, "gameui", symbolName, MH_GAMESYMBOL_KIND_PATCH);
+			if (!g_pMetaHookAPI->InlinePatchRedirectBranch(address,
+				GameUI_MessageBox_ApplySchemeSettings_Panel_SetSize, (PVOID*)&gPrivateFuncs.GameUI_Panel_SetSize))
+			{
+				Sys_Error("Could not redirect gamedata patch: %s\nEngine buildnum: %d", symbolName, g_dwEngineBuildnum);
+				return;
+			}
 		}
 	}
 }

@@ -262,7 +262,7 @@ void DllLoadNotification(mh_load_dll_notification_context_t* ctx)
 		{
 			g_hVGUI2 = ctx->hModule;
 
-			g_VGUI2DllInfo.ImageBase = g_pMetaHookAPI->GetModuleBase(g_hServerBrowser);
+			g_VGUI2DllInfo.ImageBase = g_pMetaHookAPI->GetModuleBase(g_hVGUI2);
 			g_VGUI2DllInfo.ImageSize = g_pMetaHookAPI->GetModuleSize(g_VGUI2DllInfo.ImageBase);
 			g_VGUI2DllInfo.TextBase = g_pMetaHookAPI->GetSectionByName(g_VGUI2DllInfo.ImageBase, ".text\0\0\0", &g_VGUI2DllInfo.TextSize);
 			g_VGUI2DllInfo.RdataBase = g_pMetaHookAPI->GetSectionByName(g_VGUI2DllInfo.ImageBase, ".rdata\0\0", &g_VGUI2DllInfo.RdataSize);
