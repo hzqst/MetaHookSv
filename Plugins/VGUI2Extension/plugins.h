@@ -2,6 +2,8 @@
 
 #include <metahook.h>
 
+#include <initializer_list>
+
 //VGUI2Extension resolves its gamedata-covered game-private symbols (FUNCTION/
 //GLOBAL/VIRTUAL_FUNCTION/STRUCT_MEMBER) exclusively through the gamedata catalog.
 //Reading a reported vtable slot index (mh_gamesymbol_t::vfuncIndex) requires API 115.
@@ -59,21 +61,22 @@ inline PVOID GamedataResolvePtrIfAvailable(PVOID moduleBase, const char* moduleN
 	return GamedataResolvePtr(moduleBase, moduleName, symbolName, kind);
 }
 
-//GoldSrc_VibeSignatures publishes KeyValues with its vgui2:: namespace on some module identities
-//and without it on the others (GoldSrc_VibeSignatures issue #316); accept either name until the
-//catalog settles on vgui2::KeyValues.
-inline PVOID GamedataResolveKeyValuesLoadFromFileIfAvailable(PVOID moduleBase, const char* moduleName)
+//Resolve the first published name among several aliases of the same symbol, still
+//optional. GoldSrc_VibeSignatures publishes some symbols with the vgui2::
+//namespace on some module identities and without it on the others
+//(GoldSrc_VibeSignatures issue #316), so callers accept whichever name the
+//catalog settled on rather than committing to one.
+inline PVOID GamedataResolveIfAvailable(PVOID moduleBase, const char* moduleName, std::initializer_list<const char*> symbols, mh_gamesymbol_kind_t kind)
 {
-	auto address = GamedataResolvePtrIfAvailable(moduleBase, moduleName,
-		"vgui2::KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
-
-	if (!address)
+	for (const char* symbolName : symbols)
 	{
-		address = GamedataResolvePtrIfAvailable(moduleBase, moduleName,
-			"KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
+		auto address = GamedataResolvePtrIfAvailable(moduleBase, moduleName, symbolName, kind);
+
+		if (address)
+			return address;
 	}
 
-	return address;
+	return nullptr;
 }
 
 //Resolve a required structMember byte offset; a missing symbol or a kind mismatch

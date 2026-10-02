@@ -2431,7 +2431,10 @@ void GameUI_FillAddress_CTaskBar(const mh_dll_info_t& RealDllInfo)
 void GameUI_FillAddress_KeyValues(const mh_dll_info_t& RealDllInfo)
 {
 	gPrivateFuncs.GameUI_KeyValues_LoadFromFile = (decltype(gPrivateFuncs.GameUI_KeyValues_LoadFromFile))
-		GamedataResolveKeyValuesLoadFromFileIfAvailable(RealDllInfo.ImageBase, "gameui");
+		GamedataResolveIfAvailable(RealDllInfo.ImageBase, "gameui",
+			{ "vgui2::KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)",
+			  "KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)" },
+			MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 
 	Sig_FuncNotFound(GameUI_KeyValues_LoadFromFile);
 }
@@ -2748,7 +2751,10 @@ void ServerBrowser_PatchPanelSize(void)
 void ServerBrowser_FillAddress_KeyValues(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	gPrivateFuncs.ServerBrowser_KeyValues_LoadFromFile = (decltype(gPrivateFuncs.ServerBrowser_KeyValues_LoadFromFile))
-		GamedataResolveKeyValuesLoadFromFileIfAvailable(RealDllInfo.ImageBase, "serverbrowser");
+		GamedataResolveIfAvailable(RealDllInfo.ImageBase, "serverbrowser",
+			{ "vgui2::KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)",
+			  "KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)" },
+			MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 	Sig_FuncNotFound(ServerBrowser_KeyValues_LoadFromFile);
 }
 

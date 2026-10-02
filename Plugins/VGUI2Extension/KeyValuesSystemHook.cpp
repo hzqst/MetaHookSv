@@ -78,6 +78,8 @@ void KeyValuesSystem_InstallHooks(void)
 {
 	PVOID *pVFTable = *(PVOID **)&s_KeyValuesSystemProxy;
 
+	//TODO: save VFTHook
+
 	//g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 1, (void *)pVFTable[1], (void **)&g_pfnRegisterSizeofKeyValues);
 	g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 2, (void *)pVFTable[2], (void **)&g_pfnAllocKeyValuesMemory);
 	g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 3, (void *)pVFTable[3], (void **)&g_pfnFreeKeyValuesMemory);

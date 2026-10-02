@@ -956,7 +956,10 @@ void NativeClientUI_FillAddress(const mh_dll_info_t& RealDllInfo)
 	gPrivateFuncs.ClientVGUI_Panel_Init = (decltype(gPrivateFuncs.ClientVGUI_Panel_Init))GamedataResolvePtrIfAvailable(
 		RealDllInfo.ImageBase, "client", "vgui2::Panel::Init(int, int, int, int)", MH_GAMESYMBOL_KIND_FUNCTION);
 	gPrivateFuncs.ClientVGUI_KeyValues_LoadFromFile = (decltype(gPrivateFuncs.ClientVGUI_KeyValues_LoadFromFile))
-		GamedataResolveKeyValuesLoadFromFileIfAvailable(RealDllInfo.ImageBase, "client");
+		GamedataResolveIfAvailable(RealDllInfo.ImageBase, "client",
+			{ "vgui2::KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)",
+			  "KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)" },
+			MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 
 	if (g_bIsCounterStrike)
 	{
