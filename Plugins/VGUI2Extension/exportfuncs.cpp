@@ -121,8 +121,13 @@ IBaseInterface* CreateInterfaceProxy(const char* pName, int* pReturnCode)
 	if (ret)
 		return ret;
 
-	auto CreateInterfaceClientDll = (decltype(CreateInterfaceProxy)*)gExportfuncs.ClientFactory();
-	return CreateInterfaceClientDll(pName, pReturnCode);
+	if (gExportfuncs.ClientFactory)
+	{
+		auto CreateInterfaceClientDll = (decltype(CreateInterfaceProxy)*)gExportfuncs.ClientFactory();
+		return CreateInterfaceClientDll(pName, pReturnCode);
+	}
+
+	return NULL;
 }
 
 void *NewClientFactory(void)
@@ -130,12 +135,6 @@ void *NewClientFactory(void)
 	return CreateInterfaceProxy;
 }
 
-int HUD_VidInit(void)
-{
-	int result = gExportfuncs.HUD_VidInit();
-
-	return result;
-}
 
 int HUD_Redraw(float time, int intermission)
 {
@@ -151,13 +150,6 @@ void HUD_Shutdown(void)
 	ClientVGUI_UninstallHooks();
 
 	gExportfuncs.HUD_Shutdown();
-}
-
-void HUD_Frame(double time)
-{
-	//Update resolution?
-
-	gExportfuncs.HUD_Frame(time);
 }
 
 // Purpose: Make IN_MouseEvent aware of VGUI2 mouse input capture, which is not natively supported by VGUI1 mods.

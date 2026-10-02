@@ -22,8 +22,6 @@ void __cdecl NewEngineSys_GetRegKeyValueUnderRoot(const char* subKey, const char
 	char* output, int capacity, const char* defaultValue);
 
 void HUD_Init(void);
-int HUD_VidInit(void);
-void HUD_Frame(double time);
 int HUD_Redraw(float time, int intermission);
 void HUD_Shutdown(void);
 void IN_MouseEvent(int mstate);
