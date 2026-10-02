@@ -79,7 +79,7 @@ public:
 
 extern CEngineSurfaceProxy_HL25 g_EngineSurfaceProxy_HL25;
 
-void EngineSurface_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void EngineSurface_FillAddress(const mh_dll_info_t& RealDllInfo);
 void EngineSurface_InstallHooks(void);
 void EngineSurface_UninstallHooks(void);
 
@@ -353,13 +353,14 @@ void EngineSurface_FillAddress_pushMakeCurrent(const mh_dll_info_t& RealDllInfo)
 	g_ScissorRect = (decltype(g_ScissorRect))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "g_ScissorRect", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
-void EngineSurface_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+#define ENGINE_SURFACE_VERSION "EngineSurface007"
+
+void EngineSurface_FillAddress(const mh_dll_info_t& RealDllInfo)
 {
 	auto engineFactory = g_pMetaHookAPI->GetEngineFactory();
 
 	if (engineFactory)
 	{
-#define ENGINE_SURFACE_VERSION "EngineSurface007"
 		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
 			staticSurface_HL25 = (decltype(staticSurface_HL25))engineFactory(ENGINE_SURFACE_VERSION, NULL);

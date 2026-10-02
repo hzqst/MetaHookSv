@@ -70,7 +70,7 @@ void Engine_FillAddress_HostParms(const mh_dll_info_t& RealDllInfo)
 	host_parms = (decltype(host_parms))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "host_parms", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
-void Engine_PatchAddress_VGUIClient001(const mh_dll_info_t&, const mh_dll_info_t& RealDllInfo)
+void Engine_PatchAddress_VGUIClient001(const mh_dll_info_t& RealDllInfo)
 {
 	const char* patchName = "VGUIClient001_CreateInterface";
 	const auto status = g_pMetaHookAPI->IsGameSymbolAvailable(RealDllInfo.ImageBase, patchName);
@@ -96,7 +96,7 @@ void Engine_PatchAddress_VGUIClient001(const mh_dll_info_t&, const mh_dll_info_t
 	}
 }
 
-void Engine_PatchAddress_LanguageStrncpy(const mh_dll_info_t&, const mh_dll_info_t& RealDllInfo)
+void Engine_PatchAddress_LanguageStrncpy(const mh_dll_info_t& RealDllInfo)
 {
 	// Old engines read the registry directly instead of copying an English literal.
 	if (gPrivateFuncs.Sys_GetRegKeyValueUnderRoot)
@@ -177,7 +177,7 @@ void Client_FillAddress(const mh_dll_info_t& RealDllInfo)
 	Client_FillAddress_VisibleMouse(RealDllInfo);
 }
 
-void Engine_InstallHooks(void)
+void Engine_InstallHook_Sys_GetRegKeyValueUnderRoot()
 {
 	if (gPrivateFuncs.Sys_GetRegKeyValueUnderRoot && !g_phook_LanguageRegistry)
 	{
@@ -187,6 +187,13 @@ void Engine_InstallHooks(void)
 		if (!g_phook_LanguageRegistry)
 			Sys_Error("Could not install the engine language registry hook.");
 	}
+}
+
+void Engine_InstallHooks(void)
+{
+	Engine_PatchAddress_VGUIClient001(g_EngineDLLInfo);
+	Engine_PatchAddress_LanguageStrncpy(g_EngineDLLInfo);
+	Engine_InstallHook_Sys_GetRegKeyValueUnderRoot();
 }
 
 void Engine_UninstallHooks(void)
