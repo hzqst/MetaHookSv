@@ -165,6 +165,7 @@ void CBaseUIProxy::Shutdown(void)
 
 	GameUI_UninstallHooks();
 	KeyValuesSystem_UninstallHooks();
+	Scheme_UninstallHooks();
 	Surface_UninstallHooks();
 
 	//GameUI.dll and vgui2.dll will be unloaded by engine!CBaseUI::Shutdown
@@ -419,6 +420,7 @@ void CBaseUILegacyProxy::Shutdown(void)
 
 	GameUI_UninstallHooks();
 	KeyValuesSystem_UninstallHooks();
+	Scheme_UninstallHooks();
 	Surface_UninstallHooks();
 
 	//GameUI.dll and vgui2.dll will be unloaded by engine!CBaseUI::Shutdown
