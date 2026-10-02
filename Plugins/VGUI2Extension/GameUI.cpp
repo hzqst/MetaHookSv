@@ -2783,10 +2783,14 @@ void ServerBrowser_InstallHooks(void)
 
 	Install_InlineHook(ServerBrowser_Panel_Init);
 	Install_InlineHook(ServerBrowser_KeyValues_LoadFromFile);
+
+	g_bIsServerBrowserHooked = true;
 }
 
 void ServerBrowser_UninstallHooks(void)
 {
 	Uninstall_Hook(ServerBrowser_Panel_Init);
 	Uninstall_Hook(ServerBrowser_KeyValues_LoadFromFile);
+
+	g_bIsServerBrowserHooked = false;
 }

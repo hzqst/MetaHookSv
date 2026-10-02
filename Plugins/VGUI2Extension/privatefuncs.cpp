@@ -227,8 +227,6 @@ static HMODULE WINAPI NewLoadLibraryA_GameUI(LPCSTR lpLibFileName)
 	{
 		ServerBrowser_FillAddress();
 		ServerBrowser_InstallHooks();
-
-		g_bIsServerBrowserHooked = true;
 	}
 	
 	return result;
@@ -273,7 +271,11 @@ void DllLoadNotification(mh_load_dll_notification_context_t* ctx)
 	}
 	else if (ctx->flags & LOAD_DLL_NOTIFICATION_IS_UNLOAD)
 	{
-		if (ctx->hModule == g_hGameUI)
+		if (ctx->hModule == g_hVGUI2)
+		{
+			g_hVGUI2 = NULL;
+		}
+		else if (ctx->hModule == g_hGameUI)
 		{
 			g_hGameUI = NULL;
 		}
@@ -281,7 +283,6 @@ void DllLoadNotification(mh_load_dll_notification_context_t* ctx)
 		{
 			ServerBrowser_UninstallHooks();
 			g_hServerBrowser = NULL;
-			g_bIsServerBrowserHooked = false;
 		}
 	}
 }
