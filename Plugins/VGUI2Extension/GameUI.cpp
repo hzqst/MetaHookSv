@@ -48,6 +48,12 @@ static hook_t* g_phook_CCareerProfileFrame_ctor = NULL;
 static hook_t* g_phook_CCareerMapFrame_ctor = NULL;
 static hook_t* g_phook_CCareerBotFrame_ctor = NULL;
 
+//One VFTHook per IGameUI / IGameConsole slot installed by GameUI_InstallHooks;
+//kept so GameUI_UninstallHooks can UnHook them instead of leaving the proxy
+//vftable written into the engine's interfaces.
+static hook_t* g_phook_CGameUI[20] = { NULL };
+static hook_t* g_phook_CGameConsole[9] = { NULL };
+
 namespace vgui
 {
 	bool VGui_InitInterfacesList(const char* moduleName, CreateInterfaceFn* factoryList, int numFactories);
@@ -2539,39 +2545,43 @@ void GameUI_InstallHooks(void)
 	{
 		PVOID* ProxyVFTable = *(PVOID**)&s_GameUIProxy;
 
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 1, ProxyVFTable[1], (void**)&g_pfnCGameUI_Initialize);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 2, ProxyVFTable[2], (void**)&g_pfnCGameUI_Start);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 3, ProxyVFTable[3], (void**)&g_pfnCGameUI_Shutdown);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 4, ProxyVFTable[4], (void**)&g_pfnCGameUI_ActivateGameUI);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 5, ProxyVFTable[5], (void**)&g_pfnCGameUI_ActivateDemoUI);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 6, ProxyVFTable[6], (void**)&g_pfnCGameUI_HasExclusiveInput);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 7, ProxyVFTable[7], (void**)&g_pfnCGameUI_RunFrame);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 8, ProxyVFTable[8], (void**)&g_pfnCGameUI_ConnectToServer);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 9, ProxyVFTable[9], (void**)&g_pfnCGameUI_DisconnectFromServer);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 10, ProxyVFTable[10], (void**)&g_pfnCGameUI_HideGameUI);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 11, ProxyVFTable[11], (void**)&g_pfnCGameUI_IsGameUIActive);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 12, ProxyVFTable[12], (void**)&g_pfnCGameUI_LoadingStarted);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 13, ProxyVFTable[13], (void**)&g_pfnCGameUI_LoadingFinished);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 14, ProxyVFTable[14], (void**)&g_pfnCGameUI_StartProgressBar);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 15, ProxyVFTable[15], (void**)&g_pfnCGameUI_ContinueProgressBar);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 16, ProxyVFTable[16], (void**)&g_pfnCGameUI_StopProgressBar);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 17, ProxyVFTable[17], (void**)&g_pfnCGameUI_SetProgressBarStatusText);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 18, ProxyVFTable[18], (void**)&g_pfnCGameUI_SetSecondaryProgressBar);
-		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 19, ProxyVFTable[19], (void**)&g_pfnCGameUI_SetSecondaryProgressBarText);
+		//Slot 0 is IGameUI's Unknown() and is left untouched. Slots 1..19 are
+		//proxied and unhooked again in GameUI_UninstallHooks.
+		g_phook_CGameUI[1] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 1, ProxyVFTable[1], (void**)&g_pfnCGameUI_Initialize);
+		g_phook_CGameUI[2] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 2, ProxyVFTable[2], (void**)&g_pfnCGameUI_Start);
+		g_phook_CGameUI[3] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 3, ProxyVFTable[3], (void**)&g_pfnCGameUI_Shutdown);
+		g_phook_CGameUI[4] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 4, ProxyVFTable[4], (void**)&g_pfnCGameUI_ActivateGameUI);
+		g_phook_CGameUI[5] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 5, ProxyVFTable[5], (void**)&g_pfnCGameUI_ActivateDemoUI);
+		g_phook_CGameUI[6] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 6, ProxyVFTable[6], (void**)&g_pfnCGameUI_HasExclusiveInput);
+		g_phook_CGameUI[7] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 7, ProxyVFTable[7], (void**)&g_pfnCGameUI_RunFrame);
+		g_phook_CGameUI[8] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 8, ProxyVFTable[8], (void**)&g_pfnCGameUI_ConnectToServer);
+		g_phook_CGameUI[9] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 9, ProxyVFTable[9], (void**)&g_pfnCGameUI_DisconnectFromServer);
+		g_phook_CGameUI[10] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 10, ProxyVFTable[10], (void**)&g_pfnCGameUI_HideGameUI);
+		g_phook_CGameUI[11] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 11, ProxyVFTable[11], (void**)&g_pfnCGameUI_IsGameUIActive);
+		g_phook_CGameUI[12] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 12, ProxyVFTable[12], (void**)&g_pfnCGameUI_LoadingStarted);
+		g_phook_CGameUI[13] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 13, ProxyVFTable[13], (void**)&g_pfnCGameUI_LoadingFinished);
+		g_phook_CGameUI[14] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 14, ProxyVFTable[14], (void**)&g_pfnCGameUI_StartProgressBar);
+		g_phook_CGameUI[15] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 15, ProxyVFTable[15], (void**)&g_pfnCGameUI_ContinueProgressBar);
+		g_phook_CGameUI[16] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 16, ProxyVFTable[16], (void**)&g_pfnCGameUI_StopProgressBar);
+		g_phook_CGameUI[17] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 17, ProxyVFTable[17], (void**)&g_pfnCGameUI_SetProgressBarStatusText);
+		g_phook_CGameUI[18] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 18, ProxyVFTable[18], (void**)&g_pfnCGameUI_SetSecondaryProgressBar);
+		g_phook_CGameUI[19] = g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 19, ProxyVFTable[19], (void**)&g_pfnCGameUI_SetSecondaryProgressBarText);
 	}
 
 	if (1)
 	{
 		PVOID* ProxyVFTable = *(PVOID**)&s_GameConsoleProxy;
 
-		g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 1, ProxyVFTable[1], (void**)&g_pfnCGameConsole_Activate);
-		g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 2, ProxyVFTable[2], (void**)&g_pfnCGameConsole_Initialize);
-		g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 3, ProxyVFTable[3], (void**)&g_pfnCGameConsole_Hide);
-		g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 4, ProxyVFTable[4], (void**)&g_pfnCGameConsole_Clear);
-		g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 5, ProxyVFTable[5], (void**)&g_pfnCGameConsole_IsConsoleVisible);
-		g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 6, ProxyVFTable[6], (void**)&g_pfnCGameConsole_Printf);
-		g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 7, ProxyVFTable[7], (void**)&g_pfnCGameConsole_DPrintf);
-		g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 8, ProxyVFTable[8], (void**)&g_pfnCGameConsole_SetParent);
+		//Slot 0 is IGameConsole's Unknown() and is left untouched. Slots 1..8 are
+		//proxied and unhooked again in GameUI_UninstallHooks.
+		g_phook_CGameConsole[1] = g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 1, ProxyVFTable[1], (void**)&g_pfnCGameConsole_Activate);
+		g_phook_CGameConsole[2] = g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 2, ProxyVFTable[2], (void**)&g_pfnCGameConsole_Initialize);
+		g_phook_CGameConsole[3] = g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 3, ProxyVFTable[3], (void**)&g_pfnCGameConsole_Hide);
+		g_phook_CGameConsole[4] = g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 4, ProxyVFTable[4], (void**)&g_pfnCGameConsole_Clear);
+		g_phook_CGameConsole[5] = g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 5, ProxyVFTable[5], (void**)&g_pfnCGameConsole_IsConsoleVisible);
+		g_phook_CGameConsole[6] = g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 6, ProxyVFTable[6], (void**)&g_pfnCGameConsole_Printf);
+		g_phook_CGameConsole[7] = g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 7, ProxyVFTable[7], (void**)&g_pfnCGameConsole_DPrintf);
+		g_phook_CGameConsole[8] = g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 8, ProxyVFTable[8], (void**)&g_pfnCGameConsole_SetParent);
 	}
 
 	Install_InlineHook(GameUI_Panel_Init);
@@ -2696,11 +2706,31 @@ void GameUI_UninstallHooks(void)
 	Uninstall_Hook(GameUI_PropertySheet_HasHotkey);
 	Uninstall_Hook(GameUI_PropertySheet_PerformLayout);
 	Uninstall_Hook(GameUI_FocusNavGroup_GetCurrentFocus);
-	Uninstall_Hook(GameUI_Menu_MakeItemsVisibleInScrollRange)
+	Uninstall_Hook(GameUI_Menu_MakeItemsVisibleInScrollRange);
 
 	Uninstall_Hook(CCareerProfileFrame_ctor);
 	Uninstall_Hook(CCareerMapFrame_ctor);
 	Uninstall_Hook(CCareerBotFrame_ctor);
+
+	//Restores the IGameUI / IGameConsole vftable entries the proxies replaced.
+	//g_pGameUI and g_pGameConsole stay cached; only the hooks are dropped.
+	for (int i = 1; i < _ARRAYSIZE(g_phook_CGameUI); ++i)
+	{
+		if (g_phook_CGameUI[i])
+		{
+			g_pMetaHookAPI->UnHook(g_phook_CGameUI[i]);
+			g_phook_CGameUI[i] = NULL;
+		}
+	}
+
+	for (int i = 1; i < _ARRAYSIZE(g_phook_CGameConsole); ++i)
+	{
+		if (g_phook_CGameConsole[i])
+		{
+			g_pMetaHookAPI->UnHook(g_phook_CGameConsole[i]);
+			g_phook_CGameConsole[i] = NULL;
+		}
+	}
 }
 
 void ServerBrowser_PatchPanelSize(void)
