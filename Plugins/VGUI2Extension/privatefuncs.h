@@ -189,8 +189,6 @@ PVOID VGUIClient001_CreateInterface(HINTERFACEMODULE hModule);
 
 void* Sys_GetMainWindow();
 
-PVOID *VGUI2_FindKeyValueVFTable(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
-
 void Client_FillAddress(const mh_dll_info_t& RealDllInfo);
 void Client_InstallHooks(void);
 void Client_UninstallHooks(void);

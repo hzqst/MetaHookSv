@@ -130,7 +130,7 @@ The capabilities defined publicly in `IVGUI2Extension.h` generally correspond on
     - `_GAMEUI_RICHTEXT_PATCHES` on every identity.
     - `VGUI2EXTENSION_KEYVALUES_LOADFROMFILE_ALIASES` for gameui (required) and client (required on CS, type-checked elsewhere).
     - The "exactly one condump callee" gate is gone, because the plugin no longer walks from those callees.
-  - **Still out of scope.** ServerBrowser KeyValues still uses `VGUI2_FindKeyValueVFTable`.
+  - **Still out of scope (superseded 2026-10-02).** ServerBrowser KeyValues still used `VGUI2_FindKeyValueVFTable` at the time (disassembly). `4c8bc923` later moved that locator onto `GamedataResolveKeyValuesLoadFromFileIfAvailable(RealDllInfo.ImageBase, "serverbrowser")`, which left `VGUI2_FindKeyValueVFTable` with zero references; the definition (`privatefuncs.cpp`) and declaration (`privatefuncs.h`) were then deleted.
   - **Validation.**
     - `python -m pytest scripts/tests -q`: 186 passed / 2 skipped / 1651 subtests.
     - The packaged catalog passed (21 snapshots / 5 engine families; the previous 11 errors are cleared).

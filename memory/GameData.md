@@ -300,7 +300,7 @@ Related: [[metahook-privatevars]] [[project-overview]] [[plugin-system]]
   - `_GAMEUI_RICHTEXT_PATCHES` 在所有身份上都要求 kind=patch、module=gameui。
   - 新增 `VGUI2EXTENSION_KEYVALUES_LOADFROMFILE_ALIASES` 与 `_keyvalues_loadfromfile_check`（取第一个存在的别名做 `_consumer_check`；都不存在时报错并列出两个名字）。gameui 上为必需；client 上 CS 身份必需，其他身份发布了才校验。原 `VGUI2EXTENSION_CLIENT_OPTIONAL_ENTRIES` 中的 KeyValues 条目移入别名检查。
 - **等价性**：此前已用真实 `GameUI.dll` + capstone 复核 11/11：CBasePanel ctor、CTaskbar ctor 锚点、OnCommand = 槽 87、KeyValues LoadFromFile = 槽 2、CR 分支宿主函数及三种操作码形态。
-- **未纳入**：ServerBrowser 的 KeyValues（`ServerBrowser_FillAddress_KeyValues` → `VGUI2_FindKeyValueVFTable`）来自上游 commit 48621770，不属于这三个 PR，仍走反汇编。`VGUI2_FindKeyValueVFTable` / `VGUI2_FindMenuVFTable` 仍有调用者，保留。
+- **未纳入**：ServerBrowser 的 KeyValues（`ServerBrowser_FillAddress_KeyValues` → `VGUI2_FindKeyValueVFTable`）来自上游 commit 48621770，不属于这三个 PR，当时仍走反汇编。**（2026-10-02 更新：`4c8bc923` 已把 `ServerBrowser_FillAddress_KeyValues` 改为 `GamedataResolveKeyValuesLoadFromFileIfAvailable(RealDllInfo.ImageBase, "serverbrowser")`，`VGUI2_FindKeyValueVFTable` 随之全仓库零引用并已删除——`Plugins/VGUI2Extension/privatefuncs.cpp` 的定义与 `privatefuncs.h` 的声明；`VGUI2_FindMenuVFTable` 更早已删除。）**
 - **验证**：
   - `python -m pytest scripts/tests -q`：186 passed / 2 skipped（opt-in release CLI）/ 1651 subtests。
   - `scripts/validate-gamedata.py Build/svencoop/metahook/gamedata`：通过（21 snapshots / 5 engine families）。改动前的 11 条错误清零：8 × condump、hl-10210 CTaskbar ctor 缺 `func_sig`、cstrike-3248/3647 client KeyValues 命名。
