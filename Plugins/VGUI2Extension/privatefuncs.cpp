@@ -146,18 +146,18 @@ PVOID *VGUI2_FindKeyValueVFTable(const mh_dll_info_t &DllInfo, const mh_dll_info
 void Engine_FillAddress_PanelInit(const mh_dll_info_t& RealDllInfo)
 {
 	gPrivateFuncs.EngineVGUI2_Panel_Init = (decltype(gPrivateFuncs.EngineVGUI2_Panel_Init))
-		GamedataResolvePtr(RealDllInfo.ImageBase, "vgui2::Panel::Init(int, int, int, int)", MH_GAMESYMBOL_KIND_FUNCTION);
+		GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "vgui2::Panel::Init(int, int, int, int)", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void Engine_FillAddress_GetClientTime(const mh_dll_info_t& RealDllInfo)
 {
-	cl_time = (decltype(cl_time))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_time", MH_GAMESYMBOL_KIND_GLOBAL);
-	cl_oldtime = (decltype(cl_oldtime))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_oldtime", MH_GAMESYMBOL_KIND_GLOBAL);
+	cl_time = (decltype(cl_time))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "cl_time", MH_GAMESYMBOL_KIND_GLOBAL);
+	cl_oldtime = (decltype(cl_oldtime))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "cl_oldtime", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Engine_FillAddress_HostParms(const mh_dll_info_t& RealDllInfo)
 {
-	host_parms = (decltype(host_parms))GamedataResolvePtr(RealDllInfo.ImageBase, "host_parms", MH_GAMESYMBOL_KIND_GLOBAL);
+	host_parms = (decltype(host_parms))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "host_parms", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Engine_PatchAddress_VGUIClient001(const mh_dll_info_t&, const mh_dll_info_t& RealDllInfo)
@@ -168,7 +168,7 @@ void Engine_PatchAddress_VGUIClient001(const mh_dll_info_t&, const mh_dll_info_t
 	{
 		// Legacy engines obtain the factory through the zero-argument ClientFactory callback.
 		g_pClientFactory = (decltype(g_pClientFactory))GamedataResolvePtr(
-			RealDllInfo.ImageBase, "g_pClientFactory", MH_GAMESYMBOL_KIND_GLOBAL);
+			RealDllInfo.ImageBase, "engine", "g_pClientFactory", MH_GAMESYMBOL_KIND_GLOBAL);
 		return;
 	}
 	if (status != MH_GAMESYMBOL_OK)
@@ -179,7 +179,7 @@ void Engine_PatchAddress_VGUIClient001(const mh_dll_info_t&, const mh_dll_info_t
 	}
 
 	// The PATCH is the Sys_GetFactory(hClientDLL) CALL, not the interface query.
-	auto address = (PUCHAR)GamedataResolvePtr(RealDllInfo.ImageBase, patchName, MH_GAMESYMBOL_KIND_PATCH);
+	auto address = (PUCHAR)GamedataResolvePtr(RealDllInfo.ImageBase, "engine", patchName, MH_GAMESYMBOL_KIND_PATCH);
 	gPrivateFuncs.VGUIClient001_CreateInterface = (decltype(gPrivateFuncs.VGUIClient001_CreateInterface))GetCallAddress(address);
 	g_pMetaHookAPI->InlinePatchRedirectBranch(address, VGUIClient001_CreateInterface, NULL);
 }
@@ -198,7 +198,7 @@ void Engine_PatchAddress_LanguageStrncpy(const mh_dll_info_t&, const mh_dll_info
 	PVOID patchSites[_countof(patchNames)] = {};
 	for (size_t i = 0; i < _countof(patchNames); ++i)
 	{
-		patchSites[i] = GamedataResolvePtr(RealDllInfo.ImageBase, patchNames[i], MH_GAMESYMBOL_KIND_PATCH);
+		patchSites[i] = GamedataResolvePtr(RealDllInfo.ImageBase, "engine", patchNames[i], MH_GAMESYMBOL_KIND_PATCH);
 	}
 
 	for (size_t i = 0; i < _countof(patchNames); ++i)
@@ -214,14 +214,14 @@ void Engine_PatchAddress_LanguageStrncpy(const mh_dll_info_t&, const mh_dll_info
 
 void Engine_FillAddress_StaticEngineSurface(const mh_dll_info_t& RealDllInfo)
 {
-	staticEngineSurface = (decltype(staticEngineSurface))GamedataResolvePtr(RealDllInfo.ImageBase, "staticEngineSurface", MH_GAMESYMBOL_KIND_GLOBAL);
+	staticEngineSurface = (decltype(staticEngineSurface))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "staticEngineSurface", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Engine_FillAddress_Sys_GetRegKeyValueUnderRoot(const mh_dll_info_t& RealDllInfo)
 {
 	// For blob engine only
 	gPrivateFuncs.Sys_GetRegKeyValueUnderRoot = (decltype(gPrivateFuncs.Sys_GetRegKeyValueUnderRoot))
-		GamedataResolvePtrIfAvailable(RealDllInfo.ImageBase, "Sys_GetRegKeyValueUnderRoot", MH_GAMESYMBOL_KIND_FUNCTION);
+		GamedataResolvePtrIfAvailable(RealDllInfo.ImageBase, "engine", "Sys_GetRegKeyValueUnderRoot", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void Engine_FillAddress(const mh_dll_info_t& RealDllInfo)
@@ -241,7 +241,7 @@ void Client_FillAddress_VisibleMouse(const mh_dll_info_t& RealDllInfo)
 	if (!g_IsNativeClientVGUI2)
 	{
 		g_iVisibleMouse = (decltype(g_iVisibleMouse))GamedataResolvePtrIfAvailable(
-			RealDllInfo.ImageBase, "g_iVisibleMouse", MH_GAMESYMBOL_KIND_GLOBAL);
+			RealDllInfo.ImageBase, "client", "g_iVisibleMouse", MH_GAMESYMBOL_KIND_GLOBAL);
 	}
 }
 

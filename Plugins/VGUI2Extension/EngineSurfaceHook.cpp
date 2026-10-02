@@ -348,9 +348,9 @@ static CEngineSurfaceProxy_HL25 g_EngineSurfaceProxy_HL25;
 
 void EngineSurface_FillAddress_pushMakeCurrent(const mh_dll_info_t& RealDllInfo)
 {
-	pmainwindow = (decltype(pmainwindow))GamedataResolvePtr(RealDllInfo.ImageBase, "pmainwindow", MH_GAMESYMBOL_KIND_GLOBAL);
-	g_bScissor = (decltype(g_bScissor))GamedataResolvePtr(RealDllInfo.ImageBase, "g_bScissor", MH_GAMESYMBOL_KIND_GLOBAL);
-	g_ScissorRect = (decltype(g_ScissorRect))GamedataResolvePtr(RealDllInfo.ImageBase, "g_ScissorRect", MH_GAMESYMBOL_KIND_GLOBAL);
+	pmainwindow = (decltype(pmainwindow))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "pmainwindow", MH_GAMESYMBOL_KIND_GLOBAL);
+	g_bScissor = (decltype(g_bScissor))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "g_bScissor", MH_GAMESYMBOL_KIND_GLOBAL);
+	g_ScissorRect = (decltype(g_ScissorRect))GamedataResolvePtr(RealDllInfo.ImageBase, "engine", "g_ScissorRect", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void EngineSurface_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)

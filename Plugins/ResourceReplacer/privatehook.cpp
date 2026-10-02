@@ -24,25 +24,25 @@ static std::vector<CallSite_t> g_S_LoadSound_FS_OpenCallSites;
 static std::vector<CallSite_t> g_Mod_LoadModel_FS_OpenCallSites;
 
 // On gamedata failure, print diagnostics (symbol / buildnum / CRC64 / status string) and abort via Sys_Error.
-static void ReportSymbolFailure(const char* symbolName, mh_gamesymbol_status_t status)
+static void ReportSymbolFailure(const char* moduleName, const char* symbolName, mh_gamesymbol_status_t status)
 {
 	uint64_t crc64 = 0;
 	mh_gamesymbol_status_t crcSt = g_pMetaHookAPI->GetModuleCRC64(g_EngineDLLInfo.ImageBase, &crc64);
 
 	if (crcSt == MH_GAMESYMBOL_OK)
 	{
-		Sys_Error("Failed to resolve \"%s\"\nEngine buildnum: %d\nCRC64: %016llx\nReason: %s",
-			symbolName, g_dwEngineBuildnum, (unsigned long long)crc64, g_pMetaHookAPI->GetGameSymbolStatusString(status));
+		Sys_Error("Failed to resolve \"%s\" (module %s)\nEngine buildnum: %d\nCRC64: %016llx\nReason: %s",
+			symbolName, moduleName, g_dwEngineBuildnum, (unsigned long long)crc64, g_pMetaHookAPI->GetGameSymbolStatusString(status));
 	}
 	else
 	{
-		Sys_Error("Failed to resolve \"%s\"\nEngine buildnum: %d\nReason: %s",
-			symbolName, g_dwEngineBuildnum, g_pMetaHookAPI->GetGameSymbolStatusString(status));
+		Sys_Error("Failed to resolve \"%s\" (module %s)\nEngine buildnum: %d\nReason: %s",
+			symbolName, moduleName, g_dwEngineBuildnum, g_pMetaHookAPI->GetGameSymbolStatusString(status));
 	}
 }
 
 // The return value is the real-image VA of the gamedata record.
-static PVOID ResolveGameSymbolOrError(const char* symbolName, mh_gamesymbol_kind_t expectedKind)
+static PVOID ResolveGameSymbolOrError(const char* moduleName, const char* symbolName, mh_gamesymbol_kind_t expectedKind)
 {
 	PVOID va = NULL;
 	mh_gamesymbol_status_t st = g_pMetaHookAPI->ResolveGameSymbol(g_EngineDLLInfo.ImageBase, symbolName, expectedKind, &va);
@@ -50,7 +50,7 @@ static PVOID ResolveGameSymbolOrError(const char* symbolName, mh_gamesymbol_kind
 	if (st == MH_GAMESYMBOL_OK)
 		return va;
 
-	ReportSymbolFailure(symbolName, st);
+	ReportSymbolFailure(moduleName, symbolName, st);
 	return NULL;
 }
 
@@ -68,18 +68,18 @@ static void CollectFSOpenCallSites(const char* symbolPrefix, std::vector<CallSit
 		if (st == MH_GAMESYMBOL_SYMBOL_NOT_FOUND)
 		{
 			if (index == 0)
-				ReportSymbolFailure(symbolName, st);
+				ReportSymbolFailure("engine", symbolName, st);
 
 			return;
 		}
 
 		if (st != MH_GAMESYMBOL_OK)
 		{
-			ReportSymbolFailure(symbolName, st);
+			ReportSymbolFailure("engine", symbolName, st);
 			return;
 		}
 
-		PVOID callSiteAddress = ResolveGameSymbolOrError(symbolName, MH_GAMESYMBOL_KIND_PATCH);
+		PVOID callSiteAddress = ResolveGameSymbolOrError("engine", symbolName, MH_GAMESYMBOL_KIND_PATCH);
 
 		if (!callSiteAddress)
 			return;
@@ -168,8 +168,8 @@ FileHandle_t S_LoadSound_FS_Open(const char* pFileName, const char* pOptions)
 
 void Engine_FillAddress(void)
 {
-	gPrivateFuncs.FS_Open = (decltype(gPrivateFuncs.FS_Open))ResolveGameSymbolOrError("FS_Open", MH_GAMESYMBOL_KIND_FUNCTION);
-	gPrivateFuncs.CL_PrecacheResources = (decltype(gPrivateFuncs.CL_PrecacheResources))ResolveGameSymbolOrError("CL_PrecacheResources", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.FS_Open = (decltype(gPrivateFuncs.FS_Open))ResolveGameSymbolOrError("engine", "FS_Open", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.CL_PrecacheResources = (decltype(gPrivateFuncs.CL_PrecacheResources))ResolveGameSymbolOrError("engine", "CL_PrecacheResources", MH_GAMESYMBOL_KIND_FUNCTION);
 
 	CollectFSOpenCallSites("S_LoadSound_to_FS_Open_callsite", g_S_LoadSound_FS_OpenCallSites);
 	CollectFSOpenCallSites("Mod_LoadModel_to_FS_Open_callsite", g_Mod_LoadModel_FS_OpenCallSites);

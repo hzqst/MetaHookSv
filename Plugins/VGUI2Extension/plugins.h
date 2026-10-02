@@ -35,40 +35,41 @@ extern bool g_bIsCZDS;
 
 //Resolve a required gamedata symbol; a missing symbol is fatal, mirroring the
 //Sig_FuncNotFound/Sig_VarNotFound policy of the signature-scan locators.
-inline PVOID GamedataResolvePtr(PVOID moduleBase, const char* symbolName, mh_gamesymbol_kind_t kind)
+//moduleName identifies the module owning the symbol and is echoed by the diagnostic.
+inline PVOID GamedataResolvePtr(PVOID moduleBase, const char* moduleName, const char* symbolName, mh_gamesymbol_kind_t kind)
 {
 	PVOID address = nullptr;
 	mh_gamesymbol_status_t status = g_pMetaHookAPI->ResolveGameSymbol(moduleBase, symbolName, kind, &address);
 
 	if (status != MH_GAMESYMBOL_OK)
 	{
-		Sys_Error("Could not resolve gamedata symbol: %s (%s)\nEngine buildnum: %d",
-			symbolName, g_pMetaHookAPI->GetGameSymbolStatusString(status), g_dwEngineBuildnum);
+		Sys_Error("Could not resolve gamedata symbol: %s (module %s, %s)\nEngine buildnum: %d",
+			symbolName, moduleName, g_pMetaHookAPI->GetGameSymbolStatusString(status), g_dwEngineBuildnum);
 	}
 
 	return address;
 }
 
 //Native client UI hooks are optional when the binary publishes no entry.
-inline PVOID GamedataResolvePtrIfAvailable(PVOID moduleBase, const char* symbolName, mh_gamesymbol_kind_t kind)
+inline PVOID GamedataResolvePtrIfAvailable(PVOID moduleBase, const char* moduleName, const char* symbolName, mh_gamesymbol_kind_t kind)
 {
 	if (g_pMetaHookAPI->IsGameSymbolAvailable(moduleBase, symbolName) != MH_GAMESYMBOL_OK)
 		return nullptr;
 
-	return GamedataResolvePtr(moduleBase, symbolName, kind);
+	return GamedataResolvePtr(moduleBase, moduleName, symbolName, kind);
 }
 
 //GoldSrc_VibeSignatures publishes KeyValues with its vgui2:: namespace on some module identities
 //and without it on the others (GoldSrc_VibeSignatures issue #316); accept either name until the
 //catalog settles on vgui2::KeyValues.
-inline PVOID GamedataResolveKeyValuesLoadFromFileIfAvailable(PVOID moduleBase)
+inline PVOID GamedataResolveKeyValuesLoadFromFileIfAvailable(PVOID moduleBase, const char* moduleName)
 {
-	auto address = GamedataResolvePtrIfAvailable(moduleBase,
+	auto address = GamedataResolvePtrIfAvailable(moduleBase, moduleName,
 		"vgui2::KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 
 	if (!address)
 	{
-		address = GamedataResolvePtrIfAvailable(moduleBase,
+		address = GamedataResolvePtrIfAvailable(moduleBase, moduleName,
 			"KeyValues::LoadFromFile(IFileSystem*, char const*, char const*)", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 	}
 
@@ -77,22 +78,24 @@ inline PVOID GamedataResolveKeyValuesLoadFromFileIfAvailable(PVOID moduleBase)
 
 //Resolve a required structMember byte offset; a missing symbol or a kind mismatch
 //is fatal, mirroring the Sig_FuncNotFound/Sig_VarNotFound policy of the locators.
-inline DWORD GamedataResolveStructMember(PVOID moduleBase, const char* symbolName)
+//moduleName identifies the module owning the symbol and is echoed by the diagnostic.
+inline DWORD GamedataResolveStructMember(PVOID moduleBase, const char* moduleName, const char* symbolName)
 {
 	uint32_t offset = 0;
 	mh_gamesymbol_status_t status = g_pMetaHookAPI->QueryGameSymbolStructMember(moduleBase, symbolName, &offset);
 
 	if (status != MH_GAMESYMBOL_OK)
 	{
-		Sys_Error("Could not resolve gamedata structMember: %s (%s)\nEngine buildnum: %d",
-			symbolName, g_pMetaHookAPI->GetGameSymbolStatusString(status), g_dwEngineBuildnum);
+		Sys_Error("Could not resolve gamedata structMember: %s (module %s, %s)\nEngine buildnum: %d",
+			symbolName, moduleName, g_pMetaHookAPI->GetGameSymbolStatusString(status), g_dwEngineBuildnum);
 	}
 
 	return offset;
 }
 
 //Resolve a required VIRTUAL_FUNCTION record's owning vtable slot.
-inline DWORD GamedataResolveVFuncIndex(PVOID moduleBase, const char* symbolName)
+//moduleName identifies the module owning the symbol and is echoed by the diagnostic.
+inline DWORD GamedataResolveVFuncIndex(PVOID moduleBase, const char* moduleName, const char* symbolName)
 {
 	mh_gamesymbol_t symbol = {};
 	symbol.cbSize = sizeof(symbol);
@@ -100,7 +103,7 @@ inline DWORD GamedataResolveVFuncIndex(PVOID moduleBase, const char* symbolName)
 	if (g_pMetaHookAPI->QueryGameSymbol(moduleBase, symbolName, &symbol) != MH_GAMESYMBOL_OK ||
 		symbol.kind != MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION)
 	{
-		Sys_Error("Could not resolve gamedata virtualFunction: %s\nEngine buildnum: %d", symbolName, g_dwEngineBuildnum);
+		Sys_Error("Could not resolve gamedata virtualFunction: %s (module %s)\nEngine buildnum: %d", symbolName, moduleName, g_dwEngineBuildnum);
 	}
 
 	return symbol.vfuncIndex;

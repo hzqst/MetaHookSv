@@ -57,25 +57,25 @@ void DllLoadNotification(mh_load_dll_notification_context_t* ctx)
 }
 
 // On gamedata failure, print diagnostics (symbol / buildnum / CRC64 / status string) and abort via Sys_Error.
-static void ReportSymbolFailure(const char* symbolName, mh_gamesymbol_status_t status)
+static void ReportSymbolFailure(const char* moduleName, const char* symbolName, mh_gamesymbol_status_t status)
 {
 	uint64_t crc64 = 0;
 	mh_gamesymbol_status_t crcSt = g_pMetaHookAPI->GetModuleCRC64(g_EngineDLLInfo.ImageBase, &crc64);
 
 	if (crcSt == MH_GAMESYMBOL_OK)
 	{
-		Sys_Error("Failed to resolve \"%s\"\nEngine buildnum: %d\nCRC64: %016llx\nReason: %s",
-			symbolName, g_dwEngineBuildnum, (unsigned long long)crc64, g_pMetaHookAPI->GetGameSymbolStatusString(status));
+		Sys_Error("Failed to resolve \"%s\" (module %s)\nEngine buildnum: %d\nCRC64: %016llx\nReason: %s",
+			symbolName, moduleName, g_dwEngineBuildnum, (unsigned long long)crc64, g_pMetaHookAPI->GetGameSymbolStatusString(status));
 	}
 	else
 	{
-		Sys_Error("Failed to resolve \"%s\"\nEngine buildnum: %d\nReason: %s",
-			symbolName, g_dwEngineBuildnum, g_pMetaHookAPI->GetGameSymbolStatusString(status));
+		Sys_Error("Failed to resolve \"%s\" (module %s)\nEngine buildnum: %d\nReason: %s",
+			symbolName, moduleName, g_dwEngineBuildnum, g_pMetaHookAPI->GetGameSymbolStatusString(status));
 	}
 }
 
 // The return value is the real-image VA of the gamedata record.
-static PVOID ResolveGameSymbolOrError(const char* symbolName, mh_gamesymbol_kind_t expectedKind)
+static PVOID ResolveGameSymbolOrError(const char* moduleName, const char* symbolName, mh_gamesymbol_kind_t expectedKind)
 {
 	PVOID va = NULL;
 	mh_gamesymbol_status_t st = g_pMetaHookAPI->ResolveGameSymbol(g_EngineDLLInfo.ImageBase, symbolName, expectedKind, &va);
@@ -83,19 +83,19 @@ static PVOID ResolveGameSymbolOrError(const char* symbolName, mh_gamesymbol_kind
 	if (st == MH_GAMESYMBOL_OK)
 		return va;
 
-	ReportSymbolFailure(symbolName, st);
+	ReportSymbolFailure(moduleName, symbolName, st);
 	return NULL;
 }
 
 void Engine_FillAddress(void)
 {
-	gPrivateFuncs.R_StudioDrawPlayer = (decltype(gPrivateFuncs.R_StudioDrawPlayer))ResolveGameSymbolOrError("R_StudioDrawPlayer", MH_GAMESYMBOL_KIND_FUNCTION);
-	gPrivateFuncs.studioapi_SetupPlayerModel = (decltype(gPrivateFuncs.studioapi_SetupPlayerModel))ResolveGameSymbolOrError("studioapi_SetupPlayerModel", MH_GAMESYMBOL_KIND_FUNCTION);
-	gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))ResolveGameSymbolOrError("Host_IsSinglePlayerGame", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.R_StudioDrawPlayer = (decltype(gPrivateFuncs.R_StudioDrawPlayer))ResolveGameSymbolOrError("engine", "R_StudioDrawPlayer", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.studioapi_SetupPlayerModel = (decltype(gPrivateFuncs.studioapi_SetupPlayerModel))ResolveGameSymbolOrError("engine", "studioapi_SetupPlayerModel", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))ResolveGameSymbolOrError("engine", "Host_IsSinglePlayerGame", MH_GAMESYMBOL_KIND_FUNCTION);
 
-	DM_PlayerState = (decltype(DM_PlayerState))ResolveGameSymbolOrError("DM_PlayerState", MH_GAMESYMBOL_KIND_GLOBAL);
+	DM_PlayerState = (decltype(DM_PlayerState))ResolveGameSymbolOrError("engine", "DM_PlayerState", MH_GAMESYMBOL_KIND_GLOBAL);
 
-	auto* clPlayersModel = (unsigned char*)ResolveGameSymbolOrError("cl_players_model", MH_GAMESYMBOL_KIND_GLOBAL);
+	auto* clPlayersModel = (unsigned char*)ResolveGameSymbolOrError("engine", "cl_players_model", MH_GAMESYMBOL_KIND_GLOBAL);
 
 	if (!clPlayersModel)
 		return;

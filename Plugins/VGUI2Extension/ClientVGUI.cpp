@@ -251,7 +251,7 @@ void __fastcall ClientVGUI_LoadControlSettings(vgui::Panel* pthis, int dummy, co
 
 			//Frame::Activate's slot; CSBuyMenu keeps its own override in place, so
 			//the base slot index also addresses CSBuyMenu's vtable.
-			int index = (int)GamedataResolveVFuncIndex(g_ClientDLLInfo.ImageBase, "vgui2::Frame::Activate()");
+			int index = (int)GamedataResolveVFuncIndex(g_ClientDLLInfo.ImageBase, "client", "vgui2::Frame::Activate()");
 
 			g_pMetaHookAPI->VFTHookEx(gPrivateFuncs.CSBuyMenu_vftable, index, CSBuyMenu_Activate, (void**)&gPrivateFuncs.CSBuyMenu_Activate);
 
@@ -887,16 +887,16 @@ void ClientUIProxy_Start_FillAddress(CClientVGUIProxy *pthis ,const mh_dll_info_
 {
 	if (g_bIsCounterStrike && !g_bIsCZDS)
 	{
-		DWORD offset_CSBackGroundPanel = GamedataResolveStructMember(g_ClientDLLInfo.ImageBase, "CounterStrikeViewport.m_pCSBackGround");
+		DWORD offset_CSBackGroundPanel = GamedataResolveStructMember(g_ClientDLLInfo.ImageBase, "client", "CounterStrikeViewport.m_pCSBackGround");
 
 		g_pCSBackGroundPanel = *(vgui::Panel**)((PUCHAR)pthis + offset_CSBackGroundPanel);
 
 		//CCSBackGroundPanel keeps its own Activate override; the field its body
 		//zeroes is published as a member offset, so no vtable walk is needed.
-		int index = (int)GamedataResolveVFuncIndex(g_ClientDLLInfo.ImageBase, "CounterStrikeViewport::CCSBackGroundPanel::Activate()");
+		int index = (int)GamedataResolveVFuncIndex(g_ClientDLLInfo.ImageBase, "client", "CounterStrikeViewport::CCSBackGroundPanel::Activate()");
 
-		gPrivateFuncs.CCSBackGroundPanel_m_offsetX = (int)GamedataResolveStructMember(g_ClientDLLInfo.ImageBase, "CounterStrikeViewport::CCSBackGroundPanel.m_offsetX");
-		gPrivateFuncs.CCSBackGroundPanel_m_offsetY = (int)GamedataResolveStructMember(g_ClientDLLInfo.ImageBase, "CounterStrikeViewport::CCSBackGroundPanel.m_offsetY");
+		gPrivateFuncs.CCSBackGroundPanel_m_offsetX = (int)GamedataResolveStructMember(g_ClientDLLInfo.ImageBase, "client", "CounterStrikeViewport::CCSBackGroundPanel.m_offsetX");
+		gPrivateFuncs.CCSBackGroundPanel_m_offsetY = (int)GamedataResolveStructMember(g_ClientDLLInfo.ImageBase, "client", "CounterStrikeViewport::CCSBackGroundPanel.m_offsetY");
 
 		g_pMetaHookAPI->VFTHook(g_pCSBackGroundPanel, 0, index, CCSBackGroundPanel_Activate, (void**)&gPrivateFuncs.CCSBackGroundPanel_Activate);
 
@@ -905,13 +905,13 @@ void ClientUIProxy_Start_FillAddress(CClientVGUIProxy *pthis ,const mh_dll_info_
 
 	if (g_bIsCZDS)
 	{
-		DWORD offset_WorldMapPanel = GamedataResolveStructMember(g_ClientDLLInfo.ImageBase, "CZEROViewPort.m_pWorldMapPanel");
+		DWORD offset_WorldMapPanel = GamedataResolveStructMember(g_ClientDLLInfo.ImageBase, "client", "CZEROViewPort.m_pWorldMapPanel");
 
 		g_pWorldMapPanel = *(vgui::Panel**)((PUCHAR)pthis + offset_WorldMapPanel);
 
 		//The handler raises g_bIsPaintWorldMapBackground around the original call, so
 		//the ISurface::GetScreenSize override applies only to this paint pass.
-		int index = (int)GamedataResolveVFuncIndex(g_ClientDLLInfo.ImageBase, "CWorldMap::PaintBackground()");
+		int index = (int)GamedataResolveVFuncIndex(g_ClientDLLInfo.ImageBase, "client", "CWorldMap::PaintBackground()");
 
 		g_pMetaHookAPI->VFTHook(g_pWorldMapPanel, 0, index, CWorldMap_PaintBackground, (void**)&gPrivateFuncs.CWorldMap_PaintBackground);
 
@@ -927,7 +927,7 @@ void ClientUIProxy_Start_FillAddress(CClientVGUIProxy *pthis ,const mh_dll_info_
 			Sig_NotFound("WorldMapMissionSelectPanel");
 		}
 
-		int index = (int)GamedataResolveVFuncIndex(g_ClientDLLInfo.ImageBase, "CWorldMapMissionSelect::PaintBackground()");
+		int index = (int)GamedataResolveVFuncIndex(g_ClientDLLInfo.ImageBase, "client", "CWorldMapMissionSelect::PaintBackground()");
 
 		g_pMetaHookAPI->VFTHook(g_pWorldMapMissionSelectPanel, 0, index, CWorldMapMissionSelect_PaintBackground, (void**)&gPrivateFuncs.CWorldMapMissionSelect_PaintBackground);
 
@@ -942,22 +942,22 @@ void ClientUIProxy_Start_FillAddress(CClientVGUIProxy *pthis ,const mh_dll_info_
 void NativeClientUI_FillAddress(const mh_dll_info_t& RealDllInfo)
 {
 	gPrivateFuncs.ClientVGUI_Panel_Init = (decltype(gPrivateFuncs.ClientVGUI_Panel_Init))GamedataResolvePtrIfAvailable(
-		RealDllInfo.ImageBase, "vgui2::Panel::Init(int, int, int, int)", MH_GAMESYMBOL_KIND_FUNCTION);
+		RealDllInfo.ImageBase, "client", "vgui2::Panel::Init(int, int, int, int)", MH_GAMESYMBOL_KIND_FUNCTION);
 	gPrivateFuncs.ClientVGUI_KeyValues_LoadFromFile = (decltype(gPrivateFuncs.ClientVGUI_KeyValues_LoadFromFile))
-		GamedataResolveKeyValuesLoadFromFileIfAvailable(RealDllInfo.ImageBase);
+		GamedataResolveKeyValuesLoadFromFileIfAvailable(RealDllInfo.ImageBase, "client");
 
 	if (g_bIsCounterStrike)
 	{
 		gPrivateFuncs.ClientVGUI_LoadControlSettings = (decltype(gPrivateFuncs.ClientVGUI_LoadControlSettings))GamedataResolvePtr(
-			RealDllInfo.ImageBase, "vgui2::Frame::LoadControlSettings(char const*, char const*)", MH_GAMESYMBOL_KIND_FUNCTION);
+			RealDllInfo.ImageBase, "client", "vgui2::Frame::LoadControlSettings(char const*, char const*)", MH_GAMESYMBOL_KIND_FUNCTION);
 	}
 
 	if (g_bIsCounterStrike)
 	{
 		gPrivateFuncs.TeamMenu_LoadMapPage = (decltype(gPrivateFuncs.TeamMenu_LoadMapPage))GamedataResolvePtr(
-			RealDllInfo.ImageBase, "CTeamMenu::LoadMapPage(char const*)", MH_GAMESYMBOL_KIND_FUNCTION);
+			RealDllInfo.ImageBase, "client", "CTeamMenu::LoadMapPage(char const*)", MH_GAMESYMBOL_KIND_FUNCTION);
 		gPrivateFuncs.ClientVGUI_RichText_SetTextW = (decltype(gPrivateFuncs.ClientVGUI_RichText_SetTextW))GamedataResolvePtr(
-			RealDllInfo.ImageBase, "vgui2::RichText::SetText(wchar_t const*)", MH_GAMESYMBOL_KIND_FUNCTION);
+			RealDllInfo.ImageBase, "client", "vgui2::RichText::SetText(wchar_t const*)", MH_GAMESYMBOL_KIND_FUNCTION);
 	}
 }
 

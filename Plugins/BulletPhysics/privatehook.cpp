@@ -42,7 +42,7 @@ static hook_t* g_phook_R_NewMap = NULL;
 static hook_t* g_phook_R_RenderView_SvEngine = NULL;
 static hook_t* g_phook_R_RenderView = NULL;
 
-PVOID GamedataResolvePtr(PVOID moduleBase, const char* symbolName, mh_gamesymbol_kind_t kind, bool required)
+PVOID GamedataResolvePtr(PVOID moduleBase, const char* moduleName, const char* symbolName, mh_gamesymbol_kind_t kind, bool required)
 {
 	PVOID address = nullptr;
 	mh_gamesymbol_status_t status = g_pMetaHookAPI->ResolveGameSymbol(moduleBase, symbolName, kind, &address);
@@ -51,8 +51,8 @@ PVOID GamedataResolvePtr(PVOID moduleBase, const char* symbolName, mh_gamesymbol
 	{
 		if (required)
 		{
-			Sys_Error("Could not resolve gamedata symbol: %s (%s)",
-				symbolName, g_pMetaHookAPI->GetGameSymbolStatusString(status));
+			Sys_Error("Could not resolve gamedata symbol: %s (module %s, %s)",
+				symbolName, moduleName, g_pMetaHookAPI->GetGameSymbolStatusString(status));
 		}
 
 		return nullptr;
@@ -61,7 +61,7 @@ PVOID GamedataResolvePtr(PVOID moduleBase, const char* symbolName, mh_gamesymbol
 	return address;
 }
 
-uint32_t GamedataResolveScalar(PVOID moduleBase, const char* symbolName, bool required)
+uint32_t GamedataResolveScalar(PVOID moduleBase, const char* moduleName, const char* symbolName, bool required)
 {
 	uint32_t value = 0;
 	mh_gamesymbol_status_t status = g_pMetaHookAPI->QueryGameSymbolScalar(moduleBase, symbolName, &value);
@@ -70,8 +70,8 @@ uint32_t GamedataResolveScalar(PVOID moduleBase, const char* symbolName, bool re
 	{
 		if (required)
 		{
-			Sys_Error("Could not resolve gamedata scalar: %s (%s)",
-				symbolName, g_pMetaHookAPI->GetGameSymbolStatusString(status));
+			Sys_Error("Could not resolve gamedata scalar: %s (module %s, %s)",
+				symbolName, moduleName, g_pMetaHookAPI->GetGameSymbolStatusString(status));
 		}
 
 		return 0;
@@ -83,12 +83,12 @@ uint32_t GamedataResolveScalar(PVOID moduleBase, const char* symbolName, bool re
 void Engine_FillAddress(PVOID engineBase)
 {
 	//Engine render / view functions
-	gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))GamedataResolvePtr(engineBase, "R_NewMap", MH_GAMESYMBOL_KIND_FUNCTION, true);
-	gPrivateFuncs.R_CullBox = (decltype(gPrivateFuncs.R_CullBox))GamedataResolvePtr(engineBase, "R_CullBox", MH_GAMESYMBOL_KIND_FUNCTION, true);
-	gPrivateFuncs.V_RenderView = (decltype(gPrivateFuncs.V_RenderView))GamedataResolvePtr(engineBase, "V_RenderView", MH_GAMESYMBOL_KIND_FUNCTION, true);
+	gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))GamedataResolvePtr(engineBase, "engine", "R_NewMap", MH_GAMESYMBOL_KIND_FUNCTION, true);
+	gPrivateFuncs.R_CullBox = (decltype(gPrivateFuncs.R_CullBox))GamedataResolvePtr(engineBase, "engine", "R_CullBox", MH_GAMESYMBOL_KIND_FUNCTION, true);
+	gPrivateFuncs.V_RenderView = (decltype(gPrivateFuncs.V_RenderView))GamedataResolvePtr(engineBase, "engine", "V_RenderView", MH_GAMESYMBOL_KIND_FUNCTION, true);
 
 	//SvEngine exposes the same entry as R_RenderView, but with an int viewIdx argument.
-	PVOID R_RenderView_VA = GamedataResolvePtr(engineBase, "R_RenderView", MH_GAMESYMBOL_KIND_FUNCTION, true);
+	PVOID R_RenderView_VA = GamedataResolvePtr(engineBase, "engine", "R_RenderView", MH_GAMESYMBOL_KIND_FUNCTION, true);
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 		gPrivateFuncs.R_RenderView_SvEngine = (decltype(gPrivateFuncs.R_RenderView_SvEngine))R_RenderView_VA;
@@ -96,44 +96,44 @@ void Engine_FillAddress(PVOID engineBase)
 		gPrivateFuncs.R_RenderView = (decltype(gPrivateFuncs.R_RenderView))R_RenderView_VA;
 
 	//Engine Studio functions
-	gPrivateFuncs.R_StudioDrawModel = (decltype(gPrivateFuncs.R_StudioDrawModel))GamedataResolvePtr(engineBase, "R_StudioDrawModel", MH_GAMESYMBOL_KIND_FUNCTION, true);
-	gPrivateFuncs.R_StudioDrawPlayer = (decltype(gPrivateFuncs.R_StudioDrawPlayer))GamedataResolvePtr(engineBase, "R_StudioDrawPlayer", MH_GAMESYMBOL_KIND_FUNCTION, true);
-	gPrivateFuncs.R_StudioSetupBones = (decltype(gPrivateFuncs.R_StudioSetupBones))GamedataResolvePtr(engineBase, "R_StudioSetupBones", MH_GAMESYMBOL_KIND_FUNCTION, true);
+	gPrivateFuncs.R_StudioDrawModel = (decltype(gPrivateFuncs.R_StudioDrawModel))GamedataResolvePtr(engineBase, "engine", "R_StudioDrawModel", MH_GAMESYMBOL_KIND_FUNCTION, true);
+	gPrivateFuncs.R_StudioDrawPlayer = (decltype(gPrivateFuncs.R_StudioDrawPlayer))GamedataResolvePtr(engineBase, "engine", "R_StudioDrawPlayer", MH_GAMESYMBOL_KIND_FUNCTION, true);
+	gPrivateFuncs.R_StudioSetupBones = (decltype(gPrivateFuncs.R_StudioSetupBones))GamedataResolvePtr(engineBase, "engine", "R_StudioSetupBones", MH_GAMESYMBOL_KIND_FUNCTION, true);
 
 	//Engine global slots
-	cl_max_edicts = (decltype(cl_max_edicts))GamedataResolvePtr(engineBase, "cl_max_edicts", MH_GAMESYMBOL_KIND_GLOBAL, true);
-	cl_entities = (decltype(cl_entities))GamedataResolvePtr(engineBase, "cl_entities", MH_GAMESYMBOL_KIND_GLOBAL, true);
-	gTempEnts = (decltype(gTempEnts))GamedataResolvePtr(engineBase, "gTempEnts", MH_GAMESYMBOL_KIND_GLOBAL, true);
-	cl_viewentity = (decltype(cl_viewentity))GamedataResolvePtr(engineBase, "cl_viewentity", MH_GAMESYMBOL_KIND_GLOBAL, true);
-	mod_known = (decltype(mod_known))GamedataResolvePtr(engineBase, "mod_known", MH_GAMESYMBOL_KIND_GLOBAL, true);
-	mod_numknown = (decltype(mod_numknown))GamedataResolvePtr(engineBase, "mod_numknown", MH_GAMESYMBOL_KIND_GLOBAL, true);
-	cl_frames = (decltype(cl_frames))GamedataResolvePtr(engineBase, "cl_frames", MH_GAMESYMBOL_KIND_GLOBAL, true);
-	cl_parsecount = (decltype(cl_parsecount))GamedataResolvePtr(engineBase, "cl_parsecount", MH_GAMESYMBOL_KIND_GLOBAL, true);
-	cl_numvisedicts = (decltype(cl_numvisedicts))GamedataResolvePtr(engineBase, "cl_numvisedicts", MH_GAMESYMBOL_KIND_GLOBAL, true);
-	cl_visedicts = (decltype(cl_visedicts))GamedataResolvePtr(engineBase, "cl_visedicts", MH_GAMESYMBOL_KIND_GLOBAL, true);
-	r_worldentity = (decltype(r_worldentity))GamedataResolvePtr(engineBase, "r_worldentity", MH_GAMESYMBOL_KIND_GLOBAL, true);
-	cl_worldmodel = (decltype(cl_worldmodel))GamedataResolvePtr(engineBase, "cl_worldmodel", MH_GAMESYMBOL_KIND_GLOBAL, true);
+	cl_max_edicts = (decltype(cl_max_edicts))GamedataResolvePtr(engineBase, "engine", "cl_max_edicts", MH_GAMESYMBOL_KIND_GLOBAL, true);
+	cl_entities = (decltype(cl_entities))GamedataResolvePtr(engineBase, "engine", "cl_entities", MH_GAMESYMBOL_KIND_GLOBAL, true);
+	gTempEnts = (decltype(gTempEnts))GamedataResolvePtr(engineBase, "engine", "gTempEnts", MH_GAMESYMBOL_KIND_GLOBAL, true);
+	cl_viewentity = (decltype(cl_viewentity))GamedataResolvePtr(engineBase, "engine", "cl_viewentity", MH_GAMESYMBOL_KIND_GLOBAL, true);
+	mod_known = (decltype(mod_known))GamedataResolvePtr(engineBase, "engine", "mod_known", MH_GAMESYMBOL_KIND_GLOBAL, true);
+	mod_numknown = (decltype(mod_numknown))GamedataResolvePtr(engineBase, "engine", "mod_numknown", MH_GAMESYMBOL_KIND_GLOBAL, true);
+	cl_frames = (decltype(cl_frames))GamedataResolvePtr(engineBase, "engine", "cl_frames", MH_GAMESYMBOL_KIND_GLOBAL, true);
+	cl_parsecount = (decltype(cl_parsecount))GamedataResolvePtr(engineBase, "engine", "cl_parsecount", MH_GAMESYMBOL_KIND_GLOBAL, true);
+	cl_numvisedicts = (decltype(cl_numvisedicts))GamedataResolvePtr(engineBase, "engine", "cl_numvisedicts", MH_GAMESYMBOL_KIND_GLOBAL, true);
+	cl_visedicts = (decltype(cl_visedicts))GamedataResolvePtr(engineBase, "engine", "cl_visedicts", MH_GAMESYMBOL_KIND_GLOBAL, true);
+	r_worldentity = (decltype(r_worldentity))GamedataResolvePtr(engineBase, "engine", "r_worldentity", MH_GAMESYMBOL_KIND_GLOBAL, true);
+	cl_worldmodel = (decltype(cl_worldmodel))GamedataResolvePtr(engineBase, "engine", "cl_worldmodel", MH_GAMESYMBOL_KIND_GLOBAL, true);
 
 	//Engine Studio global slots
-	currententity = (decltype(currententity))GamedataResolvePtr(engineBase, "currententity", MH_GAMESYMBOL_KIND_GLOBAL, true);
-	pstudiohdr = (decltype(pstudiohdr))GamedataResolvePtr(engineBase, "pstudiohdr", MH_GAMESYMBOL_KIND_GLOBAL, true);
-	r_origin = (decltype(r_origin))GamedataResolvePtr(engineBase, "r_origin", MH_GAMESYMBOL_KIND_GLOBAL, true);
+	currententity = (decltype(currententity))GamedataResolvePtr(engineBase, "engine", "currententity", MH_GAMESYMBOL_KIND_GLOBAL, true);
+	pstudiohdr = (decltype(pstudiohdr))GamedataResolvePtr(engineBase, "engine", "pstudiohdr", MH_GAMESYMBOL_KIND_GLOBAL, true);
+	r_origin = (decltype(r_origin))GamedataResolvePtr(engineBase, "engine", "r_origin", MH_GAMESYMBOL_KIND_GLOBAL, true);
 
 	//SvEngine-only engine global
 	if (g_iEngineType == ENGINE_SVENGINE)
-		allow_cheats = (decltype(allow_cheats))GamedataResolvePtr(engineBase, "allow_cheats", MH_GAMESYMBOL_KIND_GLOBAL, true);
+		allow_cheats = (decltype(allow_cheats))GamedataResolvePtr(engineBase, "engine", "allow_cheats", MH_GAMESYMBOL_KIND_GLOBAL, true);
 	else
 		allow_cheats = nullptr;
 
 	//frame_t stride: a plain uint32 value for the matched engine binary.
-	size_of_frame = (int)GamedataResolveScalar(engineBase, "size_of_frame", true);
+	size_of_frame = (int)GamedataResolveScalar(engineBase, "engine", "size_of_frame", true);
 }
 
 void Client_FillAddress(PVOID clientBase)
 {
 	//Observer state is required by the release gate for every client-bearing game.
-	g_iUser1 = (decltype(g_iUser1))GamedataResolvePtr(clientBase, "g_iUser1", MH_GAMESYMBOL_KIND_GLOBAL, true);
-	g_iUser2 = (decltype(g_iUser2))GamedataResolvePtr(clientBase, "g_iUser2", MH_GAMESYMBOL_KIND_GLOBAL, true);
+	g_iUser1 = (decltype(g_iUser1))GamedataResolvePtr(clientBase, "client", "g_iUser1", MH_GAMESYMBOL_KIND_GLOBAL, true);
+	g_iUser2 = (decltype(g_iUser2))GamedataResolvePtr(clientBase, "client", "g_iUser2", MH_GAMESYMBOL_KIND_GLOBAL, true);
 
 	auto pfnClientFactory = g_pMetaHookAPI->GetClientFactory();
 
@@ -141,9 +141,9 @@ void Client_FillAddress(PVOID clientBase)
 	{
 		g_bIsSvenCoop = true;
 
-		g_bRenderingPortals_SCClient = (decltype(g_bRenderingPortals_SCClient))GamedataResolvePtr(clientBase, "g_bRenderingPortals_SCClient", MH_GAMESYMBOL_KIND_GLOBAL, true);
-		g_ViewEntityIndex_SCClient = (decltype(g_ViewEntityIndex_SCClient))GamedataResolvePtr(clientBase, "g_ViewEntityIndex_SCClient", MH_GAMESYMBOL_KIND_GLOBAL, true);
-		g_pitchdrift = (decltype(g_pitchdrift))GamedataResolvePtr(clientBase, "g_pitchdrift", MH_GAMESYMBOL_KIND_GLOBAL, true);
+		g_bRenderingPortals_SCClient = (decltype(g_bRenderingPortals_SCClient))GamedataResolvePtr(clientBase, "client", "g_bRenderingPortals_SCClient", MH_GAMESYMBOL_KIND_GLOBAL, true);
+		g_ViewEntityIndex_SCClient = (decltype(g_ViewEntityIndex_SCClient))GamedataResolvePtr(clientBase, "client", "g_ViewEntityIndex_SCClient", MH_GAMESYMBOL_KIND_GLOBAL, true);
+		g_pitchdrift = (decltype(g_pitchdrift))GamedataResolvePtr(clientBase, "client", "g_pitchdrift", MH_GAMESYMBOL_KIND_GLOBAL, true);
 	}
 
 	const char* gameDir = gEngfuncs.pfnGetGameDirectory();
@@ -158,9 +158,9 @@ void Client_FillAddress(PVOID clientBase)
 		g_bIsCounterStrike = true;
 
 		if (!strcmp(gameDir, "czeror"))
-			g_PlayerExtraInfo_CZDS = (decltype(g_PlayerExtraInfo_CZDS))GamedataResolvePtr(clientBase, "g_PlayerExtraInfo_CZDS", MH_GAMESYMBOL_KIND_GLOBAL, true);
+			g_PlayerExtraInfo_CZDS = (decltype(g_PlayerExtraInfo_CZDS))GamedataResolvePtr(clientBase, "client", "g_PlayerExtraInfo_CZDS", MH_GAMESYMBOL_KIND_GLOBAL, true);
 		else
-			g_PlayerExtraInfo = (decltype(g_PlayerExtraInfo))GamedataResolvePtr(clientBase, "g_PlayerExtraInfo", MH_GAMESYMBOL_KIND_GLOBAL, true);
+			g_PlayerExtraInfo = (decltype(g_PlayerExtraInfo))GamedataResolvePtr(clientBase, "client", "g_PlayerExtraInfo", MH_GAMESYMBOL_KIND_GLOBAL, true);
 	}
 }
 
