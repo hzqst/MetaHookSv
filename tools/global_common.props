@@ -33,7 +33,7 @@
     <FreeImageCheckRequirements>$(ZLibCheckRequirements)
     if not exist "$(FreeImageLibrariesDirectory)" call "$(MetaHookBaseDir)scripts\build-FreeImage-$(PlatformTarget)-$(Configuration).bat"</FreeImageCheckRequirements>
 
-    <CapstoneIncludeDirectory>$(MetaHookBaseDir)thirdparty\install\capstone\$(PlatformTarget)\$(Configuration)\include</CapstoneIncludeDirectory>
+    <CapstoneIncludeDirectory>$(MetaHookBaseDir)thirdparty\install\capstone\$(PlatformTarget)\$(Configuration)\include\capstone</CapstoneIncludeDirectory>
     <CapstoneLibrariesDirectory>$(MetaHookBaseDir)thirdparty\install\capstone\$(PlatformTarget)\$(Configuration)\lib</CapstoneLibrariesDirectory>
     <CapstoneCheckRequirements>if not exist "$(CapstoneLibrariesDirectory)" call "$(MetaHookBaseDir)scripts\build-capstone-$(PlatformTarget)-$(Configuration).bat"</CapstoneCheckRequirements>
 
