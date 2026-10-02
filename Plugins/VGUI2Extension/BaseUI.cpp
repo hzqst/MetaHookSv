@@ -164,14 +164,15 @@ void CBaseUIProxy::Shutdown(void)
 	VGUI2ExtensionInternal()->ClientVGUI_Shutdown();
 
 	GameUI_UninstallHooks();
-	KeyValuesSystem_UninstallHooks();
 	Scheme_UninstallHooks();
-	Surface_UninstallHooks();
 
 	//GameUI.dll and vgui2.dll will be unloaded by engine!CBaseUI::Shutdown
 	m_pfnCBaseUI_Shutdown(this, 0);
 
 	VGUI2ExtensionInternal()->BaseUI_Shutdown();
+
+	KeyValuesSystem_UninstallHooks();
+	Surface_UninstallHooks();
 }
 
 int CBaseUIProxy::Key_Event(int down, int keynum, const char *pszCurrentBinding)
@@ -419,14 +420,15 @@ void CBaseUILegacyProxy::Shutdown(void)
 	VGUI2ExtensionInternal()->ClientVGUI_Shutdown();
 
 	GameUI_UninstallHooks();
-	KeyValuesSystem_UninstallHooks();
 	Scheme_UninstallHooks();
-	Surface_UninstallHooks();
 
 	//GameUI.dll and vgui2.dll will be unloaded by engine!CBaseUI::Shutdown
 	m_pfnCBaseUI_Shutdown(this, 0);
 
 	VGUI2ExtensionInternal()->BaseUI_Shutdown();
+
+	KeyValuesSystem_UninstallHooks();
+	Surface_UninstallHooks();
 }
 
 int CBaseUILegacyProxy::Key_Event(int down, int keynum, const char* pszCurrentBinding)
