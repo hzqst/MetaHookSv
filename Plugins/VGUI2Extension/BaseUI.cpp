@@ -51,6 +51,14 @@ static void(__fastcall *m_pfnCBaseUI_ActivateGameUI)(void *pthis, int) = NULL;
 static void(__fastcall *m_pfnCBaseUI_HideConsole)(void *pthis, int) = NULL;
 static void(__fastcall *m_pfnCBaseUI_ShowConsole)(void *pthis, int) = NULL;
 
+//One VFTHook per IBaseUI slot installed by BaseUI_InstallHooks; kept so
+//BaseUI_UninstallHooks can UnHook them instead of leaving the proxy vftable
+//written into IBaseUI after ExitGame.
+//The modern and legacy IBaseUI layouts share slots 0..4; slot 5 differs between
+//CallEngineSurfaceAppHandler and CallEngineSurfaceWndProc. Both proxies are
+//stored in the slot-indexed array and only the active one is ever non-null.
+static hook_t* g_phook_CBaseUI[11] = { NULL };
+
 void __fastcall EngineVGUI2_Panel_Init(vgui::Panel* pthis, int dummy, int x, int y, int w, int h)
 {
 	gPrivateFuncs.EngineVGUI2_Panel_Init(pthis, 0, x, y, w, h);
@@ -647,31 +655,35 @@ void BaseUI_InstallHooks(void)
 	{
 		PVOID* ProxyVFTable = *(PVOID**)&s_BaseUIProxy;
 
-		g_pMetaHookAPI->VFTHook(baseui, 0, 1, ProxyVFTable[1], (void**)&m_pfnCBaseUI_Initialize);
-		g_pMetaHookAPI->VFTHook(baseui, 0, 2, ProxyVFTable[2], (void**)&m_pfnCBaseUI_Start);
-		g_pMetaHookAPI->VFTHook(baseui, 0, 3, ProxyVFTable[3], (void**)&m_pfnCBaseUI_Shutdown);
-		g_pMetaHookAPI->VFTHook(baseui, 0, 4, ProxyVFTable[4], (void**)&m_pfnCBaseUI_Key_Event);
-		g_pMetaHookAPI->VFTHook(baseui, 0, 5, ProxyVFTable[5], (void**)&m_pfnCBaseUI_CallEngineSurfaceAppHandler);
-		g_pMetaHookAPI->VFTHook(baseui, 0, 6, ProxyVFTable[6], (void**)&m_pfnCBaseUI_Paint);
-		g_pMetaHookAPI->VFTHook(baseui, 0, 7, ProxyVFTable[7], (void**)&m_pfnCBaseUI_HideGameUI);
-		g_pMetaHookAPI->VFTHook(baseui, 0, 8, ProxyVFTable[8], (void**)&m_pfnCBaseUI_ActivateGameUI);
-		g_pMetaHookAPI->VFTHook(baseui, 0, 9, ProxyVFTable[9], (void**)&m_pfnCBaseUI_HideConsole);
-		g_pMetaHookAPI->VFTHook(baseui, 0, 10, ProxyVFTable[10], (void**)&m_pfnCBaseUI_ShowConsole);
+		//Slot 0 is IBaseUI's Unknown() and is left untouched. Slots 1..10 are
+		//proxied and unhooked again in BaseUI_UninstallHooks.
+		g_phook_CBaseUI[1] = g_pMetaHookAPI->VFTHook(baseui, 0, 1, ProxyVFTable[1], (void**)&m_pfnCBaseUI_Initialize);
+		g_phook_CBaseUI[2] = g_pMetaHookAPI->VFTHook(baseui, 0, 2, ProxyVFTable[2], (void**)&m_pfnCBaseUI_Start);
+		g_phook_CBaseUI[3] = g_pMetaHookAPI->VFTHook(baseui, 0, 3, ProxyVFTable[3], (void**)&m_pfnCBaseUI_Shutdown);
+		g_phook_CBaseUI[4] = g_pMetaHookAPI->VFTHook(baseui, 0, 4, ProxyVFTable[4], (void**)&m_pfnCBaseUI_Key_Event);
+		g_phook_CBaseUI[5] = g_pMetaHookAPI->VFTHook(baseui, 0, 5, ProxyVFTable[5], (void**)&m_pfnCBaseUI_CallEngineSurfaceAppHandler);
+		g_phook_CBaseUI[6] = g_pMetaHookAPI->VFTHook(baseui, 0, 6, ProxyVFTable[6], (void**)&m_pfnCBaseUI_Paint);
+		g_phook_CBaseUI[7] = g_pMetaHookAPI->VFTHook(baseui, 0, 7, ProxyVFTable[7], (void**)&m_pfnCBaseUI_HideGameUI);
+		g_phook_CBaseUI[8] = g_pMetaHookAPI->VFTHook(baseui, 0, 8, ProxyVFTable[8], (void**)&m_pfnCBaseUI_ActivateGameUI);
+		g_phook_CBaseUI[9] = g_pMetaHookAPI->VFTHook(baseui, 0, 9, ProxyVFTable[9], (void**)&m_pfnCBaseUI_HideConsole);
+		g_phook_CBaseUI[10] = g_pMetaHookAPI->VFTHook(baseui, 0, 10, ProxyVFTable[10], (void**)&m_pfnCBaseUI_ShowConsole);
 	}
 	else
 	{
 		PVOID* ProxyVFTable = *(PVOID**)&s_BaseUILegacyProxy;
 
-		g_pMetaHookAPI->VFTHook(baseui_legacy, 0, 1, ProxyVFTable[1], (void**)&m_pfnCBaseUI_Initialize);
-		g_pMetaHookAPI->VFTHook(baseui_legacy, 0, 2, ProxyVFTable[2], (void**)&m_pfnCBaseUI_Start);
-		g_pMetaHookAPI->VFTHook(baseui_legacy, 0, 3, ProxyVFTable[3], (void**)&m_pfnCBaseUI_Shutdown);
-		g_pMetaHookAPI->VFTHook(baseui_legacy, 0, 4, ProxyVFTable[4], (void**)&m_pfnCBaseUI_Key_Event);
-		g_pMetaHookAPI->VFTHook(baseui_legacy, 0, 5, ProxyVFTable[5], (void**)&m_pfnCBaseUI_CallEngineSurfaceWndProc);
-		g_pMetaHookAPI->VFTHook(baseui_legacy, 0, 6, ProxyVFTable[6], (void**)&m_pfnCBaseUI_Paint);
-		g_pMetaHookAPI->VFTHook(baseui_legacy, 0, 7, ProxyVFTable[7], (void**)&m_pfnCBaseUI_HideGameUI);
-		g_pMetaHookAPI->VFTHook(baseui_legacy, 0, 8, ProxyVFTable[8], (void**)&m_pfnCBaseUI_ActivateGameUI);
-		g_pMetaHookAPI->VFTHook(baseui_legacy, 0, 9, ProxyVFTable[9], (void**)&m_pfnCBaseUI_HideConsole);
-		g_pMetaHookAPI->VFTHook(baseui_legacy, 0, 10, ProxyVFTable[10], (void**)&m_pfnCBaseUI_ShowConsole);
+		//Slot 0 is IBaseUI_Legacy's Unknown() and is left untouched. Slots 1..10
+		//are proxied and unhooked again in BaseUI_UninstallHooks.
+		g_phook_CBaseUI[1] = g_pMetaHookAPI->VFTHook(baseui_legacy, 0, 1, ProxyVFTable[1], (void**)&m_pfnCBaseUI_Initialize);
+		g_phook_CBaseUI[2] = g_pMetaHookAPI->VFTHook(baseui_legacy, 0, 2, ProxyVFTable[2], (void**)&m_pfnCBaseUI_Start);
+		g_phook_CBaseUI[3] = g_pMetaHookAPI->VFTHook(baseui_legacy, 0, 3, ProxyVFTable[3], (void**)&m_pfnCBaseUI_Shutdown);
+		g_phook_CBaseUI[4] = g_pMetaHookAPI->VFTHook(baseui_legacy, 0, 4, ProxyVFTable[4], (void**)&m_pfnCBaseUI_Key_Event);
+		g_phook_CBaseUI[5] = g_pMetaHookAPI->VFTHook(baseui_legacy, 0, 5, ProxyVFTable[5], (void**)&m_pfnCBaseUI_CallEngineSurfaceWndProc);
+		g_phook_CBaseUI[6] = g_pMetaHookAPI->VFTHook(baseui_legacy, 0, 6, ProxyVFTable[6], (void**)&m_pfnCBaseUI_Paint);
+		g_phook_CBaseUI[7] = g_pMetaHookAPI->VFTHook(baseui_legacy, 0, 7, ProxyVFTable[7], (void**)&m_pfnCBaseUI_HideGameUI);
+		g_phook_CBaseUI[8] = g_pMetaHookAPI->VFTHook(baseui_legacy, 0, 8, ProxyVFTable[8], (void**)&m_pfnCBaseUI_ActivateGameUI);
+		g_phook_CBaseUI[9] = g_pMetaHookAPI->VFTHook(baseui_legacy, 0, 9, ProxyVFTable[9], (void**)&m_pfnCBaseUI_HideConsole);
+		g_phook_CBaseUI[10] = g_pMetaHookAPI->VFTHook(baseui_legacy, 0, 10, ProxyVFTable[10], (void**)&m_pfnCBaseUI_ShowConsole);
 	}
 
 	Install_InlineHook(EngineVGUI2_Panel_Init);
@@ -679,5 +691,16 @@ void BaseUI_InstallHooks(void)
 
 void BaseUI_UninstallHooks(void)
 {
+	//Restores the IBaseUI / IBaseUI_Legacy vftable entries the matching proxy
+	//replaced. baseui and gameuifuncs stay cached; only the hooks are dropped.
+	for (int i = 1; i < _ARRAYSIZE(g_phook_CBaseUI); ++i)
+	{
+		if (g_phook_CBaseUI[i])
+		{
+			g_pMetaHookAPI->UnHook(g_phook_CBaseUI[i]);
+			g_phook_CBaseUI[i] = NULL;
+		}
+	}
+
 	Uninstall_Hook(EngineVGUI2_Panel_Init);
 }
