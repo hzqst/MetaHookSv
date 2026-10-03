@@ -5,6 +5,9 @@ Debug/
 Release/
 Release_AVX2/
 intermediate/
+
+# CMake aggregator build tree
+/build/
 Build/svencoop/metahook/dlls/
 Build/svencoop/metahook/plugins/
 Build/svencoop/metahook/gamedata/
