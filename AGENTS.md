@@ -38,7 +38,7 @@ Shared `thirdparty/` submodules and the variables they feed:
 | `glew_fork` | `GLEW_SOURCE_PATH` | BulletPhysics, Renderer, SteamScreenshots |
 | `FreeImage_clone` | `FREEIMAGE_SOURCE_PATH` | Renderer, UtilAssetsIntegrity |
 | `tinyobjloader` | `TINYOBJLOADER_SOURCE_PATH` | BulletPhysics, Renderer |
-| `Chocobo1Hash` | `CHOCOBO1HASH_SOURCE_PATH` | BulletPhysics |
+| `Chocobo1Hash` | `CHOCOBO1HASH_SOURCE_PATH` | BulletPhysics (shares `MetaHook/thirdparty/Chocobo1Hash`) |
 | `SteamSDK` | `STEAMSDK_SOURCE_PATH` | SteamScreenshots, UtilHTTPClient_SteamAPI |
 
 Two more dependencies are shared without a submodule:

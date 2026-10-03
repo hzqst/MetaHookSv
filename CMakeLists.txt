@@ -193,7 +193,9 @@ function(metahooksv_dependency_path dep_var out_var)
     elseif(dep_var STREQUAL "TINYOBJLOADER_SOURCE_PATH")
         set(_path "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/tinyobjloader")
     elseif(dep_var STREQUAL "CHOCOBO1HASH_SOURCE_PATH")
-        set(_path "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/Chocobo1Hash")
+        # Reuse MetaHook's own Chocobo1Hash submodule instead of keeping a
+        # second copy under the aggregator's thirdparty/.
+        set(_path "${CMAKE_CURRENT_SOURCE_DIR}/MetaHook/thirdparty/Chocobo1Hash")
     else()
         message(FATAL_ERROR "Unknown injected dependency variable: ${dep_var}")
     endif()
