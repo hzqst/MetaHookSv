@@ -59,26 +59,31 @@ option(METAHOOKSV_BUILD_TOOLSRC "Build the CMake-based toolsrc/* components" ON)
 set(METAHOOKSV_COMPONENT_DEFS
     "MetaHook|metahook|METAHOOKSV_BUILD_METAHOOK|-"
 
-    "Plugins/BulletPhysics|plugins|METAHOOKSV_BUILD_PLUGIN_BULLETPHYSICS|METAHOOK_SOURCE_PATH,VGUI2EXTENSION_SOURCE_PATH"
+    "Plugins/BulletPhysics|plugins|METAHOOKSV_BUILD_PLUGIN_BULLETPHYSICS|METAHOOK_SOURCE_PATH,VGUI2EXTENSION_SOURCE_PATH,SCOPEEXIT_SOURCE_PATH,GLEW_SOURCE_PATH"
     "Plugins/CaptionMod|plugins|METAHOOKSV_BUILD_PLUGIN_CAPTIONMOD|METAHOOK_SOURCE_PATH,VGUI2EXTENSION_SOURCE_PATH"
     "Plugins/HeapPatch|plugins|METAHOOKSV_BUILD_PLUGIN_HEAPPATCH|METAHOOK_SOURCE_PATH"
     "Plugins/PrecacheManager|plugins|METAHOOKSV_BUILD_PLUGIN_PRECACHEMANAGER|METAHOOK_SOURCE_PATH"
-    "Plugins/Renderer|plugins|METAHOOKSV_BUILD_PLUGIN_RENDERER|METAHOOK_SOURCE_PATH,VGUI2EXTENSION_SOURCE_PATH,UTILTHREADTASK_SOURCE_PATH"
+    "Plugins/Renderer|plugins|METAHOOKSV_BUILD_PLUGIN_RENDERER|METAHOOK_SOURCE_PATH,VGUI2EXTENSION_SOURCE_PATH,UTILTHREADTASK_SOURCE_PATH,SCOPEEXIT_SOURCE_PATH,GLEW_SOURCE_PATH,FREEIMAGE_SOURCE_PATH"
     "Plugins/ResourceReplacer|plugins|METAHOOKSV_BUILD_PLUGIN_RESOURCEREPLACER|METAHOOK_SOURCE_PATH"
     "Plugins/SCCameraFix|plugins|METAHOOKSV_BUILD_PLUGIN_SCCAMERAFIX|METAHOOK_SOURCE_PATH"
-    "Plugins/SCModelDownloader|plugins|METAHOOKSV_BUILD_PLUGIN_SCMODELDOWNLOADER|-"
-    "Plugins/SteamScreenshots|plugins|METAHOOKSV_BUILD_PLUGIN_STEAMSCREENSHOTS|-"
+    "Plugins/SCModelDownloader|plugins|METAHOOKSV_BUILD_PLUGIN_SCMODELDOWNLOADER|METAHOOK_SOURCE_PATH,VGUI2EXTENSION_SOURCE_PATH,SCOPEEXIT_SOURCE_PATH"
+    "Plugins/SteamScreenshots|plugins|METAHOOKSV_BUILD_PLUGIN_STEAMSCREENSHOTS|STEAMSDK_SOURCE_PATH,GLEW_SOURCE_PATH"
     "Plugins/StudioEvents|plugins|METAHOOKSV_BUILD_PLUGIN_STUDIOEVENTS|METAHOOK_SOURCE_PATH"
     "Plugins/ThreadGuard|plugins|METAHOOKSV_BUILD_PLUGIN_THREADGUARD|METAHOOK_SOURCE_PATH"
     "Plugins/VGUI2Extension|plugins|METAHOOKSV_BUILD_PLUGIN_VGUI2EXTENSION|METAHOOK_SOURCE_PATH"
 
-    "PluginLibs/UtilAssetsIntegrity|pluginlibs|METAHOOKSV_BUILD_PLUGINLIB_UTILASSETSINTEGRITY|METAHOOK_SOURCE_PATH"
-    "PluginLibs/UtilHTTPClient_SteamAPI|pluginlibs|METAHOOKSV_BUILD_PLUGINLIB_UTILHTTPCLIENT_STEAMAPI|METAHOOK_SOURCE_PATH"
-    "PluginLibs/UtilHTTPClient_libcurl|pluginlibs|METAHOOKSV_BUILD_PLUGINLIB_UTILHTTPCLIENT_LIBCURL|METAHOOK_SOURCE_PATH"
+    "PluginLibs/UtilAssetsIntegrity|pluginlibs|METAHOOKSV_BUILD_PLUGINLIB_UTILASSETSINTEGRITY|METAHOOK_SOURCE_PATH,SCOPEEXIT_SOURCE_PATH,FREEIMAGE_SOURCE_PATH"
+    "PluginLibs/UtilHTTPClient_SteamAPI|pluginlibs|METAHOOKSV_BUILD_PLUGINLIB_UTILHTTPCLIENT_STEAMAPI|METAHOOK_SOURCE_PATH,SCOPEEXIT_SOURCE_PATH,STEAMSDK_SOURCE_PATH"
+    "PluginLibs/UtilHTTPClient_libcurl|pluginlibs|METAHOOKSV_BUILD_PLUGINLIB_UTILHTTPCLIENT_LIBCURL|METAHOOK_SOURCE_PATH,SCOPEEXIT_SOURCE_PATH"
     "PluginLibs/UtilThreadTask|pluginlibs|METAHOOKSV_BUILD_PLUGINLIB_UTILTHREADTASK|METAHOOK_SOURCE_PATH"
 
     "toolsrc/SteamAppsLocation|toolsrc|METAHOOKSV_BUILD_TOOL_STEAMAPPSLOCATION|-"
 )
+
+# Components that consume SDL2/SDL3 headers. They are pointed at the SDL headers
+# that MetaHook builds and installs into the shared prefix (Renderer and
+# VGUI2Extension deliberately do not build SDL themselves).
+set(METAHOOKSV_SDL_CONSUMERS Renderer VGUI2Extension)
 
 # Register a per-component option (default ON) for every entry.
 foreach(_def IN LISTS METAHOOKSV_COMPONENT_DEFS)
@@ -177,6 +182,14 @@ function(metahooksv_dependency_path dep_var out_var)
         set(_path "${CMAKE_CURRENT_SOURCE_DIR}/Plugins/VGUI2Extension")
     elseif(dep_var STREQUAL "UTILTHREADTASK_SOURCE_PATH")
         set(_path "${CMAKE_CURRENT_SOURCE_DIR}/PluginLibs/UtilThreadTask")
+    elseif(dep_var STREQUAL "SCOPEEXIT_SOURCE_PATH")
+        set(_path "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/ScopeExit")
+    elseif(dep_var STREQUAL "FREEIMAGE_SOURCE_PATH")
+        set(_path "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/FreeImage_clone")
+    elseif(dep_var STREQUAL "GLEW_SOURCE_PATH")
+        set(_path "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glew_fork")
+    elseif(dep_var STREQUAL "STEAMSDK_SOURCE_PATH")
+        set(_path "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/SteamSDK")
     else()
         message(FATAL_ERROR "Unknown injected dependency variable: ${dep_var}")
     endif()
@@ -245,8 +258,9 @@ foreach(_def IN LISTS METAHOOKSV_COMPONENT_DEFS)
         string(REPLACE "," ";" _dep_list "${_dep_vars}")
         foreach(_dep IN LISTS _dep_list)
             metahooksv_dependency_path("${_dep}" _dep_path)
-            if(NOT EXISTS "${_dep_path}/CMakeLists.txt")
-                message(FATAL_ERROR "${_name} requires ${_dep} at ${_dep_path}, which is missing.")
+            if(NOT IS_DIRECTORY "${_dep_path}")
+                message(FATAL_ERROR "${_name} requires ${_dep} at ${_dep_path}, which is missing. "
+                    "Initialize submodules (METAHOOKSV_INIT_SUBMODULES=ON) or update them.")
             endif()
             list(APPEND _dep_args "-D${_dep}=${_dep_path}")
         endforeach()
@@ -263,6 +277,22 @@ foreach(_def IN LISTS METAHOOKSV_COMPONENT_DEFS)
         list(APPEND _vcltl_args "-DVC_LTL_Root=${METAHOOKSV_VC_LTL_ROOT}")
     endif()
 
+    # SDL consumers get the headers MetaHook installs into the shared prefix and
+    # must build after MetaHook (which builds/installs SDL3 and SDL2).
+    set(_sdl_args)
+    set(_sdl_dep)
+    if(_name IN_LIST METAHOOKSV_SDL_CONSUMERS)
+        set(_sdl_include "${METAHOOKSV_INSTALL_PREFIX}/include")
+        list(APPEND _sdl_args
+            "-DSDL3_INCLUDE_DIRS=${_sdl_include}"
+            "-DSDL2_INCLUDE_DIRS=${_sdl_include}")
+        if(_targets_metahook)
+            set(_sdl_dep DEPENDS ${_targets_metahook})
+        else()
+            message(WARNING "${_name} consumes SDL but MetaHook is disabled; pass SDL2_INCLUDE_DIRS/SDL3_INCLUDE_DIRS manually.")
+        endif()
+    endif()
+
     message(STATUS "Enabling ${_path} (target '${_name}')")
     ExternalProject_Add(${_name}
         SOURCE_DIR "${_source_dir}"
@@ -273,8 +303,10 @@ foreach(_def IN LISTS METAHOOKSV_COMPONENT_DEFS)
             "-DCMAKE_INSTALL_PREFIX=${METAHOOKSV_INSTALL_PREFIX}"
             ${_metahooksv_config_args}
             ${_vcltl_args}
+            ${_sdl_args}
             ${_dep_args}
         ${_install_args}
+        ${_sdl_dep}
     )
 
     if(_group STREQUAL "metahook")

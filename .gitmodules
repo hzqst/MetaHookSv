@@ -1,9 +1,3 @@
-[submodule "thirdparty/rapidjson"]
-	path = thirdparty/rapidjson
-	url = https://github.com/Tencent/rapidjson
-[submodule "thirdparty/bullet3_fork"]
-	path = thirdparty/bullet3_fork
-	url = https://github.com/hzqst/bullet3
 [submodule "thirdparty/glew_fork"]
 	path = thirdparty/glew_fork
 	url = https://github.com/hzqst/glew-cmake
@@ -13,41 +7,6 @@
 [submodule "thirdparty/FreeImage_clone"]
 	path = thirdparty/FreeImage_clone
 	url = https://github.com/hzqst/FreeImage_clone
-[submodule "thirdparty/Detours_fork"]
-	path = thirdparty/Detours_fork
-	url = https://github.com/hzqst/Detours_fork
-[submodule "thirdparty/capstone_fork"]
-	path = thirdparty/capstone_fork
-	url = https://github.com/hzqst/capstone
-[submodule "thirdparty/tinyobjloader"]
-	path = thirdparty/tinyobjloader
-	url = https://github.com/hzqst/tinyobjloader
-[submodule "thirdparty/Musa.Veil_fork"]
-	path = thirdparty/Musa.Veil_fork
-	url = https://github.com/hzqst/Musa.Veil
-[submodule "thirdparty/Chocobo1Hash"]
-	path = thirdparty/Chocobo1Hash
-	url = https://github.com/hzqst/Chocobo1Hash
-[submodule "thirdparty/sdl2-compat-fork"]
-	path = thirdparty/sdl2-compat-fork
-	url = https://github.com/hzqst/sdl2-compat-fork
-[submodule "thirdparty/curl"]
-	path = thirdparty/curl
-	url = https://github.com/curl/curl
-[submodule "thirdparty/SDL3_fork"]
-	path = thirdparty/SDL3_fork
-	url = https://github.com/hzqst/SDL
-	branch = VC-LTL-SDL3
-[submodule "thirdparty/zlib-fork"]
-	path = thirdparty/zlib-fork
-	url = https://github.com/hzqst/zlib-fork
-	branch = VC-LTL
-[submodule "thirdparty/csv-parser-fork"]
-	path = thirdparty/csv-parser-fork
-	url = https://github.com/hzqst/csv-parser-fork
-[submodule "thirdparty/glfw"]
-	path = thirdparty/glfw
-	url = https://github.com/glfw/glfw.git
 [submodule "PluginLibs/UtilAssetsIntegrity"]
 	path = PluginLibs/UtilAssetsIntegrity
 	url = https://github.com/MetaHookSv/UtilAssetsIntegrity
@@ -108,3 +67,6 @@
 [submodule "toolsrc/MetahookInstaller"]
 	path = toolsrc/MetahookInstaller
 	url = https://github.com/MetaHookSv/MetahookInstaller
+[submodule "thirdparty/SteamSDK"]
+	path = thirdparty/SteamSDK
+	url = https://github.com/MetaHookSv/SteamSDK
