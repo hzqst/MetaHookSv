@@ -8,6 +8,9 @@ intermediate/
 
 # CMake aggregator build tree
 /build/
+
+# Shared downloaded dependency cache (VC-LTL etc.)
+/thirdparty/
 Build/svencoop/metahook/dlls/
 Build/svencoop/metahook/plugins/
 Build/svencoop/metahook/gamedata/
