@@ -59,7 +59,7 @@ option(METAHOOKSV_BUILD_TOOLSRC "Build the CMake-based toolsrc/* components" ON)
 set(METAHOOKSV_COMPONENT_DEFS
     "MetaHook|metahook|METAHOOKSV_BUILD_METAHOOK|-"
 
-    "Plugins/BulletPhysics|plugins|METAHOOKSV_BUILD_PLUGIN_BULLETPHYSICS|METAHOOK_SOURCE_PATH,VGUI2EXTENSION_SOURCE_PATH,SCOPEEXIT_SOURCE_PATH,GLEW_SOURCE_PATH"
+    "Plugins/BulletPhysics|plugins|METAHOOKSV_BUILD_PLUGIN_BULLETPHYSICS|METAHOOK_SOURCE_PATH,VGUI2EXTENSION_SOURCE_PATH,SCOPEEXIT_SOURCE_PATH,GLEW_SOURCE_PATH,TINYOBJLOADER_SOURCE_PATH,CHOCOBO1HASH_SOURCE_PATH"
     "Plugins/CaptionMod|plugins|METAHOOKSV_BUILD_PLUGIN_CAPTIONMOD|METAHOOK_SOURCE_PATH,VGUI2EXTENSION_SOURCE_PATH"
     "Plugins/HeapPatch|plugins|METAHOOKSV_BUILD_PLUGIN_HEAPPATCH|METAHOOK_SOURCE_PATH"
     "Plugins/PrecacheManager|plugins|METAHOOKSV_BUILD_PLUGIN_PRECACHEMANAGER|METAHOOK_SOURCE_PATH"
@@ -192,6 +192,8 @@ function(metahooksv_dependency_path dep_var out_var)
         set(_path "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/SteamSDK")
     elseif(dep_var STREQUAL "TINYOBJLOADER_SOURCE_PATH")
         set(_path "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/tinyobjloader")
+    elseif(dep_var STREQUAL "CHOCOBO1HASH_SOURCE_PATH")
+        set(_path "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/Chocobo1Hash")
     else()
         message(FATAL_ERROR "Unknown injected dependency variable: ${dep_var}")
     endif()

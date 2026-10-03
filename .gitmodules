@@ -73,3 +73,6 @@
 [submodule "thirdparty/tinyobjloader"]
 	path = thirdparty/tinyobjloader
 	url = https://github.com/hzqst/tinyobjloader
+[submodule "thirdparty/Chocobo1Hash"]
+	path = thirdparty/Chocobo1Hash
+	url = https://github.com/hzqst/Chocobo1Hash
