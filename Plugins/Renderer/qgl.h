@@ -1,9 +1,0 @@
-#pragma once
-
-#include <glew.h>
-
-typedef float mat3x4[3][4];
-typedef float mat4[4][4];
-typedef float vec4[4];
-typedef int ivec4[4];
-typedef unsigned int uvec4[4];
