@@ -1,0 +1,8 @@
+set(launch_root [==[@_launch_root@]==])
+set(binary_dir [==[@CMAKE_BINARY_DIR@]==])
+set(dotnet [==[@METAHOOKSV_DOTNET_EXECUTABLE@]==])
+set(cli_project [==[@_cli_project@]==])
+set(game_appid [==[@METAHOOKSV_GAME_APPID@]==])
+set(game_directory [==[@_game_directory@]==])
+set(game_mod [==[@_game_mod@]==])
+set(launcher [==[@_launcher@]==])

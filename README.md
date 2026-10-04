@@ -112,7 +112,21 @@ The aggregator builds MetaHook, MetaHook_blob, all enabled plugins (including Be
 
 ## Debugging
 
-Build and install with `--config Debug`, then deploy the output to the game. Open `build/MetaHookSv.sln` in Visual Studio, select Debug/Win32, and configure the launcher's debugging command, working directory and `-insecure -game <mod-directory>` arguments for that game.
+Enable the optional Visual Studio startup project (requires a compatible .NET SDK and .NET 8 runtime):
+
+```powershell
+cmake -S . -B build -G "Visual Studio 17 2022" -A Win32 -DMETAHOOKSV_ENABLE_LAUNCH_GAME=ON -DMETAHOOKSV_GAME_APPID=225840
+# For a custom installation/mod, also pass:
+# "-DMETAHOOKSV_GAME_DIRECTORY=D:/Games/Half-Life" -DMETAHOOKSV_GAME_APPID=70 -DMETAHOOKSV_GAME_MOD=gearbox
+```
+
+Open `build/MetaHookSv.sln`, select Debug/Win32, set **Launch-debugging / LaunchGame** as the startup project if necessary, and press **F5**. This incrementally builds all enabled components and InstallerCLI, installs into a private staging directory, deploys through InstallerCLI, and starts the actual game launcher with the native C++ debugger. The dummy executable is never launched or installed. Release/Win32 also works.
+
+`METAHOOKSV_GAME_DIRECTORY` defaults to empty (InstallerCLI discovers the Steam game by AppID); an explicit directory takes precedence. `METAHOOKSV_GAME_MOD` defaults to the app's base mod. `METAHOOKSV_GAME_ARGUMENTS` appends arguments after `-insecure -game "<mod>"`. Configuration builds the CLI and queries the game without deploying anything; invalid/missing games fail configuration. Reconfigure after changing the game/engine or moving its installation.
+
+Each startup build redeploys, including when no source changed. The private payload in `build/launch-game/<Debug|Release>/install/output` is recreated, leaving the normal install prefix unchanged. The aggregator uses the normal module names for Debug plugins/shared plugin libraries as well, matching the game's plugin list and dynamic library lookups. InstallerCLI preserves existing plugin selections, maps resources and selects `svencoop.exe`, `MetaHook.exe` or `MetaHook_blob.exe`; root PDBs are also deployed with their original names. Existing game files are overwritten according to the normal installer rules. Disabled components disappear from the staged payload, but previously deployed files are not uninstalled from the game.
+
+In **Tools / Options / Projects and Solutions / Build and Run**, enable building out-of-date projects before running and set **On Run, when build or deployment errors occur** to **Do not launch**. Stop the game before redeploying; locked files fail the build and no process is terminated automatically. Use the debugger's Modules window to check symbol loading if a breakpoint remains unbound. The workflow is opt-in and does not change normal builds or CI when disabled.
 
 ## MetaHook
 

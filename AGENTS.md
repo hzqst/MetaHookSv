@@ -83,6 +83,18 @@ subset; MetaHook is built through its own `MetaHook` target. The two .NET tools
 under `toolsrc/` (`BSPLocalizationTools`, `MetahookInstaller`) are not part of
 the CMake build; build them with `dotnet build` on their own solution.
 
+Plugin and PluginLib primary targets use an empty `DEBUG_POSTFIX` in the
+aggregator, independently of LaunchGame, so Debug DLL names match plugin lists
+and runtime lookups. Vendor targets retain their own naming conventions.
+
+Exception: `METAHOOKSV_ENABLE_LAUNCH_GAME=ON` adds an opt-in Visual Studio
+`LaunchGame` startup project. Its deploy dependency builds InstallerCLI (not the
+GUI), stages the complete enabled native install under
+`build/launch-game/<config>/install/output`, and deploys with debug symbols.
+Configuration builds/queries the CLI without modifying the game. Empty
+`METAHOOKSV_GAME_DIRECTORY` uses InstallerCLI's Steam discovery by AppID.
+See the root README debugging section and `cmake/LaunchGame.cmake`.
+
 The Windows workflow explicitly installs to `install/output` and packages only
 that tree plus the single-file MetahookInstaller GUI and MetahookInstallerCLI
 executables. Default plugin list

@@ -118,7 +118,21 @@ cmake --install build --config Release
 
 ## 如何调试
 
-使用 `--config Debug` 构建并安装，将输出部署到游戏目录。用 Visual Studio 打开 `build/MetaHookSv.sln`，选择 Debug/Win32，再按游戏位置设置启动器的调试命令、工作目录及 `-insecure -game <Mod目录>` 参数。
+启用可选的 Visual Studio 启动项目（需要兼容的 .NET SDK 和 .NET 8 runtime）：
+
+```powershell
+cmake -S . -B build -G "Visual Studio 17 2022" -A Win32 -DMETAHOOKSV_ENABLE_LAUNCH_GAME=ON -DMETAHOOKSV_GAME_APPID=225840
+# 自定义安装路径或 Mod 可另外传入：
+# "-DMETAHOOKSV_GAME_DIRECTORY=D:/Games/Half-Life" -DMETAHOOKSV_GAME_APPID=70 -DMETAHOOKSV_GAME_MOD=gearbox
+```
+
+打开 `build/MetaHookSv.sln`，选择 Debug/Win32，将 **Launch-debugging / LaunchGame** 设为启动项目，然后按 **F5**。该流程会增量编译所有启用组件和 InstallerCLI，Install 到私有暂存目录，通过 InstallerCLI 部署，再由原生 C++ 调试器启动实际游戏启动器。dummy 程序不会被启动或安装。也支持 Release/Win32。
+
+`METAHOOKSV_GAME_DIRECTORY` 默认留空，由 InstallerCLI 按 AppID 查找 Steam 游戏目录；显式填写时优先使用填写值。`METAHOOKSV_GAME_MOD` 默认使用该 AppID 的基础 Mod。`METAHOOKSV_GAME_ARGUMENTS` 追加到 `-insecure -game "<mod>"` 之后。配置阶段会构建 CLI 并只读查询游戏，不执行部署；游戏缺失或无效会使配置失败。更换游戏、引擎或安装位置后需重新配置 CMake。
+
+每次构建启动项目均会部署，包括未修改源码时。私有 payload `build/launch-game/<Debug|Release>/install/output` 会重新生成，不改变普通 Install 的输出路径。聚合构建中的 Debug 插件和共享插件库统一使用正常模块名，与游戏插件列表及动态加载名称一致。InstallerCLI 保留已有插件选择，映射资源并选择 `svencoop.exe`、`MetaHook.exe` 或 `MetaHook_blob.exe`；根目录 PDB 也会按原文件名部署。游戏文件按既有 Installer 规则覆盖。停用组件后，它会从暂存 payload 消失，但不会自动卸载游戏目录中先前部署的文件。
+
+在 **工具 / 选项 / 项目和解决方案 / 生成并运行** 中，启用运行前构建过期项目，将构建或部署出错时的行为设为 **不启动**。重新部署前请退出游戏；文件占用会导致构建失败，不会自动结束进程。断点未绑定时可在调试器的“模块”窗口检查符号加载。此功能默认关闭，不影响普通构建或 CI。
 
 ## MetaHook
 

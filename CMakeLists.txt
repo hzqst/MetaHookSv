@@ -61,6 +61,8 @@ option(METAHOOKSV_BUILD_PLUGINS "Build the Plugins/* components" ON)
 option(METAHOOKSV_BUILD_PLUGINLIBS "Build the PluginLibs/* components" ON)
 option(METAHOOKSV_BUILD_TOOLSRC "Build the CMake-based toolsrc/* components" ON)
 
+include(cmake/LaunchGame.cmake)
+
 # Component registry: <path>|<group>|<per-component option>|<injected dep vars>
 # Dependency vars are comma-separated; '-' means the component fetches everything
 # itself. (';' cannot be used: it is a CMake list separator even inside quotes.)
@@ -327,6 +329,12 @@ foreach(_def IN LISTS METAHOOKSV_COMPONENT_DEFS)
         message(FATAL_ERROR "${_path} did not define its primary target '${_name}'.")
     endif()
 
+    # Plugin lists and runtime library lookups use the same names in both configs.
+    # In particular, do not inherit Bullet's cached CMAKE_DEBUG_POSTFIX (_Debug).
+    if(_group STREQUAL "plugins" OR _group STREQUAL "pluginlibs")
+        set_target_properties(${_name} PROPERTIES DEBUG_POSTFIX "")
+    endif()
+
     list(APPEND _targets_${_group} ${_name})
 endforeach()
 
@@ -361,6 +369,10 @@ endif()
 if(METAHOOKSV_BUILD_TOOLSRC)
     message(STATUS "Note: toolsrc/BSPLocalizationTools and toolsrc/MetahookInstaller are .NET "
         "projects; build them via their own .sln (dotnet build).")
+endif()
+
+if(METAHOOKSV_ENABLE_LAUNCH_GAME)
+    metahooksv_add_launch_game()
 endif()
 
 message(STATUS "MetaHookSv aggregator configured.")
