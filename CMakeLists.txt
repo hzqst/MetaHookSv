@@ -218,7 +218,7 @@ endfunction()
 # variables are normal variables of this call, so they reach only that
 # component's directory and shadow its cache defaults (CMP0126). Locals are
 # '_'-prefixed because the component's directory inherits this scope too.
-function(metahooksv_add_component _component_path _component_deps)
+function(metahooksv_add_component _component_path _component_deps _component_folder)
     if(NOT _component_deps STREQUAL "-")
         string(REPLACE "," ";" _dep_list "${_component_deps}")
         foreach(_dep IN LISTS _dep_list)
@@ -231,6 +231,19 @@ function(metahooksv_add_component _component_path _component_deps)
         endforeach()
     endif()
     add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/${_component_path}" "${CMAKE_CURRENT_BINARY_DIR}/${_component_path}")
+
+    # Group a component's own targets into one IDE filter. Vendored libraries keep
+    # the folder their component assigned them, so an existing FOLDER is left as is.
+    if(NOT _component_folder STREQUAL "-")
+        get_property(_component_targets DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${_component_path}"
+            PROPERTY BUILDSYSTEM_TARGETS)
+        foreach(_component_target IN LISTS _component_targets)
+            get_target_property(_existing_folder "${_component_target}" FOLDER)
+            if(NOT _existing_folder OR _existing_folder STREQUAL "_existing_folder-NOTFOUND")
+                set_target_properties("${_component_target}" PROPERTIES FOLDER "${_component_folder}")
+            endif()
+        endforeach()
+    endif()
 endfunction()
 
 # ---------------------------------------------------------------------------
@@ -292,7 +305,19 @@ foreach(_def IN LISTS METAHOOKSV_COMPONENT_DEFS)
     # Each component's primary target is named after its directory.
     get_filename_component(_name "${_path}" NAME)
     message(STATUS "Enabling ${_path} (target '${_name}')")
-    metahooksv_add_component("${_path}" "${_dep_vars}")
+    # Each group maps to one IDE filter; MetaHook keeps its own.
+    if(_group STREQUAL "metahook")
+        set(_component_folder "MetaHookCore")
+    elseif(_group STREQUAL "plugins")
+        set(_component_folder "MetaHookPlugins")
+    elseif(_group STREQUAL "pluginlibs")
+        set(_component_folder "MetaHookPluginLibs")
+    elseif(_group STREQUAL "toolsrc")
+        set(_component_folder "MetaHookTools")
+    else()
+        set(_component_folder "-")
+    endif()
+    metahooksv_add_component("${_path}" "${_dep_vars}" "${_component_folder}")
     if(NOT TARGET ${_name})
         message(FATAL_ERROR "${_path} did not define its primary target '${_name}'.")
     endif()
