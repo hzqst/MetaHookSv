@@ -24,9 +24,7 @@
 
 * 因某些国内线路问题无法下载或下载过慢的话可以百度搜索GitHub加速镜像.随便找一个国内能直接访问的加速镜像站，往里复制从Release页面上复制的下载地址即可加速下载。
 
-* 大多数用户应下载 `MetaHookSv-windows-x86.zip` .
-
-* 对于使用低于4554版本GoldSrc引擎（如3248、3266、3647）的用户，请下载 `MetaHookSv-windows-x86-blob-support.zip`
+* 下载 `MetaHookSv-windows-x86.7z`，统一包包含普通和 blob 启动器。
 
 ## VAC风险?
 
@@ -66,45 +64,31 @@ A. 因为 [SDL3-over-SDL2 兼容层](https://github.com/libsdl-org/sdl2-compat) 
 
 ## 一键安装方式 (GUI安装器)
 
-1. 从 [GitHub Release](https://github.com/hzqst/MetaHookSv/releases) 下载压缩包。(可利用GitHub的国内加速镜像加速下载），然后解压。
+1. 下载 release 并完整解压。
+2. 保持 `MetahookInstaller.exe` 与 `install/output/` 在一起。运行安装器，选择游戏后点击 **安装**。
+3. Sven Co-op 从 Steam 或生成的快捷方式启动；其他游戏使用生成的 `MetaHook for [GameName].lnk`。
 
-2. 运行 `Build-Output\MetahookInstaller.exe`, 然后点击 `安装` (或者在点击安装之前选择游戏)
+安装器根据自身 EXE 的位置查找 `install/output/`，不依赖当前工作目录。它会选择普通或 blob 启动器，将通用资源映射到所选 Mod，并安装运行库 DLL。已有 `plugins.lst` 中的选择会保留。
 
-3. 从生成的快捷方式 `MetaHook for SvenCoop.lnk` 或 Steam游戏库中  或 `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe` 启动Sven Co-op。(*Sven Co-op之外的其他游戏只能通过快捷方式方式启动)
+如需脚本化安装，可使用同一压缩包中的 `MetahookInstallerCLI.exe`，执行的步骤与 GUI 相同：
 
-* 其他游戏也可以按照此种方式安装，只需在点击安装之前选择对应游戏即可。
+```powershell
+.\MetahookInstallerCLI.exe -appid 225840                                         # 安装到 Steam 版 Sven Co-op
+.\MetahookInstallerCLI.exe -appid 70 -gamedir "D:\Games\Half-Life" -moddir gearbox  # 指定游戏根目录与 Mod
+.\MetahookInstallerCLI.exe -appid 225840 -uninstall
+```
 
-## 一键安装方式 (Windows批处理脚本)
+完整参数见[安装器文档](toolsrc/MetahookInstaller/README.md#cli-usage)。
 
-1. 从 [GitHub Release](https://github.com/hzqst/MetaHookSv/releases) 下载压缩包。(可利用GitHub的国内加速镜像加速下载），然后解压。
+## 手动安装方式
 
-2. 运行 `scripts\install-to-SvenCoop.bat`
+运行文件位于 `install/output/`。安装到 Sven Co-op 时，将 `svencoop/`、其配套资源目录和 `platform/` 合入游戏根目录。其他 Mod 应将通用 `svencoop/` 资源合入所选 Mod 目录，再复制该 Mod 的配套目录。
 
-3. 从生成的快捷方式 `MetaHook for SvenCoop.lnk` 或 Steam游戏库中  或 `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe` 启动Sven Co-op。(*Sven Co-op之外的其他游戏只能通过快捷方式方式启动)
+将所需启动器、`libcurl.dll` 和 `steam_api.dll` 复制到游戏根目录。Sven Co-op 将普通启动器重命名为 `svencoop.exe`；其他游戏使用 `MetaHook.exe -insecure -game <Mod目录>` 启动。旧版 blob 引擎使用 `MetaHook_blob.exe`。
 
-* 其他游戏也可以按照此种方式安装，只需要运行其他install-to-批处理即可。
+在 Mod 的 `metahook/configs/` 下，将 Sven Co-op 的 `plugins_svencoop.lst` 或其他游戏的 `plugins_goldsrc.lst` 复制为 `plugins.lst`。已有用户列表时保留原文件。Sven Co-op 默认启用 BetterSpray。
 
-* 请确保已经登录Steam否则 [SteamAppsLocation](toolsrc/README.md) 可能会无法寻找游戏安装目录，导致自动安装失败。
-
-* 对于Steam游戏库中不存在的游戏（如盗版CS）可以复制一份`scripts\install-to-CustomGame.bat`，将里面的游戏路径修改为你自己的游戏路径，并正确修改Mod目录、Mod名等信息。这样双击你自己修改的这份bat也可以实现自动安装。
-
-## 手动安装方式 (不推荐)
-
-1. 从 [GitHub Release](https://github.com/hzqst/MetaHookSv/releases) 下载压缩包。(可利用GitHub的国内加速镜像加速下载），然后解压。
-
-2. 复制Build目录下的所有[你认为你需要安装的文件](Build/READMECN.md)到 `\SteamLibrary\steamapps\common\Sven Co-op\` 下。
-
-3. 打开 `\SteamLibrary\steamapps\common\Sven Co-op\svencoop\metahook\configs\` 目录, 将 `plugin_svencoop.lst` (或 `plugin_goldsrc.lst`，取决于你当前使用的游戏引擎是SvEngine还是GoldSrc) 重命名为 `plugins.lst`
-
-4. 从将 `MetaHook.exe` 重命名为对应游戏的mod目录名，如`svencoop.exe`、`cstrike.exe`，并从该exe启动游戏。
-
-* 对于低于4554版本的GoldSrc引擎，请使用 `MetaHook_blob.exe` 而非 `MetaHook.exe`。
-
-* 你可以在 `\SteamLibrary\steamapps\common\Sven Co-op\svencoop\metahook\configs\plugins.lst` 中根据自己需求启用/禁用插件。
-
-* `Build`目录中的 `SDL3.dll` 用于支持输入法候选词功能，因为原生的 SDL2 不会将输入法候选事件传递给引擎。
-
-* `SDL3.dll` 通过 [SDL3-over-SDL2](https://github.com/libsdl-org/sdl2-compat) 兼容层进行加载，这意味着您需要用 `Build/SDL2.dll` 替换SDL2，以使 SDL3 正常工作。
+普通引擎导入 SDL2 时，应同时安装 `install/output/SDL2.dll` 和 `SDL3.dll`，以支持输入法候选词。GUI 安装器会自动判断此条件。
 
 ## 构建需求
 
@@ -114,33 +98,45 @@ A. 因为 [SDL3-over-SDL2 兼容层](https://github.com/libsdl-org/sdl2-compat) 
 
 3. Git 客户端
 
+4. Python 3.8+（同步 gamedata），以及 .NET 8 SDK（构建安装器）。
+
 ## 如何构建
 
-假设你已经正确安装了所有构建需求。
+递归克隆后，在仓库根目录使用 PowerShell 执行：
 
-1. 执行 `git clone --recursive https://github.com/hzqst/MetaHookSv` 拉取代码到一处**路径不包含空格**的目录中。
+```powershell
+git clone --recursive https://github.com/hzqst/MetaHookSv
+Set-Location MetaHookSv
+cmake -S . -B build -G "Visual Studio 17 2022" -A Win32 "-DCMAKE_INSTALL_PREFIX=$PWD/install/output"
+cmake --build build --config Release --parallel 2
+cmake --install build --config Release
+```
 
-2. 运行 `scripts\build-MetaHook.bat`, 等待`MetaHook.exe`生成完成。如果没有错误发生，生成的EXE应该会出现在`Build`目录下。
+聚合管线构建 MetaHook、MetaHook_blob、所有启用的插件（包括 BetterSpray）、共享插件库和 CMake 工具。插件列表模板由 `assets/svencoop/metahook/configs/` 管理并安装到输出目录。.NET 工具单独构建，详见[安装器文档](toolsrc/MetahookInstaller/README.md)。
 
-3. 运行 `scripts\build-Plugins.bat`, 等待所有插件生成完成。如果没有错误发生，生成的DLL应该会出现在`Build\svencoop\metahook\plugins\`目录下。
+`windows.yml` 构建、验证并打包安装器 EXE 和完整的 `install/output/`。标签发布复用统一 Windows artifact 与独立 BSP 工具 artifact，并继续生成中英文 AI release notes。
 
 ## 如何调试
 
-1. 执行 `git clone --recursive https://github.com/hzqst/MetaHookSv` 拉取代码到一处**路径不包含空格**的目录中。
+启用可选的 Visual Studio 启动项目（需要兼容的 .NET SDK 和 .NET 8 runtime）：
 
-3. 运行 `scripts\debug-SvenCoop.bat`  (其他游戏就选择该游戏对应的批处理)
+```powershell
+cmake -S . -B build -G "Visual Studio 17 2022" -A Win32 -DMETAHOOKSV_ENABLE_LAUNCH_GAME=ON -DMETAHOOKSV_GAME_APPID=225840
+# 自定义安装路径或 Mod 可另外传入：
+# "-DMETAHOOKSV_GAME_DIRECTORY=D:/Games/Half-Life" -DMETAHOOKSV_GAME_APPID=70 -DMETAHOOKSV_GAME_MOD=gearbox
+```
 
-4. 打开 `MetaHook.sln`, 在解决方案资源管理器中找到对应的项目，右键设置为启动项目，然后以**Debug|Win32配置**重新生成该项目后，按F5即可启动本地调试。
+打开 `build/MetaHookSv.sln`，选择 Debug/Win32，将 **Launch-debugging / LaunchGame** 设为启动项目，然后按 **F5**。该流程会增量编译所有启用组件和 InstallerCLI，Install 到私有暂存目录，通过 InstallerCLI 部署，再由原生 C++ 调试器启动实际游戏启动器。dummy 程序不会被启动或安装。也支持 Release/Win32。
 
-* 如果运行 `scripts\debug-SvenCoop.bat` 时 Visual Studio 正在运行，请重启一次 Visual Studio，否则可能会导致新的调试设置不生效。
+`METAHOOKSV_GAME_DIRECTORY` 默认留空，由 InstallerCLI 按 AppID 查找 Steam 游戏目录；显式填写时优先使用填写值。`METAHOOKSV_GAME_MOD` 默认使用该 AppID 的基础 Mod。`METAHOOKSV_GAME_ARGUMENTS` 追加到 `-insecure -game "<mod>"` 之后。配置阶段会构建 CLI 并只读查询游戏，不执行部署；游戏缺失或无效会使配置失败。更换游戏、引擎或安装位置后需重新配置 CMake。
 
-* 请确保已经登录Steam否则 [SteamAppsLocation](toolsrc/README.md) 可能会无法寻找游戏安装目录。
+每次构建启动项目均会部署，包括未修改源码时。私有 payload `build/launch-game/<Debug|Release>/install/output` 会重新生成，不改变普通 Install 的输出路径。聚合构建中的 Debug 插件和共享插件库统一使用正常模块名，与游戏插件列表及动态加载名称一致。InstallerCLI 保留已有插件选择，映射资源并选择 `svencoop.exe`、`MetaHook.exe` 或 `MetaHook_blob.exe`；根目录 PDB 也会按原文件名部署。游戏文件按既有 Installer 规则覆盖。停用组件后，它会从暂存 payload 消失，但不会自动卸载游戏目录中先前部署的文件。
 
-* 对于Steam游戏库中不存在的游戏（如盗版CS）可以复制一份`scripts\debug-CustomGame.bat`，将里面的游戏路径修改为你自己的游戏路径，并正确修改Mod目录、Mod名等信息。这样双击你自己修改的这份bat也可以实现自动设置调试路径。
+在 **工具 / 选项 / 项目和解决方案 / 生成并运行** 中，启用运行前构建过期项目，将构建或部署出错时的行为设为 **不启动**。重新部署前请退出游戏；文件占用会导致构建失败，不会自动结束进程。断点未绑定时可在调试器的“模块”窗口检查符号加载。此功能默认关闭，不影响普通构建或 CI。
 
-## 文档
+## MetaHook
 
-[中文文档](docs/MetaHookCN.md) [ENGLISH DOC](docs/MetaHook.md)
+[链接](https://github.com/MetaHookSv/MetaHook)
 
 ## 插件列表
 
@@ -152,29 +148,31 @@ A. 因为 [SDL3-over-SDL2 兼容层](https://github.com/libsdl-org/sdl2-compat) 
 
 对Sven Co-op而言，该插件修复了游戏中的汉字无法显示或者乱码的问题。
 
-[中文文档](docs/CaptionModCN.md) [ENGLISH DOC](docs/CaptionMod.md)
+[链接](https://github.com/MetaHookSv/CaptionMod)
 
 ### BulletPhysics
 
 对游戏提供布娃娃支持。玩家死亡时以及玩家被藤壶、喷火怪抓住时将玩家模型转化为布娃娃。
 
-[中文文档](docs/BulletPhysicsCN.md) [ENGLISH DOC](docs/BulletPhysics.md)
+[链接](https://github.com/MetaHookSv/BulletPhysics)
 
 ### MetaRenderer
 
 替换了原版的图形渲染引擎，极大提升了渲染性能，使用了黑科技提升你的画质和帧率。
 
-[中文文档](docs/RendererCN.md) [ENGLISH DOC](docs/Renderer.md)
+[链接](https://github.com/MetaHookSv/Renderer)
 
 ### StudioEvents
 
 该插件可以防止重复播放模型自带音效，防止音效反复刷屏。
 
-[中文文档](docs/StudioEventsCN.md) [ENGLISH DOC](docs/StudioEvents.md)
+[链接](https://github.com/MetaHookSv/StudioEvents)
 
 ### SteamScreenshots (只支持Sven Co-op)
 
 该插件捕获了`snapshot`截图命令，将其重定向到Steam客户端自带的截图功能上。
+
+[链接](https://github.com/MetaHookSv/SteamScreenshots)
 
 ### SCModelDownloader (只支持Sven Co-op)
 
@@ -183,6 +181,8 @@ A. 因为 [SDL3-over-SDL2 兼容层](https://github.com/libsdl-org/sdl2-compat) 
 控制台参数 : `scmodel_autodownload 0 / 1` 设为1时启用自动下载
 
 控制台参数 : `scmodel_downloadlatest 0 / 1` 设为1时自动下载最新版本的模型（如果有多个版本的模型）
+
+[链接](https://github.com/MetaHookSv/SCModelDownloader)
 
 ### CommunicationDemo (只支持Sven Co-op)
 
@@ -194,25 +194,33 @@ A. 因为 [SDL3-over-SDL2 兼容层](https://github.com/libsdl-org/sdl2-compat) 
 
 * Sven Co-op 的声音系统使用 `soundcache.txt` 而非引擎的预缓存系统来维护声音文件的预缓存列表。
 
+[链接](https://github.com/MetaHookSv/PrecacheManager)
+
 ### ThreadGuard
 
 该插件接管了Valve的一些模块的线程创建行为，这些模块创建线程后在模块释放时不会等待线程结束，这可能会导致游戏退出或热重启时游戏进程随机崩溃。
 
-目前接管的模块：
-
-`hw.dll`, `GameUI.dll`, `ServerBrowser.dll`
+[链接](https://github.com/MetaHookSv/ThreadGuard)
 
 ### ResourceReplacer
 
-该插件可以动态替换游戏内资源 (主要是模型和声音文件) 且无需修改磁盘上的文件，就像 Sven Co-op 的 [gmr](https://wiki.svencoop.com/Mapping/Model_Replacement_Guide) 和 [gsr](https://wiki.svencoop.com/Mapping/Sound_Replacement_Guide) 文件提供资源替换功能一样。
+该插件可以动态替换游戏内资源 (主要是模型和声音文件) 且无需修改磁盘上的文件，就像 Sven Co-op 的 [gmr](https://wiki.svencoop.com/Mapping/Model_Replacement_Guide) 和 [gsr](https://wiki.svencoop.com/Mapping/Sound_Replacement_Guide) 的资源替换功能一样。
 
-[中文文档](docs/ResourceReplacerCN.md) [ENGLISH DOC](docs/ResourceReplacer.md)
+[链接](https://github.com/MetaHookSv/ResourceReplacer)
 
 ### SCCameraFix  (只支持Sven Co-op)
 
 该插件修复了Sven Co-op的观察者模式下摄像机视角/画面高频抖动的问题。
 
 部分代码来自[halflife-updated](https://github.com/SamVanheer/halflife-updated)
+
+[链接](https://github.com/MetaHookSv/SCCameraFix)
+
+### BetterSpray (只支持Sven Co-op / GoldSrc 25周年更新后)
+
+BetterSpray 是一个 MetaHookSV 插件，为 Sven Co-op 和 GoldSrc 的喷漆系统提供高分辨率图像、动态重载和云分享支持。
+
+[链接](https://github.com/MetaHookSv/BetterSpray)
 
 ### ABCEnchance (第三方) (只支持Sven Co-op)
 

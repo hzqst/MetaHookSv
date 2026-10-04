@@ -17,16 +17,12 @@ jobs:
     if: github.repository == 'hzqst/MetaHookSv'
     uses: ./.github/workflows/windows.yml
 
-  windows-blob:
-    if: github.repository == 'hzqst/MetaHookSv'
-    uses: ./.github/workflows/windows_blob.yml
-
   bsp-localization-tools:
     if: github.repository == 'hzqst/MetaHookSv'
     uses: ./.github/workflows/bsp-localization-tools.yml
 
   notes:
-    needs: [windows, windows-blob, bsp-localization-tools]
+    needs: [windows, bsp-localization-tools]
     runs-on: ubuntu-24.04
     environment: release
     timeout-minutes: 30
@@ -77,7 +73,7 @@ jobs:
           overwrite: true
 
   publish:
-    needs: [windows, windows-blob, bsp-localization-tools, notes]
+    needs: [windows, bsp-localization-tools, notes]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -95,11 +91,6 @@ jobs:
         with:
           name: release-windows
           path: release-assets/release-windows
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: release-windows-blob
-          path: release-assets/release-windows-blob
 
       - uses: actions/download-artifact@v4
         with:

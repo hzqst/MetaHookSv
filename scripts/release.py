@@ -22,9 +22,6 @@ PAGE_SIZE = 100
 UPLOAD_CHUNK_BYTES = 1024 * 1024
 EXPECTED_ASSETS = (
     "release-windows/MetaHookSv-windows-x86.7z",
-    "release-windows/MetaHookSv-windows-x86-debug-info.7z",
-    "release-windows-blob/MetaHookSv-windows-x86-blob-support.7z",
-    "release-windows-blob/MetaHookSv-windows-x86-blob-support-debug-info.7z",
     "release-bsp-localization-tools/BSPLocalizationTools-windows-x64.7z",
 )
 INSTRUCTIONS = """Write release notes for the current MetaHookSv tag using the supplied evidence and read-only Git history queries.
@@ -356,7 +353,7 @@ def validate_assets(root):
         if path.is_file():
             actual.add(path.relative_to(root).as_posix())
     if actual != expected:
-        raise ReleaseError("Expected exactly the five release archives in their designated artifacts")
+        raise ReleaseError("Expected exactly the two release archives in their designated artifacts")
     archives = [root / relative for relative in EXPECTED_ASSETS]
     if any(archive.stat().st_size == 0 for archive in archives):
         raise ReleaseError("Release archives must not be empty")

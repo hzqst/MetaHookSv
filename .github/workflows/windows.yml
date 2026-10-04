@@ -3,135 +3,149 @@ name: windows
 on:
   workflow_call:
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  # github.workflow is the caller's workflow name under workflow_call, which can
-  # collide with the caller's own concurrency group and deadlock the run
+  # Keep this separate from the caller's concurrency group.
   group: windows-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-env:
-  # Path to the solution file relative to the root of the project.
-  SOLUTION_FILE_PATH: .
-
-  # Configuration type to build.
-  # You can convert this to a build matrix if you need coverage of multiple configuration types.
-  # https://docs.github.com/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
-  BUILD_CONFIGURATION: Release
-
 jobs:
   build:
-
     runs-on: windows-2022
     if: github.repository == 'hzqst/MetaHookSv'
+    defaults:
+      run:
+        shell: pwsh
 
     steps:
-      - uses: hzqst/checkout@v2.3.4
+      - uses: actions/checkout@v4
         with:
-          submodules: true
+          submodules: recursive
+          persist-credentials: false
 
-      - name: Add MSBuild to PATH
-        uses: microsoft/setup-msbuild@v1.0.2
-  
-      - name: Build MetaHook
-        working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: scripts\build-MetaHook.bat
-        shell: cmd
-
-      - name: Build Plugins
-        working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: scripts\build-Plugins.bat
-        shell: cmd
-
-      - name: Checkout BetterSpray
-        uses: hzqst/checkout@v2.3.4
+      - uses: actions/setup-dotnet@v4
         with:
-          repository: hzqst/BetterSpray
-          path: BetterSpray
-          submodules: true
+          dotnet-version: '8.0.x'
 
-      - name: Build BetterSpray
-        working-directory: BetterSpray
-        run: msbuild /m /p:Configuration=Release /t:BetterSpray
-        shell: cmd
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
-      - name: Merge BetterSpray Build
-        working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: xcopy "BetterSpray\Build\*" "Build\" /y /e
-        shell: cmd
+      - name: Configure CMake
+        run: |
+          cmake -S . -B build -G "Visual Studio 17 2022" -A Win32 `
+            "-DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install/output" `
+            -DMETAHOOKSV_INIT_SUBMODULES=OFF -DBETTERSPRAY_BUILD_TESTS=ON
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - name: Create Build-Output directory
-        working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: mkdir Build-Output
-        shell: cmd
+      - name: Build Release
+        run: |
+          cmake --build build --config Release --parallel 2
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - name: Copy Build to Build-Output
-        working-directory: ${{env.GITHUB_WORKSPACE}}
+      - name: Test BetterSpray
         run: |
-          mkdir "Build-Output\Build"
-          xcopy "Build" "Build-Output\Build" /y /e
-          if exist "Build-Output\Build\svencoop\metahook\dlls\.placeholder" del "Build-Output\Build\svencoop\metahook\dlls\.placeholder"
-          if exist "Build-Output\Build\svencoop\metahook\plugins\.placeholder" del "Build-Output\Build\svencoop\metahook\plugins\.placeholder"
-        shell: cmd
-        
-      - name: Build and Publish MetahookInstaller
-        working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: |
-          dotnet publish toolsrc/MetahookInstaller/MetahookInstallerAvalonia.Desktop/MetahookInstallerAvalonia.Desktop.csproj -p:PublishProfile=FolderProfile
-          echo .pdb > exclude.txt
-          ren "toolsrc\MetahookInstaller\MetahookInstallerAvalonia.Desktop\bin\Release\net8.0\publish\win-x64\MetahookInstallerAvalonia.Desktop.exe" "MetahookInstaller.exe"
-          xcopy "toolsrc\MetahookInstaller\MetahookInstallerAvalonia.Desktop\bin\Release\net8.0\publish\win-x64\*" "Build-Output\" /y /e /EXCLUDE:exclude.txt
-        shell: cmd
+          ctest --test-dir build -C Release -R '^betterspray_' --output-on-failure --no-tests=error
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - name: Copy SteamAppsLocation to Build-Output
-        working-directory: ${{env.GITHUB_WORKSPACE}}
+      - name: Install CMake output
         run: |
-          mkdir "Build-Output\tools"
-          copy "tools\SteamAppsLocation.exe" "Build-Output\tools" /y
-          copy "tools\steam_appid.txt" "Build-Output\tools" /y
-          copy "tools\steam_api.dll" "Build-Output\tools" /y
-        shell: cmd
+          cmake --install build --config Release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - name: Copy install bat to Build-Output
-        working-directory: ${{env.GITHUB_WORKSPACE}}
+      - name: Test installer payload operations
         run: |
-          mkdir "Build-Output\scripts"
-          copy "scripts\install-*.bat" "Build-Output\scripts" /y
-        shell: cmd
+          dotnet run --project toolsrc/MetahookInstaller/tests/MetahookInstaller.FileTests -c Release -- --payload "${{ github.workspace }}/install/output"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - name: Zipping All
-        working-directory: ${{env.GITHUB_WORKSPACE}}
+      - name: Test release scripts
         run: |
-          7z a MetaHookSv-windows-x86.7z "Build-Output/*" -r
-        shell: cmd
-        
-      - name: Zipping PDB
-        working-directory: ${{env.GITHUB_WORKSPACE}}
+          python -B -m unittest discover -s scripts/tests -p 'test_release*.py' -v
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Publish MetahookInstaller
         run: |
-          7z a MetaHookSv-windows-x86-debug-info.7z "output/x86/*" -r ^
-          -x!*.lib ^
-          -x!*.exp
-        shell: cmd
-        
-      - name: Verify release archives
-        shell: pwsh
+          dotnet publish toolsrc/MetahookInstaller/src/MetahookInstallerAvalonia.Desktop/MetahookInstallerAvalonia.Desktop.csproj `
+            -c Release -r win-x64 --self-contained true `
+            -p:PublishAot=false -p:PublishTrimmed=false -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugSymbols=false -p:DebugType=None `
+            -o build/installer-publish
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Publish MetahookInstallerCLI
         run: |
-          foreach ($name in @('MetaHookSv-windows-x86.7z', 'MetaHookSv-windows-x86-debug-info.7z')) {
-            if (!(Test-Path -LiteralPath $name -PathType Leaf) -or (Get-Item -LiteralPath $name).Length -eq 0) {
-              throw "Missing or empty archive: $name"
+          dotnet publish toolsrc/MetahookInstaller/src/MetahookInstallerCLI/MetahookInstallerCLI.csproj `
+            -c Release -r win-x64 --self-contained true `
+            -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:EnableCompressionInSingleFile=true -p:DebugSymbols=false -p:DebugType=None `
+            -o build/installer-cli-publish
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Package and verify release
+        id: package
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $workspace = (Resolve-Path '.').Path
+          $publishDirectory = Join-Path $workspace 'build/installer-publish'
+          $publishedFiles = @(Get-ChildItem -LiteralPath $publishDirectory -Recurse -File)
+          if ($publishedFiles.Count -ne 1 -or $publishedFiles[0].Name -ne 'MetahookInstallerAvalonia.Desktop.exe') {
+            throw 'Installer publish must contain exactly one self-contained executable.'
+          }
+          $cliPublishDirectory = Join-Path $workspace 'build/installer-cli-publish'
+          $cliFiles = @(Get-ChildItem -LiteralPath $cliPublishDirectory -Recurse -File)
+          if ($cliFiles.Count -ne 1 -or $cliFiles[0].Name -ne 'MetahookInstallerCLI.exe') {
+            throw 'Installer CLI publish must contain exactly one self-contained executable.'
+          }
+          $payloadDirectory = Join-Path $workspace 'install/output'
+          foreach ($name in @('MetaHook.exe', 'MetaHook_blob.exe')) {
+            if (!(Test-Path -LiteralPath (Join-Path $payloadDirectory $name) -PathType Leaf)) {
+              throw "Missing installed launcher: $name"
             }
           }
+          $staging = Join-Path $workspace 'build/package'
+          $extracted = Join-Path $workspace 'build/package-verification'
+          $archive = Join-Path $workspace 'build/artifacts/MetaHookSv-windows-x86.7z'
+          if ((Test-Path -LiteralPath $staging) -or (Test-Path -LiteralPath $extracted) -or (Test-Path -LiteralPath $archive)) {
+            throw 'Packaging requires fresh staging, extraction and archive paths.'
+          }
+          New-Item -ItemType Directory -Path (Join-Path $staging 'install'), (Split-Path $archive), $extracted -Force | Out-Null
+          Copy-Item -LiteralPath $publishedFiles[0].FullName -Destination (Join-Path $staging 'MetahookInstaller.exe')
+          Copy-Item -LiteralPath $cliFiles[0].FullName -Destination (Join-Path $staging 'MetahookInstallerCLI.exe')
+          Copy-Item -LiteralPath $payloadDirectory -Destination (Join-Path $staging 'install/output') -Recurse
+          Push-Location $staging
+          try {
+            & 7z a -t7z $archive 'MetahookInstaller.exe' 'MetahookInstallerCLI.exe' 'install/output' -r
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          } finally {
+            Pop-Location
+          }
+          & 7z t $archive
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & 7z x $archive "-o$extracted" -y
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $expectedFiles = @(Get-ChildItem -LiteralPath $staging -Recurse -File)
+          $actualFiles = @(Get-ChildItem -LiteralPath $extracted -Recurse -File)
+          if ($expectedFiles.Count -ne $actualFiles.Count) { throw 'Archive file count differs from staging.' }
+          foreach ($file in $expectedFiles) {
+            $relative = [System.IO.Path]::GetRelativePath($staging, $file.FullName)
+            $actual = Join-Path $extracted $relative
+            if (!(Test-Path -LiteralPath $actual -PathType Leaf) -or
+                (Get-FileHash -LiteralPath $file.FullName).Hash -ne (Get-FileHash -LiteralPath $actual).Hash) {
+              throw "Archive content differs: $relative"
+            }
+          }
+          if ((Get-Item -LiteralPath $archive).Length -eq 0) { throw 'Release archive is empty.' }
+          "archive-path=$archive" >> $env:GITHUB_OUTPUT
 
       - name: Upload release artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-windows
-          path: |
-            MetaHookSv-windows-x86.7z
-            MetaHookSv-windows-x86-debug-info.7z
+          path: ${{ steps.package.outputs.archive-path }}
           if-no-files-found: error
           retention-days: 14
           compression-level: 0

@@ -1,9 +1,3 @@
-[submodule "thirdparty/rapidjson"]
-	path = thirdparty/rapidjson
-	url = https://github.com/Tencent/rapidjson
-[submodule "thirdparty/bullet3_fork"]
-	path = thirdparty/bullet3_fork
-	url = https://github.com/hzqst/bullet3
 [submodule "thirdparty/glew_fork"]
 	path = thirdparty/glew_fork
 	url = https://github.com/hzqst/glew-cmake
@@ -13,38 +7,77 @@
 [submodule "thirdparty/FreeImage_clone"]
 	path = thirdparty/FreeImage_clone
 	url = https://github.com/hzqst/FreeImage_clone
-[submodule "thirdparty/Detours_fork"]
-	path = thirdparty/Detours_fork
-	url = https://github.com/hzqst/Detours_fork
-[submodule "thirdparty/capstone_fork"]
-	path = thirdparty/capstone_fork
-	url = https://github.com/hzqst/capstone
+[submodule "PluginLibs/UtilAssetsIntegrity"]
+	path = PluginLibs/UtilAssetsIntegrity
+	url = https://github.com/MetaHookSv/UtilAssetsIntegrity
+[submodule "PluginLibs/UtilHTTPClient_SteamAPI"]
+	path = PluginLibs/UtilHTTPClient_SteamAPI
+	url = https://github.com/MetaHookSv/UtilHTTPClient_SteamAPI
+[submodule "PluginLibs/UtilHTTPClient_libcurl"]
+	path = PluginLibs/UtilHTTPClient_libcurl
+	url = https://github.com/MetaHookSv/UtilHTTPClient_libcurl
+[submodule "PluginLibs/UtilThreadTask"]
+	path = PluginLibs/UtilThreadTask
+	url = https://github.com/MetaHookSv/UtilThreadTask
+[submodule "Plugins/BulletPhysics"]
+	path = Plugins/BulletPhysics
+	url = https://github.com/MetaHookSv/BulletPhysics
+[submodule "Plugins/CaptionMod"]
+	path = Plugins/CaptionMod
+	url = https://github.com/MetaHookSv/CaptionMod
+[submodule "Plugins/HeapPatch"]
+	path = Plugins/HeapPatch
+	url = https://github.com/MetaHookSv/HeapPatch
+[submodule "Plugins/PrecacheManager"]
+	path = Plugins/PrecacheManager
+	url = https://github.com/MetaHookSv/PrecacheManager
+[submodule "Plugins/Renderer"]
+	path = Plugins/Renderer
+	url = https://github.com/MetaHookSv/Renderer
+[submodule "Plugins/ResourceReplacer"]
+	path = Plugins/ResourceReplacer
+	url = https://github.com/MetaHookSv/ResourceReplacer
+[submodule "Plugins/SCCameraFix"]
+	path = Plugins/SCCameraFix
+	url = https://github.com/MetaHookSv/SCCameraFix
+[submodule "Plugins/SCModelDownloader"]
+	path = Plugins/SCModelDownloader
+	url = https://github.com/MetaHookSv/SCModelDownloader
+[submodule "Plugins/SteamScreenshots"]
+	path = Plugins/SteamScreenshots
+	url = https://github.com/MetaHookSv/SteamScreenshots
+[submodule "Plugins/StudioEvents"]
+	path = Plugins/StudioEvents
+	url = https://github.com/MetaHookSv/StudioEvents
+[submodule "Plugins/ThreadGuard"]
+	path = Plugins/ThreadGuard
+	url = https://github.com/MetaHookSv/ThreadGuard
+[submodule "Plugins/VGUI2Extension"]
+	path = Plugins/VGUI2Extension
+	url = https://github.com/MetaHookSv/VGUI2Extension
+[submodule "MetaHook"]
+	path = MetaHook
+	url = https://github.com/MetaHookSv/MetaHook
+[submodule "toolsrc/SteamAppsLocation"]
+	path = toolsrc/SteamAppsLocation
+	url = https://github.com/MetaHookSv/SteamAppsLocation
+[submodule "toolsrc/BSPLocalizationTools"]
+	path = toolsrc/BSPLocalizationTools
+	url = https://github.com/MetaHookSv/BSPLocalizationTools
+[submodule "toolsrc/MetahookInstaller"]
+	path = toolsrc/MetahookInstaller
+	url = https://github.com/MetaHookSv/MetahookInstaller
+	branch = main
+[submodule "thirdparty/SteamSDK"]
+	path = thirdparty/SteamSDK
+	url = https://github.com/MetaHookSv/SteamSDK
 [submodule "thirdparty/tinyobjloader"]
 	path = thirdparty/tinyobjloader
 	url = https://github.com/hzqst/tinyobjloader
-[submodule "thirdparty/Musa.Veil_fork"]
-	path = thirdparty/Musa.Veil_fork
-	url = https://github.com/hzqst/Musa.Veil
-[submodule "thirdparty/Chocobo1Hash"]
-	path = thirdparty/Chocobo1Hash
-	url = https://github.com/hzqst/Chocobo1Hash
-[submodule "thirdparty/sdl2-compat-fork"]
-	path = thirdparty/sdl2-compat-fork
-	url = https://github.com/hzqst/sdl2-compat-fork
-[submodule "thirdparty/curl"]
-	path = thirdparty/curl
-	url = https://github.com/curl/curl
-[submodule "thirdparty/SDL3_fork"]
-	path = thirdparty/SDL3_fork
-	url = https://github.com/hzqst/SDL
-	branch = VC-LTL-SDL3
-[submodule "thirdparty/zlib-fork"]
-	path = thirdparty/zlib-fork
-	url = https://github.com/hzqst/zlib-fork
-	branch = VC-LTL
-[submodule "thirdparty/csv-parser-fork"]
-	path = thirdparty/csv-parser-fork
-	url = https://github.com/hzqst/csv-parser-fork
-[submodule "thirdparty/glfw"]
-	path = thirdparty/glfw
-	url = https://github.com/glfw/glfw.git
+[submodule "Plugins/BetterSpray"]
+	path = Plugins/BetterSpray
+	url = https://github.com/MetaHookSv/BetterSpray.git
+	branch = main
+[submodule "thirdparty/libxml2"]
+	path = thirdparty/libxml2
+	url = https://github.com/GNOME/libxml2.git

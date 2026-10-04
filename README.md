@@ -22,9 +22,7 @@ Most of plugins are still compatible with vanilla GoldSrc engine. please check e
 
 [GitHub Release](https://github.com/hzqst/MetaHookSv/releases)
 
-* `MetaHookSv-windows-x86.zip` for most users.
-
-* `MetaHookSv-windows-x86-blob-support.zip` for legacy GoldSrc engine with buildnum < 4554.
+Download `MetaHookSv-windows-x86.7z`. It contains both normal and blob launchers.
 
 ## Risk of VAC ?
 
@@ -60,47 +58,31 @@ Try `r_lightmap 1`.
 
 ## One Click Installation (GUI Installer)
 
-1. Download from [GitHub Release](https://github.com/hzqst/MetaHookSv/releases), then unzip it.
+1. Download the release and extract the complete archive.
+2. Keep `MetahookInstaller.exe` and `install/output/` together. Run the installer, select the game, then click **Install**.
+3. Launch Sven Co-op from Steam or the generated shortcut. Other games use the generated `MetaHook for [GameName].lnk`.
 
-2. Run `Build-Output\MetahookInstaller.exe`, and click `install` (or choose the desired game before installing)
+The installer reads `install/output/` relative to its executable, independently of the current working directory. It selects the normal or blob launcher, maps common resources to the selected mod, and installs runtime DLLs. Existing `plugins.lst` selections are preserved.
 
-3. Launch game from either the generated shortcut `MetaHook for SvenCoop.lnk` or Steam game library.
+For scripted installation, `MetahookInstallerCLI.exe` from the same archive performs the same steps:
 
-* Run `MetaHook for [GameName].lnk` for games other than Sven Co-op.
+```powershell
+.\MetahookInstallerCLI.exe -appid 225840                                         # Sven Co-op from Steam
+.\MetahookInstallerCLI.exe -appid 70 -gamedir "D:\Games\Half-Life" -moddir gearbox  # explicit game root and mod
+.\MetahookInstallerCLI.exe -appid 225840 -uninstall
+```
 
-* Other games follow the same instruction, don't forget to choose the desired game before installing.
-
-## One Click Installation (Windows batch script)
-
-1. Download from [GitHub Release](https://github.com/hzqst/MetaHookSv/releases), then unzip it.
-
-2. Run `scripts\install-to-SvenCoop.bat` (or `scripts\install-to-(WhateverGameYouWant).bat`, depends on which you are going to play)
-
-3. Launch game from either the generated shortcut `MetaHook for SvenCoop.lnk`
-
-* Run `MetaHook for [GameName].lnk` for games other than Sven Co-op.
-
-* Other games follow the same instruction.
-
-* You should have your Steam running and own the game in your game library otherwise the [SteamAppsLocation](toolsrc/README.md) will probably not going to find GameInstallDir.
+See the [MetahookInstaller README](toolsrc/MetahookInstaller/README.md#cli-usage) for all arguments.
 
 ## Manual Installation
 
-1. Download from [GitHub Release](https://github.com/hzqst/MetaHookSv/releases), then unzip it.
+Runtime files are in `install/output/`. For Sven Co-op, merge `svencoop/`, its sibling resource directories and `platform/` into the game root. For other mods, merge the common `svencoop/` resources into the selected mod directory and add its matching resource directories.
 
-2. All required executable and resource files are in `Build` folder, copy [whatever you want](Build/README.md) to `\SteamLibrary\steamapps\common\Sven Co-op\`.
+Copy the required launcher, `libcurl.dll` and `steam_api.dll` into the game root. Rename the normal launcher to `svencoop.exe` for Sven Co-op; other games use `MetaHook.exe -insecure -game <mod-directory>`. Legacy blob engines use `MetaHook_blob.exe`.
 
-3. Go to `\SteamLibrary\steamapps\common\Sven Co-op\svencoop\metahook\configs\`, rename `plugin_svencoop.lst` (or `plugin_goldsrc.lst`) to `plugin.lst` (depending on the engine you are going to run)
+In the mod's `metahook/configs/`, copy `plugins_svencoop.lst` for Sven Co-op or `plugins_goldsrc.lst` for other games to `plugins.lst`, unless a user list already exists. BetterSpray is enabled by default for Sven Co-op.
 
-4. Rename `MetaHook.exe` to `(ModDirectory).exe`, Let's say `svencoop.exe` for Sven Co-op. or `cstrike.exe` for Counter-Strike.
-
-* Use `MetaHook_blob.exe` instead of `MetaHook.exe` if you are on a legacy GoldSrc engine with buildnum < 4554.
-
-* Plugins can be disabled or enabled in `\SteamLibrary\steamapps\common\Sven Co-op\svencoop\metahook\configs\plugins.lst`
-
-* The `Build/SDL3.dll` is for full IME candidates support as SDL2 does not pust IME candidate events to engine at all.
-
-* The `Build/SDL3.dll` is loaded by [SDL3-over-SDL2 compatibility layer](https://github.com/libsdl-org/sdl2-compat), which means you will have to overwrite SDL2.dll with `Build/SDL2.dll` to get SDL3 working properly.
+For a normal engine that imports SDL2, install both `install/output/SDL2.dll` and `SDL3.dll` together to enable IME candidate support. The GUI installer checks this condition automatically.
 
 ## Build Requirements
 
@@ -110,31 +92,45 @@ Try `r_lightmap 1`.
 
 3. [Git for Windows](https://gitforwindows.org/)
 
+4. Python 3.8+ for gamedata synchronization, and the .NET 8 SDK for MetahookInstaller.
+
 ## Build Instruction
 
-Let's assume that you have all requirements installed correctly.
+Clone recursively, then run from the repository root in PowerShell:
 
-1. `git clone --recursive https://github.com/hzqst/MetaHookSv` to somewhere that doesn't contain space in the directory path.
+```powershell
+git clone --recursive https://github.com/hzqst/MetaHookSv
+Set-Location MetaHookSv
+cmake -S . -B build -G "Visual Studio 17 2022" -A Win32 "-DCMAKE_INSTALL_PREFIX=$PWD/install/output"
+cmake --build build --config Release --parallel 2
+cmake --install build --config Release
+```
 
-2. Run `scripts\build-MetaHook.bat`, wait for metahook exe to generate. The generated exe should be under `Build` if no error(s) occurs.
+The aggregator builds MetaHook, MetaHook_blob, all enabled plugins (including BetterSpray), shared plugin libraries and CMake tools. Plugin list templates are owned by `assets/svencoop/metahook/configs/` and installed with the output. The .NET tools build separately; see [MetahookInstaller](toolsrc/MetahookInstaller/README.md).
 
-3. Run `scripts\build-Plugins.bat`, wait for all plugins to generate. All generated dlls should be under `Build\svencoop\metahook\plugins\` if no error(s) occurs.
+`windows.yml` builds, tests and packages the installer EXE plus the complete `install/output/` tree. Tag releases use this Windows artifact and the separate BSP tool artifact, with bilingual AI release notes.
 
 ## Debugging
 
-1. `git clone --recursive https://github.com/hzqst/MetaHookSv` to somewhere that doesn't contain space in the directory path.
+Enable the optional Visual Studio startup project (requires a compatible .NET SDK and .NET 8 runtime):
 
-2. Run `scripts\debug-SvenCoop.bat` (or `scripts\debug-(WhateverGameYouWant).bat`, depends on which game you are going to debug with)
+```powershell
+cmake -S . -B build -G "Visual Studio 17 2022" -A Win32 -DMETAHOOKSV_ENABLE_LAUNCH_GAME=ON -DMETAHOOKSV_GAME_APPID=225840
+# For a custom installation/mod, also pass:
+# "-DMETAHOOKSV_GAME_DIRECTORY=D:/Games/Half-Life" -DMETAHOOKSV_GAME_APPID=70 -DMETAHOOKSV_GAME_MOD=gearbox
+```
 
-3. Open `MetaHook.sln` with Visual Studio IDE, set specified project as launch project, compile the project, then press F5 to start debugging.
+Open `build/MetaHookSv.sln`, select Debug/Win32, set **Launch-debugging / LaunchGame** as the startup project if necessary, and press **F5**. This incrementally builds all enabled components and InstallerCLI, installs into a private staging directory, deploys through InstallerCLI, and starts the actual game launcher with the native C++ debugger. The dummy executable is never launched or installed. Release/Win32 also works.
 
-* Other games follow the same instruction.
+`METAHOOKSV_GAME_DIRECTORY` defaults to empty (InstallerCLI discovers the Steam game by AppID); an explicit directory takes precedence. `METAHOOKSV_GAME_MOD` defaults to the app's base mod. `METAHOOKSV_GAME_ARGUMENTS` appends arguments after `-insecure -game "<mod>"`. Configuration builds the CLI and queries the game without deploying anything; invalid/missing games fail configuration. Reconfigure after changing the game/engine or moving its installation.
 
-* You should restart Visual Studio IDE to apply changes to debugging profile if Visual Studio IDE was running.
+Each startup build redeploys, including when no source changed. The private payload in `build/launch-game/<Debug|Release>/install/output` is recreated, leaving the normal install prefix unchanged. The aggregator uses the normal module names for Debug plugins/shared plugin libraries as well, matching the game's plugin list and dynamic library lookups. InstallerCLI preserves existing plugin selections, maps resources and selects `svencoop.exe`, `MetaHook.exe` or `MetaHook_blob.exe`; root PDBs are also deployed with their original names. Existing game files are overwritten according to the normal installer rules. Disabled components disappear from the staged payload, but previously deployed files are not uninstalled from the game.
 
-## MetaHook Docs
+In **Tools / Options / Projects and Solutions / Build and Run**, enable building out-of-date projects before running and set **On Run, when build or deployment errors occur** to **Do not launch**. Stop the game before redeploying; locked files fail the build and no process is terminated automatically. Use the debugger's Modules window to check symbol loading if a breakpoint remains unbound. The workflow is opt-in and does not change normal builds or CI when disabled.
 
-[Docs](docs/MetaHook.md) [中文文档](docs/MetaHookCN.md)
+## MetaHook
+
+[Link](https://github.com/MetaHookSv/MetaHook)
 
 ## Plugins
 
@@ -142,19 +138,19 @@ Let's assume that you have all requirements installed correctly.
 
 VGUI2Extension acts as a VGUI2 modding framework, providing capability for other plugins to install hooks / patches on VGUI2 components.
 
-[DOC](docs/VGUI2Extension.md) [中文文档](docs/VGUI2ExtensionCN.md)
+[Link](https://github.com/MetaHookSv/VGUI2Extension)
 
 ### CaptionMod
 
 A plugin that adds closing-captioning, HUD text translatation, HiDpi support and Source2007-style chat dialog to game.
 
-[DOC](docs/CaptionMod.md) [中文文档](docs/CaptionModCN.md)
+[Link](https://github.com/MetaHookSv/CaptionMod)
 
 ### BulletPhysics
 
 A plugin that transform player model into ragdoll when player is dead or being caught by barnacle.
 
-[DOC](docs/BulletPhysics.md) [中文文档](docs/BulletPhysicsCN.md)
+[Link](https://github.com/MetaHookSv/BulletPhysics)
 
 ### MetaRenderer
 
@@ -162,17 +158,19 @@ A graphic enhancement plugin that modifiy the original render engine.
 
 You can even play with 200k epolys models and still keep a high framerate.
 
-[DOC](docs/Renderer.md) [中文文档](docs/RendererCN.md)
+[Link](https://github.com/MetaHookSv/Renderer)
 
 ### StudioEvents
 
 This plugin can block studio-event sound spamming with controllable cvars.
 
-[DOC](docs/StudioEvents.md) [中文文档](docs/StudioEventsCN.md)
+[Link](https://github.com/MetaHookSv/StudioEvents)
 
 ### SteamScreenshots (Sven Co-op / GoldSrc post-25th update)
 
 This plugin intercepts `snapshot` command and replace it with `ISteamScreenshots` interface which will upload the snapshot to Steam Screenshot Manager.
+
+[Link](https://github.com/MetaHookSv/SteamScreenshots)
 
 ### SCModelDownloader (Sven Co-op only)
 
@@ -182,11 +180,15 @@ Cvar : `scmodel_autodownload 0 / 1` Automatically download missing model from sc
 
 Cvar : `scmodel_downloadlatest 0 / 1` Download latest version of this model if there are multiple ones with different version.
 
+[Link](https://github.com/MetaHookSv/SCModelDownloader)
+
 ### PrecacheManager
 
 This plugin provides a console command `fs_dump_precaches` to dump precache resource list into `[ModDirectory]\maps\[mapname].dump.res`.
 
 * The SoundSystem from Sven Co-op uses `soundcache.txt` instead of engine's precache system to precache sound files.
+
+[Link](https://github.com/MetaHookSv/PrecacheManager)
 
 ### ThreadGuard
 
@@ -196,11 +198,13 @@ Managed modules that may create new threads and quit without waiting for thread 
 
 `hw.dll`, `GameUI.dll`, `ServerBrowser.dll`
 
+[Link](https://github.com/MetaHookSv/ThreadGuard)
+
 ### ResourceReplacer
 
 This plugin replaces in-game resources (mainly model and sound files) at runtime with customizable replace list files without actually manipulating the files, just like what Sven Co-op does with [gmr](https://wiki.svencoop.com/Mapping/Model_Replacement_Guide) and [gsr](https://wiki.svencoop.com/Mapping/Sound_Replacement_Guide) files.
 
-[DOC](docs/ResourceReplacer.md) [中文文档](docs/ResourceReplacerCN.md)
+[Link](https://github.com/MetaHookSv/ResourceReplacer)
 
 ### SCCameraFix  (Sven Co-op only)
 
@@ -208,11 +212,13 @@ This plugin fixes camera glitching in spectator-view for Sven Co-op.
 
 The updated spectator-view code credits to [halflife-updated](https://github.com/SamVanheer/halflife-updated)
 
-### Better Spray (Sven Co-op / GoldSrc post-25th update)
+[Link](https://github.com/MetaHookSv/SCCameraFix)
+
+### BetterSpray (Sven Co-op / GoldSrc post-25th update)
 
 BetterSpray is a plugin for MetaHookSV that enhances Sven Co-op and GoldSrc’s spray system with support for high-res images, dynamic reloading and cloud sharing.
 
-https://github.com/hzqst/BetterSpray
+[Link](https://github.com/MetaHookSv/BetterSpray)
 
 ### ABCEnchance (third-party) (Sven Co-op only)
 
