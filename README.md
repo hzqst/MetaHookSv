@@ -112,7 +112,7 @@ The aggregator builds MetaHook, MetaHook_blob, all enabled plugins (including Be
 
 ## Debugging
 
-Enable the optional Visual Studio startup project (requires a compatible .NET SDK and .NET 8 runtime):
+Enable the optional Visual Studio startup project (building InstallerCLI from source requires a compatible .NET SDK and .NET 8 runtime):
 
 ```powershell
 cmake -S . -B build -G "Visual Studio 17 2022" -A Win32 -DMETAHOOKSV_ENABLE_LAUNCH_GAME=ON -DMETAHOOKSV_GAME_APPID=225840
@@ -127,6 +127,23 @@ Open `build/MetaHookSv.sln`, select Debug/Win32, set **Launch-debugging / Launch
 Each startup build redeploys, including when no source changed. The private payload in `build/launch-game/<Debug|Release>/install/output` is recreated, leaving the normal install prefix unchanged. The aggregator uses the normal module names for Debug plugins/shared plugin libraries as well, matching the game's plugin list and dynamic library lookups. InstallerCLI preserves existing plugin selections, maps resources and selects `svencoop.exe`, `MetaHook.exe` or `MetaHook_blob.exe`; root PDBs are also deployed with their original names. Existing game files are overwritten according to the normal installer rules. Disabled components disappear from the staged payload, but previously deployed files are not uninstalled from the game.
 
 In **Tools / Options / Projects and Solutions / Build and Run**, enable building out-of-date projects before running and set **On Run, when build or deployment errors occur** to **Do not launch**. Stop the game before redeploying; locked files fail the build and no process is terminated automatically. Use the debugger's Modules window to check symbol loading if a breakpoint remains unbound. The workflow is opt-in and does not change normal builds or CI when disabled.
+
+### Standalone plugin debugging
+
+All repositories under `Plugins/` support the same options when configured independently, including outside this checkout:
+
+```powershell
+cmake -S Plugins/HeapPatch -B build/heappatch -G "Visual Studio 17 2022" -A Win32 -DMETAHOOKSV_ENABLE_LAUNCH_GAME=ON
+cmake --build build/heappatch --config Debug --target LaunchGame
+```
+
+Install MetaHook and enable the plugin in the game's `plugins.lst` first. Standalone **DeployGame** builds the current plugin and its dependencies, stages its install, and updates only plugin files/resources, including plugin PDBs and mod-local dependency libraries. It does not update root launchers/runtime DLLs, create shortcuts, edit plugin lists or remove previously installed files. F5 uses the existing launcher; missing installations fail configuration. The aggregate **DeployGame** continues to deploy the complete enabled install.
+
+Plugins share this repository's CMake module: `METAHOOKSV_LAUNCH_GAME_MODULE_DIR` overrides its directory; otherwise they use the surrounding aggregator checkout, or fetch a pinned source archive into the build tree without its submodules. They never configure the downloaded aggregate project. Disabled LaunchGame performs no module/CLI downloads.
+
+`METAHOOKSV_INSTALLER_CLI_EXECUTABLE` can point to a self-contained CLI for offline use. Otherwise an available `toolsrc/MetahookInstaller/src` is built; when absent, CMake downloads `MetahookInstaller-windows-x64.7z` from the Installer release selected by `METAHOOKSV_INSTALLER_RELEASE` (default `latest`, or a fixed tag). The downloaded CLI needs no .NET installation. Plugin deployment requires a release supporting `-plugins-only` (v20261004c or later).
+
+Downloads use the release's SHA-256 when provided and cache the executable and resolved tag under `build/launch-game/installer/<release>`. A valid cache is reused offline, without checking for newer releases. Select another tag or remove only that private cache directory to update; corrupt or incompatible caches report an error. GitHub API rate limits can be avoided with `GH_TOKEN` or `GITHUB_TOKEN` in the environment; tokens are not cached. Each configuration receives its own CLI and fresh payload under `build/launch-game/<config>`. Keep Visual Studio's build-before-run enabled and its build-error behavior set to **Do not launch**.
 
 ## MetaHook
 

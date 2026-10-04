@@ -95,6 +95,17 @@ Configuration builds/queries the CLI without modifying the game. Empty
 `METAHOOKSV_GAME_DIRECTORY` uses InstallerCLI's Steam discovery by AppID.
 See the root README debugging section and `cmake/LaunchGame.cmake`.
 
+Standalone plugins reuse the same module through a small bootstrap: local override,
+surrounding aggregator, then a pinned aggregate source archive without submodules.
+`DeployGame` installs only that plugin's payload through CLI `-plugins-only` and
+requires an existing MetaHook installation. Missing CLI sources use a cached,
+self-contained Installer release; source builds and explicit executable overrides
+take precedence. Keep the feature off by default and add targets only at top level.
+The plugin bootstraps pin the shared module commit, retained by the
+`launch-game-cmake-v1` tag. When updating shared behavior for standalone clones,
+publish a new retained module commit and update all plugin pins together; do not
+move an existing module tag or rely on a feature branch remaining available.
+
 The Windows workflow explicitly installs to `install/output` and packages only
 that tree plus the single-file MetahookInstaller GUI and MetahookInstallerCLI
 executables. Default plugin list
