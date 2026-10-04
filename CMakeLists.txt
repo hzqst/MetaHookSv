@@ -31,6 +31,10 @@ cmake_minimum_required(VERSION 3.21)
 
 project(MetaHookSv LANGUAGES C CXX RC)
 
+# Allow components to group their targets into IDE solution folders via the
+# target FOLDER property (a no-op unless the USE_FOLDERS global property is on).
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
 if(NOT WIN32 OR NOT MSVC OR NOT CMAKE_SIZEOF_VOID_P EQUAL 4)
     message(FATAL_ERROR "MetaHookSv components require Windows MSVC x86. Configure with -A Win32.")
 endif()
