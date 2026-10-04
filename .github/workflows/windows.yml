@@ -76,6 +76,15 @@ jobs:
             -o build/installer-publish
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+      - name: Publish MetahookInstallerCLI
+        run: |
+          dotnet publish toolsrc/MetahookInstaller/src/MetahookInstallerCLI/MetahookInstallerCLI.csproj `
+            -c Release -r win-x64 --self-contained true `
+            -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:EnableCompressionInSingleFile=true -p:DebugSymbols=false -p:DebugType=None `
+            -o build/installer-cli-publish
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       - name: Package and verify release
         id: package
         run: |
@@ -85,6 +94,11 @@ jobs:
           $publishedFiles = @(Get-ChildItem -LiteralPath $publishDirectory -Recurse -File)
           if ($publishedFiles.Count -ne 1 -or $publishedFiles[0].Name -ne 'MetahookInstallerAvalonia.Desktop.exe') {
             throw 'Installer publish must contain exactly one self-contained executable.'
+          }
+          $cliPublishDirectory = Join-Path $workspace 'build/installer-cli-publish'
+          $cliFiles = @(Get-ChildItem -LiteralPath $cliPublishDirectory -Recurse -File)
+          if ($cliFiles.Count -ne 1 -or $cliFiles[0].Name -ne 'MetahookInstallerCLI.exe') {
+            throw 'Installer CLI publish must contain exactly one self-contained executable.'
           }
           $payloadDirectory = Join-Path $workspace 'install/output'
           foreach ($name in @('MetaHook.exe', 'MetaHook_blob.exe')) {
@@ -100,10 +114,11 @@ jobs:
           }
           New-Item -ItemType Directory -Path (Join-Path $staging 'install'), (Split-Path $archive), $extracted -Force | Out-Null
           Copy-Item -LiteralPath $publishedFiles[0].FullName -Destination (Join-Path $staging 'MetahookInstaller.exe')
+          Copy-Item -LiteralPath $cliFiles[0].FullName -Destination (Join-Path $staging 'MetahookInstallerCLI.exe')
           Copy-Item -LiteralPath $payloadDirectory -Destination (Join-Path $staging 'install/output') -Recurse
           Push-Location $staging
           try {
-            & 7z a -t7z $archive 'MetahookInstaller.exe' 'install/output' -r
+            & 7z a -t7z $archive 'MetahookInstaller.exe' 'MetahookInstallerCLI.exe' 'install/output' -r
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           } finally {
             Pop-Location

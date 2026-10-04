@@ -70,6 +70,16 @@ A. 因为 [SDL3-over-SDL2 兼容层](https://github.com/libsdl-org/sdl2-compat) 
 
 安装器根据自身 EXE 的位置查找 `install/output/`，不依赖当前工作目录。它会选择普通或 blob 启动器，将通用资源映射到所选 Mod，并安装运行库 DLL。已有 `plugins.lst` 中的选择会保留。
 
+如需脚本化安装，可使用同一压缩包中的 `MetahookInstallerCLI.exe`，执行的步骤与 GUI 相同：
+
+```powershell
+.\MetahookInstallerCLI.exe -appid 225840                                         # 安装到 Steam 版 Sven Co-op
+.\MetahookInstallerCLI.exe -appid 70 -gamedir "D:\Games\Half-Life" -moddir gearbox  # 指定游戏根目录与 Mod
+.\MetahookInstallerCLI.exe -appid 225840 -uninstall
+```
+
+完整参数见[安装器文档](toolsrc/MetahookInstaller/README.md#cli-usage)。
+
 ## 手动安装方式
 
 运行文件位于 `install/output/`。安装到 Sven Co-op 时，将 `svencoop/`、其配套资源目录和 `platform/` 合入游戏根目录。其他 Mod 应将通用 `svencoop/` 资源合入所选 Mod 目录，再复制该 Mod 的配套目录。

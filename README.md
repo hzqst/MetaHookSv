@@ -64,6 +64,16 @@ Try `r_lightmap 1`.
 
 The installer reads `install/output/` relative to its executable, independently of the current working directory. It selects the normal or blob launcher, maps common resources to the selected mod, and installs runtime DLLs. Existing `plugins.lst` selections are preserved.
 
+For scripted installation, `MetahookInstallerCLI.exe` from the same archive performs the same steps:
+
+```powershell
+.\MetahookInstallerCLI.exe -appid 225840                                         # Sven Co-op from Steam
+.\MetahookInstallerCLI.exe -appid 70 -gamedir "D:\Games\Half-Life" -moddir gearbox  # explicit game root and mod
+.\MetahookInstallerCLI.exe -appid 225840 -uninstall
+```
+
+See the [MetahookInstaller README](toolsrc/MetahookInstaller/README.md#cli-usage) for all arguments.
+
 ## Manual Installation
 
 Runtime files are in `install/output/`. For Sven Co-op, merge `svencoop/`, its sibling resource directories and `platform/` into the game root. For other mods, merge the common `svencoop/` resources into the selected mod directory and add its matching resource directories.

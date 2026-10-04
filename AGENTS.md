@@ -84,7 +84,8 @@ under `toolsrc/` (`BSPLocalizationTools`, `MetahookInstaller`) are not part of
 the CMake build; build them with `dotnet build` on their own solution.
 
 The Windows workflow explicitly installs to `install/output` and packages only
-that tree plus the single-file MetahookInstaller executable. Default plugin list
+that tree plus the single-file MetahookInstaller GUI and MetahookInstallerCLI
+executables. Default plugin list
 templates belong to `assets/svencoop/metahook/configs/`; the aggregator installs
 them, and the installer selects the template for the chosen game.
 
