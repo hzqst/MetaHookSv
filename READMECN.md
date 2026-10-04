@@ -122,7 +122,7 @@ cmake --install build --config Release
 
 ## 文档
 
-[中文文档](docs/MetaHookCN.md) [ENGLISH DOC](docs/MetaHook.md)
+[链接](https://github.com/MetaHookSv/MetaHook)
 
 ## 插件列表
 
@@ -134,29 +134,31 @@ cmake --install build --config Release
 
 对Sven Co-op而言，该插件修复了游戏中的汉字无法显示或者乱码的问题。
 
-[中文文档](docs/CaptionModCN.md) [ENGLISH DOC](docs/CaptionMod.md)
+[链接](https://github.com/MetaHookSv/CaptionMod)
 
 ### BulletPhysics
 
 对游戏提供布娃娃支持。玩家死亡时以及玩家被藤壶、喷火怪抓住时将玩家模型转化为布娃娃。
 
-[中文文档](docs/BulletPhysicsCN.md) [ENGLISH DOC](docs/BulletPhysics.md)
+[链接](https://github.com/MetaHookSv/BulletPhysics)
 
 ### MetaRenderer
 
 替换了原版的图形渲染引擎，极大提升了渲染性能，使用了黑科技提升你的画质和帧率。
 
-[中文文档](docs/RendererCN.md) [ENGLISH DOC](docs/Renderer.md)
+[链接](https://github.com/MetaHookSv/Renderer)
 
 ### StudioEvents
 
 该插件可以防止重复播放模型自带音效，防止音效反复刷屏。
 
-[中文文档](docs/StudioEventsCN.md) [ENGLISH DOC](docs/StudioEvents.md)
+[链接](https://github.com/MetaHookSv/StudioEvents)
 
 ### SteamScreenshots (只支持Sven Co-op)
 
 该插件捕获了`snapshot`截图命令，将其重定向到Steam客户端自带的截图功能上。
+
+[链接](https://github.com/MetaHookSv/SteamScreenshots)
 
 ### SCModelDownloader (只支持Sven Co-op)
 
@@ -165,6 +167,8 @@ cmake --install build --config Release
 控制台参数 : `scmodel_autodownload 0 / 1` 设为1时启用自动下载
 
 控制台参数 : `scmodel_downloadlatest 0 / 1` 设为1时自动下载最新版本的模型（如果有多个版本的模型）
+
+[链接](https://github.com/MetaHookSv/SCModelDownloader)
 
 ### CommunicationDemo (只支持Sven Co-op)
 
@@ -176,6 +180,8 @@ cmake --install build --config Release
 
 * Sven Co-op 的声音系统使用 `soundcache.txt` 而非引擎的预缓存系统来维护声音文件的预缓存列表。
 
+[链接](https://github.com/MetaHookSv/PrecacheManager)
+
 ### ThreadGuard
 
 该插件接管了Valve的一些模块的线程创建行为，这些模块创建线程后在模块释放时不会等待线程结束，这可能会导致游戏退出或热重启时游戏进程随机崩溃。
@@ -184,17 +190,27 @@ cmake --install build --config Release
 
 `hw.dll`, `GameUI.dll`, `ServerBrowser.dll`
 
+[链接](https://github.com/MetaHookSv/ThreadGuard)
+
 ### ResourceReplacer
 
 该插件可以动态替换游戏内资源 (主要是模型和声音文件) 且无需修改磁盘上的文件，就像 Sven Co-op 的 [gmr](https://wiki.svencoop.com/Mapping/Model_Replacement_Guide) 和 [gsr](https://wiki.svencoop.com/Mapping/Sound_Replacement_Guide) 文件提供资源替换功能一样。
 
-[中文文档](docs/ResourceReplacerCN.md) [ENGLISH DOC](docs/ResourceReplacer.md)
+[链接](https://github.com/MetaHookSv/ResourceReplacer)
 
 ### SCCameraFix  (只支持Sven Co-op)
 
 该插件修复了Sven Co-op的观察者模式下摄像机视角/画面高频抖动的问题。
 
 部分代码来自[halflife-updated](https://github.com/SamVanheer/halflife-updated)
+
+[链接](https://github.com/MetaHookSv/SCCameraFix)
+
+### BetterSpray (只支持Sven Co-op / GoldSrc 25周年更新后)
+
+BetterSpray 是一个 MetaHookSV 插件，为 Sven Co-op 和 GoldSrc 的喷漆系统提供高分辨率图像、动态重载和云分享支持。
+
+[链接](https://github.com/MetaHookSv/BetterSpray)
 
 ### ABCEnchance (第三方) (只支持Sven Co-op)
 

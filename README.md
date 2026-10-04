@@ -116,7 +116,7 @@ Build and install with `--config Debug`, then deploy the output to the game. Ope
 
 ## MetaHook Docs
 
-[Docs](docs/MetaHook.md) [中文文档](docs/MetaHookCN.md)
+[Docs](https://github.com/MetaHookSv/MetaHook)
 
 ## Plugins
 
@@ -124,19 +124,19 @@ Build and install with `--config Debug`, then deploy the output to the game. Ope
 
 VGUI2Extension acts as a VGUI2 modding framework, providing capability for other plugins to install hooks / patches on VGUI2 components.
 
-[DOC](docs/VGUI2Extension.md) [中文文档](docs/VGUI2ExtensionCN.md)
+[Link](https://github.com/MetaHookSv/VGUI2Extension)
 
 ### CaptionMod
 
 A plugin that adds closing-captioning, HUD text translatation, HiDpi support and Source2007-style chat dialog to game.
 
-[DOC](docs/CaptionMod.md) [中文文档](docs/CaptionModCN.md)
+[Link](https://github.com/MetaHookSv/CaptionMod)
 
 ### BulletPhysics
 
 A plugin that transform player model into ragdoll when player is dead or being caught by barnacle.
 
-[DOC](docs/BulletPhysics.md) [中文文档](docs/BulletPhysicsCN.md)
+[Link](https://github.com/MetaHookSv/BulletPhysics)
 
 ### MetaRenderer
 
@@ -144,17 +144,19 @@ A graphic enhancement plugin that modifiy the original render engine.
 
 You can even play with 200k epolys models and still keep a high framerate.
 
-[DOC](docs/Renderer.md) [中文文档](docs/RendererCN.md)
+[Link](https://github.com/MetaHookSv/Renderer)
 
 ### StudioEvents
 
 This plugin can block studio-event sound spamming with controllable cvars.
 
-[DOC](docs/StudioEvents.md) [中文文档](docs/StudioEventsCN.md)
+[Link](https://github.com/MetaHookSv/StudioEvents)
 
 ### SteamScreenshots (Sven Co-op / GoldSrc post-25th update)
 
 This plugin intercepts `snapshot` command and replace it with `ISteamScreenshots` interface which will upload the snapshot to Steam Screenshot Manager.
+
+[Link](https://github.com/MetaHookSv/SteamScreenshots)
 
 ### SCModelDownloader (Sven Co-op only)
 
@@ -164,11 +166,15 @@ Cvar : `scmodel_autodownload 0 / 1` Automatically download missing model from sc
 
 Cvar : `scmodel_downloadlatest 0 / 1` Download latest version of this model if there are multiple ones with different version.
 
+[Link](https://github.com/MetaHookSv/SCModelDownloader)
+
 ### PrecacheManager
 
 This plugin provides a console command `fs_dump_precaches` to dump precache resource list into `[ModDirectory]\maps\[mapname].dump.res`.
 
 * The SoundSystem from Sven Co-op uses `soundcache.txt` instead of engine's precache system to precache sound files.
+
+[Link](https://github.com/MetaHookSv/PrecacheManager)
 
 ### ThreadGuard
 
@@ -178,11 +184,13 @@ Managed modules that may create new threads and quit without waiting for thread 
 
 `hw.dll`, `GameUI.dll`, `ServerBrowser.dll`
 
+[Link](https://github.com/MetaHookSv/ThreadGuard)
+
 ### ResourceReplacer
 
 This plugin replaces in-game resources (mainly model and sound files) at runtime with customizable replace list files without actually manipulating the files, just like what Sven Co-op does with [gmr](https://wiki.svencoop.com/Mapping/Model_Replacement_Guide) and [gsr](https://wiki.svencoop.com/Mapping/Sound_Replacement_Guide) files.
 
-[DOC](docs/ResourceReplacer.md) [中文文档](docs/ResourceReplacerCN.md)
+[Link](https://github.com/MetaHookSv/ResourceReplacer)
 
 ### SCCameraFix  (Sven Co-op only)
 
@@ -190,11 +198,13 @@ This plugin fixes camera glitching in spectator-view for Sven Co-op.
 
 The updated spectator-view code credits to [halflife-updated](https://github.com/SamVanheer/halflife-updated)
 
+[Link](https://github.com/MetaHookSv/SCCameraFix)
+
 ### Better Spray (Sven Co-op / GoldSrc post-25th update)
 
 BetterSpray is a plugin for MetaHookSV that enhances Sven Co-op and GoldSrc’s spray system with support for high-res images, dynamic reloading and cloud sharing.
 
-https://github.com/hzqst/BetterSpray
+[Link](https://github.com/MetaHookSv/BetterSpray)
 
 ### ABCEnchance (third-party) (Sven Co-op only)
 
