@@ -3,7 +3,7 @@
     "basic-memory": {
       "type": "stdio",
       "command": "uvx",
-      "args": ["basic-memory", "mcp", "--project", "metahooksv"],
+      "args": ["basic-memory", "mcp"],
       "env": {}
     }
   }

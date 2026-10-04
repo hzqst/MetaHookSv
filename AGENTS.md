@@ -17,7 +17,7 @@ Submodule workflow:
 
 - Clone recursively: `git clone --recursive <repo-url>`
 - Initialize/refresh after clone or pull: `git submodule update --init --recursive`
-- Each submodule tracks its own `main`; change code inside the submodule repo, then bump the gitlink here.
+- Each submodule tracks its own `main`; change code inside the submodule repo, then bump the gitlink in the root repo.
 
 ## Shared dependencies (the `thirdparty/` convention)
 
@@ -133,11 +133,18 @@ includable as a subproject (standalone builds are unaffected by these rules):
 
 - Use a progressive disclosure approach for agent coding in this repository: start from high-level information in the Basic Memory knowledge base first, and only locate/read specific files or symbols when necessary, instead of expanding a large amount of context at once.
 
-#### Basic Memory knowledge base (project-scoped, `MetaHook/memory/`)
+#### Basic Memory knowledge base
 
-- Notes live in `MetaHook/memory/` (markdown with YAML frontmatter: `title`/`type`/`permalink`), tracked in git inside the MetaHook submodule repo.
-- Basic Memory is registered as MCP server `basic-memory`, pinned to the `metahooksv` project (`--project metahooksv` via project-level `.mcp.json`).
-- Prefer Basic Memory MCP tools (`search_notes` / `read_note` / `write_note` / `edit_note`) for project knowledge.
+- **Storage & Structure**:
+  - Notes live in `<ProjectName>/memory/` (markdown with YAML frontmatter: `title`/`type`/`permalink`), tracked in git inside the MetaHook submodule repo.
+  - Basic Memory is registered as MCP server `basic-memory`.
+- **Project Discovery & Dynamic Routing**:
+  - Available projects are managed dynamically. When uncertain about available projects or when starting a topic-specific task, call `list_memory_projects` first to discover available `<ProjectName>`s.
+  - Autonomously select or switch to the appropriate project based on the user's intent, task context, or repository.
+- **Tool Usage**:
+  - Prefer Basic Memory MCP tools (`search_notes`, `read_note`, `write_note`, `edit_note`, `build_context`) for project knowledge.
+  - **Always explicitly specify the `project` argument** (e.g., `project="<ProjectName>"`) in tool calls to target the intended project, rather than relying on the default.
+  - Cross-project references should follow the `memory://<ProjectName>/...` URI format.
 
 #### High-level information in this repository (read corresponding notes first)
 
