@@ -44,12 +44,12 @@ Shared `thirdparty/` submodules and the variables they feed:
 Two more dependencies are shared without a submodule:
 
 - **VC-LTL**: the aggregator downloads and verifies VC-LTL 5.3.1 once into
-  `thirdparty/VC-LTL-5.3.1` and passes `-DVC_LTL_Root` to every component, so no
+  `thirdparty/VC-LTL-5.3.1` and sets `VC_LTL_Root` for every component, so no
   component downloads its own copy. `thirdparty/VC-LTL-*` is gitignored.
-- **SDL3/SDL2**: `Renderer` and `VGUI2Extension` consume the SDL headers that
-  `MetaHook` builds and installs into the shared prefix; the aggregator passes
-  `-DSDL2_INCLUDE_DIRS`/`-DSDL3_INCLUDE_DIRS` and adds a build-order dependency
-  on `MetaHook`.
+- **SDL3/SDL2**: `Renderer` and `VGUI2Extension` consume only SDL's public
+  headers; the aggregator points `SDL2_INCLUDE_DIRS`/`SDL3_INCLUDE_DIRS` at
+  MetaHook's SDL submodules (`MetaHook/thirdparty/{sdl2-compat-fork,SDL3_fork}/include`),
+  which exist at configure time.
 
 Component rule: when a component needs a shared dependency, add it to the
 repository `thirdparty/` as a submodule (if not already present), accept
@@ -59,21 +59,41 @@ component.
 
 ## Top-level CMake aggregator
 
-The root `CMakeLists.txt` is a superbuild: each component is configured in its
-own build tree via `ExternalProject_Add` (a single CMake tree would collide on
-shared dependency target names such as `FreeImage`/`libglew_static`). It also
-resolves the shared VC-LTL and injects every `<NAME>_SOURCE_PATH`.
+The root `CMakeLists.txt` adds every enabled component to **one CMake tree**
+with `add_subdirectory()` (binary dirs mirror the source paths, e.g.
+`build/Plugins/Renderer`), so one configure yields one solution with the real
+component targets. It resolves the shared VC-LTL and injects each component's
+`<NAME>_SOURCE_PATH` set (see the registry in the file) as normal variables of
+that component's scope, which shadow the component's own cache defaults.
 
 ```bash
 cmake -S . -B build -A Win32             # MSVC x86 is required by all components
 cmake --build build --config Release
-cmake --install build --config Release   # stages into build/output
+cmake --install build --config Release   # stages into build/output (CMAKE_INSTALL_PREFIX)
 ```
 
-Per-component and per-group options (`METAHOOKSV_BUILD_*`) default to `ON`. The
-two .NET tools under `toolsrc/` (`BSPLocalizationTools`, `MetahookInstaller`) are
-not part of the CMake build; build them with `dotnet build` on their own
-solution.
+Per-component and per-group options (`METAHOOKSV_BUILD_*`) default to `ON`.
+Group targets `plugins`, `pluginlibs`, `tools` and `all-components` build a
+subset; MetaHook is built through its own `MetaHook` target. The two .NET tools
+under `toolsrc/` (`BSPLocalizationTools`, `MetahookInstaller`) are not part of
+the CMake build; build them with `dotnet build` on their own solution.
+
+Because components share one tree, each component's CMake must stay
+includable as a subproject (standalone builds are unaffected by these rules):
+
+- Add a shared vendor target only if no sibling added it:
+  `if(NOT TARGET libglew_static) add_subdirectory(...) endif()` (same for
+  `FreeImage`).
+- Keep imported targets directory-scoped (no `GLOBAL`); e.g. two components
+  define their own `SteamSDK::SteamAPI` with different include roots.
+- Anchor per-component build trees (gamedata, sync caches) to
+  `PROJECT_BINARY_DIR`, not `CMAKE_BINARY_DIR`; MetaHook's gamedata directory
+  is the parent of every plugin's, so a shared root would make syncs delete each
+  other.
+- Do not force generic cache variables such as `BUILD_SHARED_LIBS`; use
+  directory-scoped variables instead.
+- Target, cache-variable, function and FetchContent names stay
+  component-prefixed so they cannot collide.
 
 ## When coding / building plan
 

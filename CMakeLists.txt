@@ -1,4 +1,4 @@
-# MetaHookSv aggregator (superbuild)
+# MetaHookSv aggregator
 #
 # This repository aggregates the MetaHookSv components, each of which lives in
 # its own git submodule and is a self-contained CMake project:
@@ -8,43 +8,47 @@
 #   PluginLibs/*       shared plugin libraries
 #   toolsrc/*          standalone tools (CMake-based ones only)
 #
-# Why a superbuild and not add_subdirectory():
-#   Several components configure the *same* dependency targets (Renderer and
-#   UtilAssetsIntegrity both add_subdirectory() FreeImage; BulletPhysics and
-#   Renderer both add GLEW). Placing them in one CMake tree would collide on the
-#   FreeImage / libglew_static target names and fail. Configuring each component
-#   in its own binary directory keeps those private dependency trees isolated.
-#
-# Each component is pinned to a submodule revision, so this aggregate is a fixed
-# set of per-component builds that install into one shared prefix.
+# Every enabled component is added to this single CMake tree with
+# add_subdirectory(), so one configure produces one solution holding the real
+# component targets. Components therefore stay includable as subprojects:
+#   - shared vendor targets (libglew_static, FreeImage) are added only when no
+#     sibling component has added them yet (`if(NOT TARGET ...)`);
+#   - imported targets stay directory-scoped (no GLOBAL);
+#   - per-component trees such as the synchronized gamedata are anchored to
+#     PROJECT_BINARY_DIR, not CMAKE_BINARY_DIR;
+#   - generic cache variables (for example BUILD_SHARED_LIBS) are not forced.
 #
 # Usage (MSVC x86 / Win32 is required by every component):
 #   cmake -S . -B build -A Win32
 #   cmake --build build --config Release
 #   cmake --install build --config Release      # stages into build/output
 #
-# The aggregated sibling sources are injected so components consume the local
-# submodules instead of downloading their own copies:
-#   METAHOOK_SOURCE_PATH          -> MetaHook/
-#   VGUI2EXTENSION_SOURCE_PATH    -> Plugins/VGUI2Extension/
-#   UTILTHREADTASK_SOURCE_PATH    -> PluginLibs/UtilThreadTask/
+# The aggregated sibling sources are injected per component (see the registry
+# below) so components consume the local submodules instead of downloading
+# their own copies.
 
 cmake_minimum_required(VERSION 3.21)
 
-project(MetaHookSv LANGUAGES NONE)
+project(MetaHookSv LANGUAGES C CXX RC)
 
-include(ExternalProject)
-
-if(NOT WIN32)
-    message(FATAL_ERROR "MetaHookSv components require Windows. Configure on Windows with MSVC x86 (-A Win32).")
+if(NOT WIN32 OR NOT MSVC OR NOT CMAKE_SIZEOF_VOID_P EQUAL 4)
+    message(FATAL_ERROR "MetaHookSv components require Windows MSVC x86. Configure with -A Win32.")
 endif()
 
 # ---------------------------------------------------------------------------
 # Options
 # ---------------------------------------------------------------------------
 option(METAHOOKSV_INIT_SUBMODULES "Run 'git submodule update --init --recursive' at configure time" ON)
-option(METAHOOKSV_INSTALL "Run each component's install step into a shared prefix" ON)
-set(METAHOOKSV_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/output" CACHE PATH "Shared install prefix for all components")
+
+# Stage every component into one shared prefix unless one was chosen explicitly.
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/output" CACHE PATH "Shared install prefix for all components" FORCE)
+elseif(DEFINED CACHE{METAHOOKSV_INSTALL_PREFIX})
+    # Build trees from the former ExternalProject superbuild kept the shared
+    # prefix in METAHOOKSV_INSTALL_PREFIX; carry it over once.
+    set(CMAKE_INSTALL_PREFIX "${METAHOOKSV_INSTALL_PREFIX}" CACHE PATH "Shared install prefix for all components" FORCE)
+    unset(METAHOOKSV_INSTALL_PREFIX CACHE)
+endif()
 
 # Group master switches; a component builds only when both its group and its own
 # option are ON.
@@ -56,6 +60,8 @@ option(METAHOOKSV_BUILD_TOOLSRC "Build the CMake-based toolsrc/* components" ON)
 # Component registry: <path>|<group>|<per-component option>|<injected dep vars>
 # Dependency vars are comma-separated; '-' means the component fetches everything
 # itself. (';' cannot be used: it is a CMake list separator even inside quotes.)
+# Order matters only for shared vendor targets: the first component that adds
+# libglew_static / FreeImage owns them, later ones reuse them.
 set(METAHOOKSV_COMPONENT_DEFS
     "MetaHook|metahook|METAHOOKSV_BUILD_METAHOOK|-"
 
@@ -63,14 +69,14 @@ set(METAHOOKSV_COMPONENT_DEFS
     "Plugins/CaptionMod|plugins|METAHOOKSV_BUILD_PLUGIN_CAPTIONMOD|METAHOOK_SOURCE_PATH,VGUI2EXTENSION_SOURCE_PATH"
     "Plugins/HeapPatch|plugins|METAHOOKSV_BUILD_PLUGIN_HEAPPATCH|METAHOOK_SOURCE_PATH"
     "Plugins/PrecacheManager|plugins|METAHOOKSV_BUILD_PLUGIN_PRECACHEMANAGER|METAHOOK_SOURCE_PATH"
-    "Plugins/Renderer|plugins|METAHOOKSV_BUILD_PLUGIN_RENDERER|METAHOOK_SOURCE_PATH,VGUI2EXTENSION_SOURCE_PATH,UTILTHREADTASK_SOURCE_PATH,SCOPEEXIT_SOURCE_PATH,GLEW_SOURCE_PATH,FREEIMAGE_SOURCE_PATH,TINYOBJLOADER_SOURCE_PATH"
+    "Plugins/Renderer|plugins|METAHOOKSV_BUILD_PLUGIN_RENDERER|METAHOOK_SOURCE_PATH,VGUI2EXTENSION_SOURCE_PATH,UTILTHREADTASK_SOURCE_PATH,SCOPEEXIT_SOURCE_PATH,GLEW_SOURCE_PATH,FREEIMAGE_SOURCE_PATH,TINYOBJLOADER_SOURCE_PATH,SDL2_INCLUDE_DIRS,SDL3_INCLUDE_DIRS"
     "Plugins/ResourceReplacer|plugins|METAHOOKSV_BUILD_PLUGIN_RESOURCEREPLACER|METAHOOK_SOURCE_PATH"
     "Plugins/SCCameraFix|plugins|METAHOOKSV_BUILD_PLUGIN_SCCAMERAFIX|METAHOOK_SOURCE_PATH"
     "Plugins/SCModelDownloader|plugins|METAHOOKSV_BUILD_PLUGIN_SCMODELDOWNLOADER|METAHOOK_SOURCE_PATH,VGUI2EXTENSION_SOURCE_PATH,SCOPEEXIT_SOURCE_PATH"
     "Plugins/SteamScreenshots|plugins|METAHOOKSV_BUILD_PLUGIN_STEAMSCREENSHOTS|STEAMSDK_SOURCE_PATH,GLEW_SOURCE_PATH"
     "Plugins/StudioEvents|plugins|METAHOOKSV_BUILD_PLUGIN_STUDIOEVENTS|METAHOOK_SOURCE_PATH"
     "Plugins/ThreadGuard|plugins|METAHOOKSV_BUILD_PLUGIN_THREADGUARD|METAHOOK_SOURCE_PATH"
-    "Plugins/VGUI2Extension|plugins|METAHOOKSV_BUILD_PLUGIN_VGUI2EXTENSION|METAHOOK_SOURCE_PATH"
+    "Plugins/VGUI2Extension|plugins|METAHOOKSV_BUILD_PLUGIN_VGUI2EXTENSION|METAHOOK_SOURCE_PATH,SDL2_INCLUDE_DIRS,SDL3_INCLUDE_DIRS"
 
     "PluginLibs/UtilAssetsIntegrity|pluginlibs|METAHOOKSV_BUILD_PLUGINLIB_UTILASSETSINTEGRITY|METAHOOK_SOURCE_PATH,SCOPEEXIT_SOURCE_PATH,FREEIMAGE_SOURCE_PATH"
     "PluginLibs/UtilHTTPClient_SteamAPI|pluginlibs|METAHOOKSV_BUILD_PLUGINLIB_UTILHTTPCLIENT_STEAMAPI|METAHOOK_SOURCE_PATH,SCOPEEXIT_SOURCE_PATH,STEAMSDK_SOURCE_PATH"
@@ -79,11 +85,6 @@ set(METAHOOKSV_COMPONENT_DEFS
 
     "toolsrc/SteamAppsLocation|toolsrc|METAHOOKSV_BUILD_TOOL_STEAMAPPSLOCATION|-"
 )
-
-# Components that consume SDL2/SDL3 headers. They are pointed at the SDL headers
-# that MetaHook builds and installs into the shared prefix (Renderer and
-# VGUI2Extension deliberately do not build SDL themselves).
-set(METAHOOKSV_SDL_CONSUMERS Renderer VGUI2Extension)
 
 # Register a per-component option (default ON) for every entry.
 foreach(_def IN LISTS METAHOOKSV_COMPONENT_DEFS)
@@ -112,9 +113,9 @@ endif()
 # ---------------------------------------------------------------------------
 # Every Windows component links the same VC-LTL 5.3.1 package. Resolve it once
 # here (mirroring a component's cmake/Dependencies.cmake + cmake/VCLTL.cmake),
-# place it under the repository-level thirdparty/, and pass VC_LTL_Root to each
-# component. A component's *_prepare_vcltl() then sees the verified package and
-# returns early instead of downloading its own copy.
+# place it under the repository-level thirdparty/, and expose VC_LTL_Root to
+# each component. A component's *_prepare_vcltl() then sees the verified package
+# and returns early instead of downloading its own copy.
 option(METAHOOKSV_SHARED_VCLTL "Resolve one shared VC-LTL package under thirdparty/ for all components" ON)
 
 function(metahooksv_prepare_vcltl cache_dir)
@@ -166,9 +167,10 @@ function(metahooksv_prepare_vcltl cache_dir)
     set(METAHOOKSV_VC_LTL_ROOT "${vcltl_root}" PARENT_SCOPE)
 endfunction()
 
-set(METAHOOKSV_VC_LTL_ROOT "")
 if(METAHOOKSV_SHARED_VCLTL)
     metahooksv_prepare_vcltl("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty")
+    # Components only provide a default for VC_LTL_Root, so this entry wins.
+    set(VC_LTL_Root "${METAHOOKSV_VC_LTL_ROOT}" CACHE PATH "VC-LTL binary package root" FORCE)
 endif()
 
 # ---------------------------------------------------------------------------
@@ -196,31 +198,57 @@ function(metahooksv_dependency_path dep_var out_var)
         # Reuse MetaHook's own Chocobo1Hash submodule instead of keeping a
         # second copy under the aggregator's thirdparty/.
         set(_path "${CMAKE_CURRENT_SOURCE_DIR}/MetaHook/thirdparty/Chocobo1Hash")
+    elseif(dep_var STREQUAL "SDL2_INCLUDE_DIRS")
+        # SDL consumers read the public headers straight from MetaHook's SDL
+        # submodules; they exist at configure time, unlike the installed copies.
+        set(_path "${CMAKE_CURRENT_SOURCE_DIR}/MetaHook/thirdparty/sdl2-compat-fork/include")
+    elseif(dep_var STREQUAL "SDL3_INCLUDE_DIRS")
+        set(_path "${CMAKE_CURRENT_SOURCE_DIR}/MetaHook/thirdparty/SDL3_fork/include")
     else()
         message(FATAL_ERROR "Unknown injected dependency variable: ${dep_var}")
     endif()
     set(${out_var} "${_path}" PARENT_SCOPE)
 endfunction()
 
+# Add one component from its own function scope: the injected dependency
+# variables are normal variables of this call, so they reach only that
+# component's directory and shadow its cache defaults (CMP0126). Locals are
+# '_'-prefixed because the component's directory inherits this scope too.
+function(metahooksv_add_component _component_path _component_deps)
+    if(NOT _component_deps STREQUAL "-")
+        string(REPLACE "," ";" _dep_list "${_component_deps}")
+        foreach(_dep IN LISTS _dep_list)
+            metahooksv_dependency_path("${_dep}" _dep_path)
+            if(NOT IS_DIRECTORY "${_dep_path}")
+                message(FATAL_ERROR "${_component_path} requires ${_dep} at ${_dep_path}, which is missing. "
+                    "Initialize submodules (METAHOOKSV_INIT_SUBMODULES=ON) or update them.")
+            endif()
+            set(${_dep} "${_dep_path}")
+        endforeach()
+    endif()
+    add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/${_component_path}" "${CMAKE_CURRENT_BINARY_DIR}/${_component_path}")
+endfunction()
+
 # ---------------------------------------------------------------------------
-# Build configuration passed to every component's sub-build.
+# Build configuration shared by every component.
 # ---------------------------------------------------------------------------
-# Multi-config generators (Visual Studio) select the configuration with
-# `--config`; single-config generators (Ninja) need CMAKE_BUILD_TYPE.
 get_property(_is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
-set(_metahooksv_config_args)
-if(NOT _is_multi_config)
+if(_is_multi_config)
+    set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "Supported configurations" FORCE)
+else()
     if(NOT CMAKE_BUILD_TYPE)
         set(CMAKE_BUILD_TYPE Release CACHE STRING "Configuration for single-config generators" FORCE)
     endif()
     if(NOT CMAKE_BUILD_TYPE MATCHES "^(Debug|Release)$")
         message(FATAL_ERROR "Select Debug or Release (got CMAKE_BUILD_TYPE='${CMAKE_BUILD_TYPE}').")
     endif()
-    list(APPEND _metahooksv_config_args "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
 endif()
 
+# Component tests (opt-in per component) are reachable from this tree's CTest.
+enable_testing()
+
 # ---------------------------------------------------------------------------
-# Register one ExternalProject per enabled component.
+# Add every enabled component.
 # ---------------------------------------------------------------------------
 set(_targets_metahook)
 set(_targets_plugins)
@@ -252,88 +280,41 @@ foreach(_def IN LISTS METAHOOKSV_COMPONENT_DEFS)
         continue()
     endif()
 
-    set(_source_dir "${CMAKE_CURRENT_SOURCE_DIR}/${_path}")
-    if(NOT EXISTS "${_source_dir}/CMakeLists.txt")
-        message(FATAL_ERROR "${_path} has no CMakeLists.txt at ${_source_dir}. "
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${_path}/CMakeLists.txt")
+        message(FATAL_ERROR "${_path} has no CMakeLists.txt at ${CMAKE_CURRENT_SOURCE_DIR}/${_path}. "
             "Initialize submodules (METAHOOKSV_INIT_SUBMODULES=ON) or update them.")
     endif()
 
+    # Each component's primary target is named after its directory.
     get_filename_component(_name "${_path}" NAME)
-    set(_dep_args)
-    if(NOT _dep_vars STREQUAL "-")
-        string(REPLACE "," ";" _dep_list "${_dep_vars}")
-        foreach(_dep IN LISTS _dep_list)
-            metahooksv_dependency_path("${_dep}" _dep_path)
-            if(NOT IS_DIRECTORY "${_dep_path}")
-                message(FATAL_ERROR "${_name} requires ${_dep} at ${_dep_path}, which is missing. "
-                    "Initialize submodules (METAHOOKSV_INIT_SUBMODULES=ON) or update them.")
-            endif()
-            list(APPEND _dep_args "-D${_dep}=${_dep_path}")
-        endforeach()
-    endif()
-
-    if(METAHOOKSV_INSTALL)
-        set(_install_args "")
-    else()
-        set(_install_args INSTALL_COMMAND "")
-    endif()
-
-    set(_vcltl_args)
-    if(METAHOOKSV_VC_LTL_ROOT)
-        list(APPEND _vcltl_args "-DVC_LTL_Root=${METAHOOKSV_VC_LTL_ROOT}")
-    endif()
-
-    # SDL consumers get the headers MetaHook installs into the shared prefix and
-    # must build after MetaHook (which builds/installs SDL3 and SDL2).
-    set(_sdl_args)
-    set(_sdl_dep)
-    if(_name IN_LIST METAHOOKSV_SDL_CONSUMERS)
-        set(_sdl_include "${METAHOOKSV_INSTALL_PREFIX}/include")
-        list(APPEND _sdl_args
-            "-DSDL3_INCLUDE_DIRS=${_sdl_include}"
-            "-DSDL2_INCLUDE_DIRS=${_sdl_include}")
-        if(_targets_metahook)
-            set(_sdl_dep DEPENDS ${_targets_metahook})
-        else()
-            message(WARNING "${_name} consumes SDL but MetaHook is disabled; pass SDL2_INCLUDE_DIRS/SDL3_INCLUDE_DIRS manually.")
-        endif()
-    endif()
-
     message(STATUS "Enabling ${_path} (target '${_name}')")
-    ExternalProject_Add(${_name}
-        SOURCE_DIR "${_source_dir}"
-        BINARY_DIR "${CMAKE_BINARY_DIR}/build/${_name}"
-        DOWNLOAD_COMMAND ""
-        UPDATE_COMMAND ""
-        CMAKE_ARGS
-            "-DCMAKE_INSTALL_PREFIX=${METAHOOKSV_INSTALL_PREFIX}"
-            ${_metahooksv_config_args}
-            ${_vcltl_args}
-            ${_sdl_args}
-            ${_dep_args}
-        ${_install_args}
-        ${_sdl_dep}
-    )
-
-    if(_group STREQUAL "metahook")
-        list(APPEND _targets_metahook ${_name})
-    elseif(_group STREQUAL "plugins")
-        list(APPEND _targets_plugins ${_name})
-    elseif(_group STREQUAL "pluginlibs")
-        list(APPEND _targets_pluginlibs ${_name})
-    elseif(_group STREQUAL "toolsrc")
-        list(APPEND _targets_toolsrc ${_name})
+    metahooksv_add_component("${_path}" "${_dep_vars}")
+    if(NOT TARGET ${_name})
+        message(FATAL_ERROR "${_path} did not define its primary target '${_name}'.")
     endif()
+
+    list(APPEND _targets_${_group} ${_name})
 endforeach()
 
 # ---------------------------------------------------------------------------
-# Group convenience targets.
+# Group convenience targets. MetaHook needs none: its own target is `MetaHook`,
+# and a `metahook` group target would differ from it only by case, which
+# Windows file names and Visual Studio project names cannot tell apart.
 # ---------------------------------------------------------------------------
-add_custom_target(metahook DEPENDS ${_targets_metahook})
-add_custom_target(plugins DEPENDS ${_targets_plugins})
-add_custom_target(pluginlibs DEPENDS ${_targets_pluginlibs})
-add_custom_target(tools DEPENDS ${_targets_toolsrc})
-add_custom_target(all-components DEPENDS metahook plugins pluginlibs tools)
+foreach(_group_target IN ITEMS plugins pluginlibs tools)
+    add_custom_target(${_group_target})
+endforeach()
+if(_targets_plugins)
+    add_dependencies(plugins ${_targets_plugins})
+endif()
+if(_targets_pluginlibs)
+    add_dependencies(pluginlibs ${_targets_pluginlibs})
+endif()
+if(_targets_toolsrc)
+    add_dependencies(tools ${_targets_toolsrc})
+endif()
+add_custom_target(all-components)
+add_dependencies(all-components plugins pluginlibs tools ${_targets_metahook})
 
 # toolsrc/BSPLocalizationTools and toolsrc/MetahookInstaller are .NET 8 projects
 # driven by their own solution files; they are intentionally not aggregated here.
@@ -344,4 +325,4 @@ endif()
 
 message(STATUS "MetaHookSv aggregator configured.")
 message(STATUS "  Components: metahook=${_targets_metahook} plugins=${_targets_plugins} pluginlibs=${_targets_pluginlibs} tools=${_targets_toolsrc}")
-message(STATUS "  Install prefix: ${METAHOOKSV_INSTALL_PREFIX}")
+message(STATUS "  Install prefix: ${CMAKE_INSTALL_PREFIX}")
