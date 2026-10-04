@@ -120,7 +120,7 @@ cmake --install build --config Release
 
 使用 `--config Debug` 构建并安装，将输出部署到游戏目录。用 Visual Studio 打开 `build/MetaHookSv.sln`，选择 Debug/Win32，再按游戏位置设置启动器的调试命令、工作目录及 `-insecure -game <Mod目录>` 参数。
 
-## 文档
+## MetaHook
 
 [链接](https://github.com/MetaHookSv/MetaHook)
 
@@ -186,15 +186,11 @@ cmake --install build --config Release
 
 该插件接管了Valve的一些模块的线程创建行为，这些模块创建线程后在模块释放时不会等待线程结束，这可能会导致游戏退出或热重启时游戏进程随机崩溃。
 
-目前接管的模块：
-
-`hw.dll`, `GameUI.dll`, `ServerBrowser.dll`
-
 [链接](https://github.com/MetaHookSv/ThreadGuard)
 
 ### ResourceReplacer
 
-该插件可以动态替换游戏内资源 (主要是模型和声音文件) 且无需修改磁盘上的文件，就像 Sven Co-op 的 [gmr](https://wiki.svencoop.com/Mapping/Model_Replacement_Guide) 和 [gsr](https://wiki.svencoop.com/Mapping/Sound_Replacement_Guide) 文件提供资源替换功能一样。
+该插件可以动态替换游戏内资源 (主要是模型和声音文件) 且无需修改磁盘上的文件，就像 Sven Co-op 的 [gmr](https://wiki.svencoop.com/Mapping/Model_Replacement_Guide) 和 [gsr](https://wiki.svencoop.com/Mapping/Sound_Replacement_Guide) 的资源替换功能一样。
 
 [链接](https://github.com/MetaHookSv/ResourceReplacer)
 

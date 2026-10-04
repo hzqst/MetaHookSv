@@ -114,9 +114,9 @@ The aggregator builds MetaHook, MetaHook_blob, all enabled plugins (including Be
 
 Build and install with `--config Debug`, then deploy the output to the game. Open `build/MetaHookSv.sln` in Visual Studio, select Debug/Win32, and configure the launcher's debugging command, working directory and `-insecure -game <mod-directory>` arguments for that game.
 
-## MetaHook Docs
+## MetaHook
 
-[Docs](https://github.com/MetaHookSv/MetaHook)
+[Link](https://github.com/MetaHookSv/MetaHook)
 
 ## Plugins
 
@@ -200,7 +200,7 @@ The updated spectator-view code credits to [halflife-updated](https://github.com
 
 [Link](https://github.com/MetaHookSv/SCCameraFix)
 
-### Better Spray (Sven Co-op / GoldSrc post-25th update)
+### BetterSpray (Sven Co-op / GoldSrc post-25th update)
 
 BetterSpray is a plugin for MetaHookSV that enhances Sven Co-op and GoldSrc’s spray system with support for high-res images, dynamic reloading and cloud sharing.
 
