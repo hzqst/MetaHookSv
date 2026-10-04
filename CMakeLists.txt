@@ -63,9 +63,11 @@ option(METAHOOKSV_BUILD_TOOLSRC "Build the CMake-based toolsrc/* components" ON)
 
 include(cmake/LaunchGame.cmake)
 
-# Component registry: <path>|<group>|<per-component option>|<injected dep vars>
+# Component registry: <path>|<group>|<per-component option>|<injected dep vars>|<default, optional>
 # Dependency vars are comma-separated; '-' means the component fetches everything
 # itself. (';' cannot be used: it is a CMake list separator even inside quotes.)
+# The optional fifth field is the option default: use 0 for components that
+# should stay out of the aggregate unless explicitly re-enabled with -D<opt>=ON.
 # Order matters only for shared vendor targets: the first component that adds
 # libglew_static / FreeImage owns them, later ones reuse them.
 set(METAHOOKSV_COMPONENT_DEFS
@@ -90,7 +92,10 @@ set(METAHOOKSV_COMPONENT_DEFS
     "PluginLibs/UtilHTTPClient_libcurl|pluginlibs|METAHOOKSV_BUILD_PLUGINLIB_UTILHTTPCLIENT_LIBCURL|METAHOOK_SOURCE_PATH,SCOPEEXIT_SOURCE_PATH"
     "PluginLibs/UtilThreadTask|pluginlibs|METAHOOKSV_BUILD_PLUGINLIB_UTILTHREADTASK|METAHOOK_SOURCE_PATH"
 
-    "toolsrc/SteamAppsLocation|toolsrc|METAHOOKSV_BUILD_TOOL_STEAMAPPSLOCATION|-"
+    # Standalone dev tool, currently unused by the aggregate; off by default so
+    # its EXE/PDB stay out of the shared install. Re-enable with
+    # -DMETAHOOKSV_BUILD_TOOL_STEAMAPPSLOCATION=ON.
+    "toolsrc/SteamAppsLocation|toolsrc|METAHOOKSV_BUILD_TOOL_STEAMAPPSLOCATION|-|0"
 )
 
 # Register a per-component option (default ON) for every entry.
@@ -98,7 +103,15 @@ foreach(_def IN LISTS METAHOOKSV_COMPONENT_DEFS)
     string(REPLACE "|" ";" _fields "${_def}")
     list(GET _fields 0 _path)
     list(GET _fields 2 _opt)
-    option(${_opt} "Build ${_path}" ON)
+    # The optional fifth field overrides the default (e.g. 0 keeps the component
+    # out of the aggregate unless explicitly enabled from the cache/command line).
+    list(LENGTH _fields _field_count)
+    if(_field_count GREATER 4)
+        list(GET _fields 4 _default)
+    else()
+        set(_default ON)
+    endif()
+    option(${_opt} "Build ${_path}" ${_default})
 endforeach()
 
 # ---------------------------------------------------------------------------
