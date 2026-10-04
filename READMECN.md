@@ -118,7 +118,7 @@ cmake --install build --config Release
 
 ## 如何调试
 
-启用可选的 Visual Studio 启动项目（需要兼容的 .NET SDK 和 .NET 8 runtime）：
+启用可选的 Visual Studio 启动项目（从源码构建 InstallerCLI 时需要兼容的 .NET SDK 和 .NET 8 runtime）：
 
 ```powershell
 cmake -S . -B build -G "Visual Studio 17 2022" -A Win32 -DMETAHOOKSV_ENABLE_LAUNCH_GAME=ON -DMETAHOOKSV_GAME_APPID=225840
@@ -133,6 +133,23 @@ cmake -S . -B build -G "Visual Studio 17 2022" -A Win32 -DMETAHOOKSV_ENABLE_LAUN
 每次构建启动项目均会部署，包括未修改源码时。私有 payload `build/launch-game/<Debug|Release>/install/output` 会重新生成，不改变普通 Install 的输出路径。聚合构建中的 Debug 插件和共享插件库统一使用正常模块名，与游戏插件列表及动态加载名称一致。InstallerCLI 保留已有插件选择，映射资源并选择 `svencoop.exe`、`MetaHook.exe` 或 `MetaHook_blob.exe`；根目录 PDB 也会按原文件名部署。游戏文件按既有 Installer 规则覆盖。停用组件后，它会从暂存 payload 消失，但不会自动卸载游戏目录中先前部署的文件。
 
 在 **工具 / 选项 / 项目和解决方案 / 生成并运行** 中，启用运行前构建过期项目，将构建或部署出错时的行为设为 **不启动**。重新部署前请退出游戏；文件占用会导致构建失败，不会自动结束进程。断点未绑定时可在调试器的“模块”窗口检查符号加载。此功能默认关闭，不影响普通构建或 CI。
+
+### 独立插件调试
+
+`Plugins/` 下的全部插件在独立配置时支持相同选项，单独 clone 插件仓库也可使用：
+
+```powershell
+cmake -S Plugins/HeapPatch -B build/heappatch -G "Visual Studio 17 2022" -A Win32 -DMETAHOOKSV_ENABLE_LAUNCH_GAME=ON
+cmake --build build/heappatch --config Debug --target LaunchGame
+```
+
+请先安装 MetaHook，并在游戏的 `plugins.lst` 中启用该插件。独立构建的 **DeployGame** 编译当前插件及依赖，暂存 Install 后只更新插件文件和资源，包括插件 PDB 及 mod 内的依赖库；不更新根目录 launcher/运行库，不创建快捷方式、不修改插件列表，也不删除已安装的旧文件。F5 启动已有 launcher，缺少既有安装会使配置失败。聚合构建的 **DeployGame** 仍部署全部启用组件。
+
+插件共享本仓库的 CMake 模块：优先使用 `METAHOOKSV_LAUNCH_GAME_MODULE_DIR` 指定的目录，其次使用所在聚合仓库；独立 clone 时将固定提交的源码包下载到构建目录，不拉取子模块、不配置聚合工程。关闭 LaunchGame 时不下载模块或 CLI。
+
+可通过 `METAHOOKSV_INSTALLER_CLI_EXECUTABLE` 指定自包含 CLI，以便离线使用。否则存在 `toolsrc/MetahookInstaller/src` 时从源码构建；缺失时从 Installer Release 下载 `MetahookInstaller-windows-x64.7z`，版本由 `METAHOOKSV_INSTALLER_RELEASE` 选择（默认 `latest`，也可填写固定 tag）。下载的 CLI 无需安装 .NET。插件部署要求支持 `-plugins-only` 的版本（v20261004c 或之后的版本）。
+
+下载使用发布资产提供的 SHA-256 校验，将 EXE 和实际 tag 缓存到 `build/launch-game/installer/<release>`。有效缓存可离线复用，不自动查询升级；切换 tag 或仅清理该私有缓存目录后重新下载。缓存损坏或 CLI 过旧时会明确报错。GitHub API 限流时可通过环境变量 `GH_TOKEN` 或 `GITHUB_TOKEN` 提供凭据，凭据不会写入缓存。每个配置在 `build/launch-game/<config>` 下使用各自 CLI 和全新 payload。VS 必须开启运行前构建，并将构建失败策略设为 **不启动**。
 
 ## MetaHook
 
