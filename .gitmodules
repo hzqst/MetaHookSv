@@ -81,3 +81,7 @@
 [submodule "thirdparty/libxml2"]
 	path = thirdparty/libxml2
 	url = https://github.com/GNOME/libxml2.git
+[submodule "PluginLibs/SteamAPIBridge"]
+	path = PluginLibs/SteamAPIBridge
+	url = https://github.com/MetaHookSv/SteamAPIBridge
+	branch = main

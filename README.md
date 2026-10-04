@@ -24,6 +24,12 @@ Most of plugins are still compatible with vanilla GoldSrc engine. please check e
 
 Download `MetaHookSv-windows-x86.7z`. It contains both normal and blob launchers.
 
+SteamScreenshots, BetterSpray and UtilHTTPClient_SteamAPI share `SteamAPIBridge.dll`
+under `metahook/dlls`. Its source is the `PluginLibs/SteamAPIBridge` submodule.
+Keep this DLL when deploying these consumers; retain the game's own `steam_api.dll`.
+The aggregate builds the bridge first and requires its pluginlibs option when a
+consumer is enabled. SteamAPI compatibility does not extend a plugin's engine-hook support.
+
 ## Risk of VAC ?
 
 There is no VAC ban reported yet.
