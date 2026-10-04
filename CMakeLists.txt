@@ -344,6 +344,10 @@ if(_targets_toolsrc)
 endif()
 add_custom_target(all-components)
 add_dependencies(all-components plugins pluginlibs tools ${_targets_metahook})
+# MetaHook's blob companion is not a component primary target, so add it here.
+if(TARGET MetaHook_blob)
+    add_dependencies(all-components MetaHook_blob)
+endif()
 
 # toolsrc/BSPLocalizationTools and toolsrc/MetahookInstaller are .NET 8 projects
 # driven by their own solution files; they are intentionally not aggregated here.
