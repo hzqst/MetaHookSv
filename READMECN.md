@@ -62,23 +62,21 @@ A. 因为 [SDL3-over-SDL2 兼容层](https://github.com/libsdl-org/sdl2-compat) 
 
 请设置 `r_lightmap 1`
 
-## 一键安装方式 (GUI安装器)
+## 一键安装方式
 
 1. 下载 release 并完整解压。
 2. 保持 `MetahookInstaller.exe` 与 `install/output/` 在一起。运行安装器，选择游戏后点击 **安装**。
 3. Sven Co-op 从 Steam 或生成的快捷方式启动；其他游戏使用生成的 `MetaHook for [GameName].lnk`。
 
-安装器根据自身 EXE 的位置查找 `install/output/`，不依赖当前工作目录。它会选择普通或 blob 启动器，将通用资源映射到所选 Mod，并安装运行库 DLL。已有 `plugins.lst` 中的选择会保留。
-
 如需脚本化安装，可使用同一压缩包中的 `MetahookInstallerCLI.exe`，执行的步骤与 GUI 相同：
 
 ```powershell
 .\MetahookInstallerCLI.exe -appid 225840                                         # 安装到 Steam 版 Sven Co-op
-.\MetahookInstallerCLI.exe -appid 70 -gamedir "D:\Games\Half-Life" -moddir gearbox  # 指定游戏根目录与 Mod
+.\MetahookInstallerCLI.exe -appid 70 -gamedir "D:\SteamLibrary\steamapps\common\Half-Life" -moddir gearbox  # 安装到 Steam 版 Half-Life : Opposing Force
 .\MetahookInstallerCLI.exe -appid 225840 -uninstall
 ```
 
-完整参数见[安装器文档](toolsrc/MetahookInstaller/README.md#cli-usage)。
+完整参数见 [MetahookInstaller](https://github.com/MetaHookSv/MetahookInstaller).
 
 ## 手动安装方式
 

@@ -38,29 +38,29 @@ The binaries or executables of Sven Co-op are not signed with digital signatures
 
 ## FAQ
 
-1. Why the game process hangs up / freeze occasionally for few seconds when playing on legacy / pirated version of GoldSrc game ?
+Q. Why the game process hangs up / freeze occasionally for few seconds when playing on legacy / pirated version of GoldSrc game ?
 
-A: This is because Valve uses `gethostbyname` with an non-existing hostname to query master servers. which is known to block the whole game loop for few seconds if the hostname is not available.
+    This is because Valve uses `gethostbyname` with an non-existing hostname to query master servers. which is known to block the whole game loop for few seconds if the hostname is not available.
 
-You can either add `-nomaster` to launch paramaters to prevent engine from querying invalid hostname or add `-steam` launch paramaters to force engine to use a valid master server source (which probably not gonna work on pirated game).
+    You can either add `-nomaster` to launch paramaters to prevent engine from querying invalid hostname or add `-steam` launch paramaters to force engine to use a valid master server source (which probably not gonna work on pirated game).
 
-2. Why the game process hangs up for tens of seconds on exiting / on restarting ?
+Q. Why the game process hangs up for tens of seconds on exiting / on restarting ?
 
-A: This is because ThreadGuard.dll is waiting for Valve's network threads or similiar things to exit before actually exiting the game. See [ThreadGuard](https://github.com/hzqst/MetaHookSv#threadguard) for more details.
+    This is because ThreadGuard.dll is waiting for Valve's network threads or similiar things to exit before actually exiting the game. See [ThreadGuard](https://github.com/hzqst/MetaHookSv#threadguard) for more details.
 
-3. Why I got black-screen in the main menu?
+Q. Why I got black-screen in the main menu?
 
-A. The [SDL3-over-SDL2 compatibility layer](https://github.com/libsdl-org/sdl2-compat) is not working well with software-rendering mode. please switch to OpenGL mode by adding `-gl` in the launch parameter.
+    The [SDL3-over-SDL2 compatibility layer](https://github.com/libsdl-org/sdl2-compat) is not working well with software-rendering mode. please switch to OpenGL mode by adding `-gl` in the launch parameter.
 
-4. What if game crashes due to out of memory ?
+Q. What if game crashes due to out of memory ?
 
-Try launch parameter: `-metahook_early_unload_mirrored_dll` (This saves ~120MB system memory)
+    try launch parameter: `-metahook_early_unload_mirrored_dll` (This saves ~120MB system memory)
 
-Try ConVars: `r_studio_lazy_load 1`, `r_leaf_lazy_load 1`
+    try ConVars: `r_studio_lazy_load 1`, `r_leaf_lazy_load 1`
 
-5. Why the terrain become all black when `sv_cheats 1` ?
+Q. Why the terrain become all black when `sv_cheats 1` ?
 
-Try `r_lightmap 1`.
+    try `r_lightmap 1`.
 
 ## One Click Installation (GUI Installer)
 
@@ -68,17 +68,15 @@ Try `r_lightmap 1`.
 2. Keep `MetahookInstaller.exe` and `install/output/` together. Run the installer, select the game, then click **Install**.
 3. Launch Sven Co-op from Steam or the generated shortcut. Other games use the generated `MetaHook for [GameName].lnk`.
 
-The installer reads `install/output/` relative to its executable, independently of the current working directory. It selects the normal or blob launcher, maps common resources to the selected mod, and installs runtime DLLs. Existing `plugins.lst` selections are preserved.
-
 For scripted installation, `MetahookInstallerCLI.exe` from the same archive performs the same steps:
 
 ```powershell
-.\MetahookInstallerCLI.exe -appid 225840                                         # Sven Co-op from Steam
-.\MetahookInstallerCLI.exe -appid 70 -gamedir "D:\Games\Half-Life" -moddir gearbox  # explicit game root and mod
+.\MetahookInstallerCLI.exe -appid 225840                                         # Install to Sven Co-op (Steam edition)
+.\MetahookInstallerCLI.exe -appid 70 -gamedir "D:\SteamLibrary\steamapps\common\Half-Life" -moddir gearbox  # Install to Half-Life : Opposing Force (Steam edition)
 .\MetahookInstallerCLI.exe -appid 225840 -uninstall
 ```
 
-See the [MetahookInstaller README](toolsrc/MetahookInstaller/README.md#cli-usage) for all arguments.
+See [MetahookInstaller](https://github.com/MetaHookSv/MetahookInstaller) for all arguments.
 
 ## Manual Installation
 
