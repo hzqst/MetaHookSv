@@ -1,10 +1,5 @@
 # Build outputs
-install/
-output/
-Debug/
-Release/
-Release_AVX2/
-intermediate/
+/install/
 
 # CMake aggregator build tree
 /build/
@@ -14,16 +9,7 @@ intermediate/
 /thirdparty/VC-LTL-*.7z
 /thirdparty/VC-LTL-*.7z.download
 /thirdparty/VC-LTL.lock
-Build/svencoop/metahook/dlls/
-Build/svencoop/metahook/plugins/
-Build/svencoop/metahook/gamedata/
-Build/MetaHook.exe
-Build/MetaHook_blob.exe
-Build/SDL2.dll
-Build/SDL3.dll
 
-tools/steam_appid.txt
-tools/global.props
 toolsrc/MetahookInstaller/MetahookInstallerAvalonia/bin
 toolsrc/MetahookInstaller/MetahookInstallerAvalonia/obj
 toolsrc/MetahookInstaller/MetahookInstallerAvalonia.Desktop/bin
@@ -33,50 +19,12 @@ toolsrc/MetahookInstaller/obj
 toolsrc/BSPLocalizationTools/.env
 toolsrc/BSPLocalizationTools/**/.env
 
-.vs/
-
 settings.local.json
 
 .vscode
 .pytest_cache
 
-# zcode (local skills link)
-.zcode/skills
-
-__pycache__
-
 *.lnk
-
-# Prerequisites
-*.d
-
-# Compiled Object files
-*.slo
-*.lo
-*.o
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-
-# Executables
-*.out
-*.app
-
-*.vcxproj.user
 
 # Basic Memory knowledge base (memory.db, config, logs stay local)
 memory/*.db*
