@@ -38,8 +38,13 @@ Shared `thirdparty/` submodules and the variables they feed:
 | `glew_fork` | `GLEW_SOURCE_PATH` | BulletPhysics, Renderer, SteamScreenshots |
 | `FreeImage_clone` | `FREEIMAGE_SOURCE_PATH` | Renderer, UtilAssetsIntegrity |
 | `tinyobjloader` | `TINYOBJLOADER_SOURCE_PATH` | BulletPhysics, Renderer |
+| `libxml2` | `LIBXML2_SOURCE_PATH` | BetterSpray |
 | `Chocobo1Hash` | `CHOCOBO1HASH_SOURCE_PATH` | BulletPhysics (shares `MetaHook/thirdparty/Chocobo1Hash`) |
 | `SteamSDK` | `STEAMSDK_SOURCE_PATH` | SteamScreenshots, UtilHTTPClient_SteamAPI |
+
+BetterSpray also consumes the shared ScopeExit, FreeImage, SteamSDK and
+MetaHook Chocobo1Hash sources, plus VGUI2Extension, UtilThreadTask and
+UtilHTTPClient_libcurl public interface headers.
 
 Two more dependencies are shared without a submodule:
 
@@ -77,6 +82,11 @@ Group targets `plugins`, `pluginlibs`, `tools` and `all-components` build a
 subset; MetaHook is built through its own `MetaHook` target. The two .NET tools
 under `toolsrc/` (`BSPLocalizationTools`, `MetahookInstaller`) are not part of
 the CMake build; build them with `dotnet build` on their own solution.
+
+The Windows workflow explicitly installs to `install/output` and packages only
+that tree plus the single-file MetahookInstaller executable. Default plugin list
+templates belong to `assets/svencoop/metahook/configs/`; the aggregator installs
+them, and the installer selects the template for the chosen game.
 
 Because components share one tree, each component's CMake must stay
 includable as a subproject (standalone builds are unaffected by these rules):

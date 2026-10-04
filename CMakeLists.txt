@@ -74,6 +74,7 @@ set(METAHOOKSV_COMPONENT_DEFS
     "Plugins/HeapPatch|plugins|METAHOOKSV_BUILD_PLUGIN_HEAPPATCH|METAHOOK_SOURCE_PATH"
     "Plugins/PrecacheManager|plugins|METAHOOKSV_BUILD_PLUGIN_PRECACHEMANAGER|METAHOOK_SOURCE_PATH"
     "Plugins/Renderer|plugins|METAHOOKSV_BUILD_PLUGIN_RENDERER|METAHOOK_SOURCE_PATH,VGUI2EXTENSION_SOURCE_PATH,UTILTHREADTASK_SOURCE_PATH,SCOPEEXIT_SOURCE_PATH,GLEW_SOURCE_PATH,FREEIMAGE_SOURCE_PATH,TINYOBJLOADER_SOURCE_PATH,SDL2_INCLUDE_DIRS,SDL3_INCLUDE_DIRS"
+    "Plugins/BetterSpray|plugins|METAHOOKSV_BUILD_PLUGIN_BETTERSPRAY|METAHOOK_SOURCE_PATH,VGUI2EXTENSION_SOURCE_PATH,UTILTHREADTASK_SOURCE_PATH,UTILHTTPCLIENT_SOURCE_PATH,STEAMSDK_SOURCE_PATH,FREEIMAGE_SOURCE_PATH,LIBXML2_SOURCE_PATH,SCOPEEXIT_SOURCE_PATH,CHOCOBO1HASH_SOURCE_PATH"
     "Plugins/ResourceReplacer|plugins|METAHOOKSV_BUILD_PLUGIN_RESOURCEREPLACER|METAHOOK_SOURCE_PATH"
     "Plugins/SCCameraFix|plugins|METAHOOKSV_BUILD_PLUGIN_SCCAMERAFIX|METAHOOK_SOURCE_PATH"
     "Plugins/SCModelDownloader|plugins|METAHOOKSV_BUILD_PLUGIN_SCMODELDOWNLOADER|METAHOOK_SOURCE_PATH,VGUI2EXTENSION_SOURCE_PATH,SCOPEEXIT_SOURCE_PATH"
@@ -188,10 +189,14 @@ function(metahooksv_dependency_path dep_var out_var)
         set(_path "${CMAKE_CURRENT_SOURCE_DIR}/Plugins/VGUI2Extension")
     elseif(dep_var STREQUAL "UTILTHREADTASK_SOURCE_PATH")
         set(_path "${CMAKE_CURRENT_SOURCE_DIR}/PluginLibs/UtilThreadTask")
+    elseif(dep_var STREQUAL "UTILHTTPCLIENT_SOURCE_PATH")
+        set(_path "${CMAKE_CURRENT_SOURCE_DIR}/PluginLibs/UtilHTTPClient_libcurl")
     elseif(dep_var STREQUAL "SCOPEEXIT_SOURCE_PATH")
         set(_path "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/ScopeExit")
     elseif(dep_var STREQUAL "FREEIMAGE_SOURCE_PATH")
         set(_path "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/FreeImage_clone")
+    elseif(dep_var STREQUAL "LIBXML2_SOURCE_PATH")
+        set(_path "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libxml2")
     elseif(dep_var STREQUAL "GLEW_SOURCE_PATH")
         set(_path "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glew_fork")
     elseif(dep_var STREQUAL "STEAMSDK_SOURCE_PATH")
@@ -330,6 +335,8 @@ endforeach()
 # and a `metahook` group target would differ from it only by case, which
 # Windows file names and Visual Studio project names cannot tell apart.
 # ---------------------------------------------------------------------------
+install(DIRECTORY assets/ DESTINATION .)
+
 foreach(_group_target IN ITEMS plugins pluginlibs tools)
     add_custom_target(${_group_target})
 endforeach()

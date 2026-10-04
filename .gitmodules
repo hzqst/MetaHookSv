@@ -73,3 +73,10 @@
 [submodule "thirdparty/tinyobjloader"]
 	path = thirdparty/tinyobjloader
 	url = https://github.com/hzqst/tinyobjloader
+[submodule "Plugins/BetterSpray"]
+	path = Plugins/BetterSpray
+	url = https://github.com/MetaHookSv/BetterSpray.git
+	branch = main
+[submodule "thirdparty/libxml2"]
+	path = thirdparty/libxml2
+	url = https://github.com/GNOME/libxml2.git
