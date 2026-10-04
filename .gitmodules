@@ -67,6 +67,7 @@
 [submodule "toolsrc/MetahookInstaller"]
 	path = toolsrc/MetahookInstaller
 	url = https://github.com/MetaHookSv/MetahookInstaller
+	branch = main
 [submodule "thirdparty/SteamSDK"]
 	path = thirdparty/SteamSDK
 	url = https://github.com/MetaHookSv/SteamSDK
