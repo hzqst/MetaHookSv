@@ -85,3 +85,6 @@
 	path = PluginLibs/SteamAPIBridge
 	url = https://github.com/MetaHookSv/SteamAPIBridge
 	branch = main
+[submodule "thirdparty/glfw"]
+	path = thirdparty/glfw
+	url = https://github.com/MetaHookSv/glfw
