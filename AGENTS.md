@@ -131,20 +131,7 @@ includable as a subproject (standalone builds are unaffected by these rules):
 
 ## When coding / building plan
 
-- Use a progressive disclosure approach for agent coding in this repository: start from high-level information in the Basic Memory knowledge base first, and only locate/read specific files or symbols when necessary, instead of expanding a large amount of context at once.
-
-#### Basic Memory knowledge base
-
-- **Storage & Structure**:
-  - Notes live in `<ProjectName>/memory/` (markdown with YAML frontmatter: `title`/`type`/`permalink`), tracked in git inside the MetaHook submodule repo.
-  - Basic Memory is registered as MCP server `basic-memory`.
-- **Project Discovery & Dynamic Routing**:
-  - Available projects are managed dynamically. When uncertain about available projects or when starting a topic-specific task, call `list_memory_projects` first to discover available `<ProjectName>`s.
-  - Autonomously select or switch to the appropriate project based on the user's intent, task context, or repository.
-- **Tool Usage**:
-  - Prefer Basic Memory MCP tools (`search_notes`, `read_note`, `write_note`, `edit_note`, `build_context`) for project knowledge.
-  - **Always explicitly specify the `project` argument** (e.g., `project="<ProjectName>"`) in tool calls to target the intended project, rather than relying on the default.
-  - Cross-project references should follow the `memory://<ProjectName>/...` URI format.
+- Use a progressive disclosure approach for agent coding in this repository: start from high-level information in the memory knowledge base first, and only locate/read specific files or symbols when necessary, instead of expanding a large amount of context at once.
 
 #### High-level information in this repository (read corresponding notes first)
 
@@ -164,5 +151,6 @@ includable as a subproject (standalone builds are unaffected by these rules):
 #### Progressive disclosure key points
 
 - Read notes first, then locate a single file/symbol; do not read the whole repository at once.
-- Prefer Basic Memory MCP tools for knowledge retrieval, and read file contents only when necessary.
+- Prefer Memory MCP tools for knowledge retrieval, and read file contents only when necessary.
+- Prefer Context-Engine MCP tools for code retrieval, and read source files only when necessary.
 - Prefer Context7 for external dependency/library usage (query on demand).

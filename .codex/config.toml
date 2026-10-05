@@ -1,9 +1,0 @@
-# Always ask for approval mode
-approval_policy = "never"
-sandbox_mode    = "workspace-write"
-
-[mcp_servers.basic-memory]
-command = "uvx"
-args = ["basic-memory", "mcp"]
-startup_timeout_sec = 120
-tool_timeout_sec = 300
