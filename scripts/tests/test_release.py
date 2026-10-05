@@ -72,7 +72,7 @@ class PublishingTests(unittest.TestCase):
     def test_complete_release_is_published_last(self):
         self.publish()
         self.assertFalse(self.api.release["draft"])
-        self.assertEqual(2, len(self.api.assets))
+        self.assertEqual(len(release.EXPECTED_ASSETS), len(self.api.assets))
         self.assertEqual(("PATCH", "releases/42", {"draft": False}), self.api.calls[-1])
 
     def test_missing_empty_extra_and_duplicate_assets_fail_before_api(self):

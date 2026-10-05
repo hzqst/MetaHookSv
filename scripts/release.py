@@ -22,6 +22,7 @@ PAGE_SIZE = 100
 UPLOAD_CHUNK_BYTES = 1024 * 1024
 EXPECTED_ASSETS = (
     "release-windows/MetaHookSv-windows-x86.7z",
+    "release-windows/MetaHookSv-windows-x86-debug-info.7z",
     "release-bsp-localization-tools/BSPLocalizationTools-windows-x64.7z",
 )
 INSTRUCTIONS = """Write release notes for the current MetaHookSv tag using the supplied evidence and read-only Git history queries.

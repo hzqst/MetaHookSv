@@ -103,14 +103,32 @@ jobs:
           }
           $staging = Join-Path $workspace 'build/package'
           $extracted = Join-Path $workspace 'build/package-verification'
+          $debugStaging = Join-Path $workspace 'build/package-debug-info'
+          $debugExtracted = Join-Path $workspace 'build/package-debug-info-verification'
           $archive = Join-Path $workspace 'build/artifacts/MetaHookSv-windows-x86.7z'
-          if ((Test-Path -LiteralPath $staging) -or (Test-Path -LiteralPath $extracted) -or (Test-Path -LiteralPath $archive)) {
+          $debugArchive = Join-Path $workspace 'build/artifacts/MetaHookSv-windows-x86-debug-info.7z'
+          $fresh = @($staging, $extracted, $debugStaging, $debugExtracted, $archive, $debugArchive)
+          if ($fresh | Where-Object { Test-Path -LiteralPath $_ }) {
             throw 'Packaging requires fresh staging, extraction and archive paths.'
           }
-          New-Item -ItemType Directory -Path (Join-Path $staging 'install'), (Split-Path $archive), $extracted -Force | Out-Null
+          New-Item -ItemType Directory -Path (Join-Path $staging 'install'), (Split-Path $archive), $extracted, $debugStaging, $debugExtracted -Force | Out-Null
           Copy-Item -LiteralPath $publishedFiles[0].FullName -Destination (Join-Path $staging 'MetahookInstaller.exe')
           Copy-Item -LiteralPath $cliFiles[0].FullName -Destination (Join-Path $staging 'MetahookInstallerCLI.exe')
+          # Main archive never ships PDBs; the debug-info archive carries each
+          # PDB next to its PE body in the same install-relative layout.
           Copy-Item -LiteralPath $payloadDirectory -Destination (Join-Path $staging 'install/output') -Recurse
+          $stagedPdbs = @(Get-ChildItem -LiteralPath $staging -Recurse -File -Filter '*.pdb' -ErrorAction SilentlyContinue)
+          if ($stagedPdbs.Count -gt 0) { $stagedPdbs | Remove-Item -Force }
+          foreach ($pdb in @(Get-ChildItem -LiteralPath $payloadDirectory -Recurse -File -Filter '*.pdb')) {
+            $relative = [System.IO.Path]::GetRelativePath($payloadDirectory, $pdb.FullName)
+            $destination = Join-Path (Join-Path $debugStaging 'install/output') $relative
+            New-Item -ItemType Directory -Path (Split-Path $destination) -Force | Out-Null
+            Copy-Item -LiteralPath $pdb.FullName -Destination $destination
+            $peer = [System.IO.Path]::ChangeExtension($pdb.FullName, $null).TrimEnd('.')
+            $peerFile = @("$peer.dll", "$peer.exe") | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
+            if (-not $peerFile) { throw "PDB has no matching PE to pair: $relative" }
+            Copy-Item -LiteralPath $peerFile -Destination (Join-Path (Split-Path $destination) (Split-Path $peerFile -Leaf))
+          }
           Push-Location $staging
           try {
             & 7z a -t7z $archive 'MetahookInstaller.exe' 'MetahookInstallerCLI.exe' 'install/output' -r
@@ -118,29 +136,48 @@ jobs:
           } finally {
             Pop-Location
           }
-          & 7z t $archive
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          & 7z x $archive "-o$extracted" -y
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $expectedFiles = @(Get-ChildItem -LiteralPath $staging -Recurse -File)
-          $actualFiles = @(Get-ChildItem -LiteralPath $extracted -Recurse -File)
-          if ($expectedFiles.Count -ne $actualFiles.Count) { throw 'Archive file count differs from staging.' }
-          foreach ($file in $expectedFiles) {
-            $relative = [System.IO.Path]::GetRelativePath($staging, $file.FullName)
-            $actual = Join-Path $extracted $relative
-            if (!(Test-Path -LiteralPath $actual -PathType Leaf) -or
-                (Get-FileHash -LiteralPath $file.FullName).Hash -ne (Get-FileHash -LiteralPath $actual).Hash) {
-              throw "Archive content differs: $relative"
-            }
+          Push-Location $debugStaging
+          try {
+            & 7z a -t7z $debugArchive 'install/output' -r
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          } finally {
+            Pop-Location
           }
-          if ((Get-Item -LiteralPath $archive).Length -eq 0) { throw 'Release archive is empty.' }
+          function Test-Archive($archivePath, $directoryPath, $extractionPath) {
+            & 7z t $archivePath
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            & 7z x $archivePath "-o$extractionPath" -y
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            $expectedFiles = @(Get-ChildItem -LiteralPath $directoryPath -Recurse -File)
+            $actualFiles = @(Get-ChildItem -LiteralPath $extractionPath -Recurse -File)
+            if ($expectedFiles.Count -ne $actualFiles.Count) { throw "Archive file count differs from staging: $archivePath" }
+            foreach ($file in $expectedFiles) {
+              $relative = [System.IO.Path]::GetRelativePath($directoryPath, $file.FullName)
+              $actual = Join-Path $extractionPath $relative
+              if (!(Test-Path -LiteralPath $actual -PathType Leaf) -or
+                  (Get-FileHash -LiteralPath $file.FullName).Hash -ne (Get-FileHash -LiteralPath $actual).Hash) {
+                throw "Archive content differs: $relative"
+              }
+            }
+            if ((Get-Item -LiteralPath $archivePath).Length -eq 0) { throw "Release archive is empty: $archivePath" }
+          }
+          Test-Archive $archive $staging $extracted
+          Test-Archive $debugArchive $debugStaging $debugExtracted
+          $mainPdbs = @(Get-ChildItem -LiteralPath $extracted -Recurse -File -Filter '*.pdb' -ErrorAction SilentlyContinue)
+          if ($mainPdbs.Count -gt 0) { throw 'Main archive must not contain PDB files.' }
+          if (@(Get-ChildItem -LiteralPath $debugExtracted -Recurse -File -Filter '*.pdb').Count -eq 0) {
+            throw 'Debug-info archive must contain PDB files.'
+          }
           "archive-path=$archive" >> $env:GITHUB_OUTPUT
+          "debug-archive-path=$debugArchive" >> $env:GITHUB_OUTPUT
 
-      - name: Upload release artifact
+      - name: Upload release artifacts
         uses: actions/upload-artifact@v4
         with:
           name: release-windows
-          path: ${{ steps.package.outputs.archive-path }}
+          path: |
+            ${{ steps.package.outputs.archive-path }}
+            ${{ steps.package.outputs.debug-archive-path }}
           if-no-files-found: error
           retention-days: 14
           compression-level: 0
