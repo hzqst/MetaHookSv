@@ -74,7 +74,7 @@ that component's scope, which shadow the component's own cache defaults.
 ```bash
 cmake -S . -B build -A Win32             # MSVC x86 is required by all components
 cmake --build build --config Release
-cmake --install build --config Release   # stages into build/output (CMAKE_INSTALL_PREFIX)
+cmake --install build --config Release   # stages into install/ (CMAKE_INSTALL_PREFIX)
 ```
 
 Per-component and per-group options (`METAHOOKSV_BUILD_*`) default to `ON`.

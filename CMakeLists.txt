@@ -21,7 +21,7 @@
 # Usage (MSVC x86 / Win32 is required by every component):
 #   cmake -S . -B build -A Win32
 #   cmake --build build --config Release
-#   cmake --install build --config Release      # stages into build/output
+#   cmake --install build --config Release      # stages into install/
 #
 # The aggregated sibling sources are injected per component (see the registry
 # below) so components consume the local submodules instead of downloading
@@ -46,7 +46,7 @@ option(METAHOOKSV_INIT_SUBMODULES "Run 'git submodule update --init --recursive'
 
 # Stage every component into one shared prefix unless one was chosen explicitly.
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/output" CACHE PATH "Shared install prefix for all components" FORCE)
+    set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/install" CACHE PATH "Shared install prefix for all components" FORCE)
 elseif(DEFINED CACHE{METAHOOKSV_INSTALL_PREFIX})
     # Build trees from the former ExternalProject superbuild kept the shared
     # prefix in METAHOOKSV_INSTALL_PREFIX; carry it over once.
