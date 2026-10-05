@@ -128,29 +128,3 @@ includable as a subproject (standalone builds are unaffected by these rules):
   directory-scoped variables instead.
 - Target, cache-variable, function and FetchContent names stay
   component-prefixed so they cannot collide.
-
-## When coding / building plan
-
-- Use a progressive disclosure approach for agent coding in this repository: start from high-level information in the memory knowledge base first, and only locate/read specific files or symbols when necessary, instead of expanding a large amount of context at once.
-
-#### High-level information in this repository (read corresponding notes first)
-
-- Project overview and codebase entry points: `project_overview`
-- Plugin system and development workflow: `plugin_system`
-- Build and verification: `build_and_verification`
-- Suggested commands: `suggested_commands`
-
-#### When notes are insufficient: source entry points (query and read on demand)
-
-- Core loader and logic: `MetaHook/src/`
-- Public API / interfaces: `MetaHook/include/metahook.h`, `MetaHook/include/Interface/`
-- Plugins and shared libraries: `Plugins/`, `PluginLibs/`
-- Build configuration: `MetaHook/CMakeLists.txt`, `MetaHook/cmake/`, per-component `CMakeLists.txt`
-- Runtime plugin loading config: `plugins.lst` (generated under the target game's `metahook/configs/`, not a tracked repo file)
-
-#### Progressive disclosure key points
-
-- Read notes first, then locate a single file/symbol; do not read the whole repository at once.
-- Prefer Memory MCP tools for knowledge retrieval, and read file contents only when necessary.
-- Prefer Context-Engine MCP tools for code retrieval, and read source files only when necessary.
-- Prefer Context7 for external dependency/library usage (query on demand).
