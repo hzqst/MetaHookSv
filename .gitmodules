@@ -88,3 +88,9 @@
 [submodule "thirdparty/glfw"]
 	path = thirdparty/glfw
 	url = https://github.com/MetaHookSv/glfw
+[submodule "thirdparty/bullet3"]
+	path = thirdparty/bullet3
+	url = https://github.com/hzqst/bullet3
+[submodule "thirdparty/curl"]
+	path = thirdparty/curl
+	url = https://github.com/curl/curl
