@@ -13,6 +13,51 @@ SPEC = importlib.util.spec_from_file_location("release_git", Path(__file__).pare
 release_git = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(release_git)
 
+# Invocation-scoped: the fixture repositories must not start background
+# maintenance that would rewrite .git storage while a read-only assertion runs.
+GIT_MAINTENANCE_DISABLED = ("-c", "gc.auto=0", "-c", "maintenance.auto=false")
+
+
+def worktree_snapshot(repository):
+    """Byte snapshot of work tree content only.
+
+    .git is excluded: loose objects, packs, packed-refs and index metadata are
+    Git's internal storage and can be rewritten by background maintenance while
+    the work tree bytes, HEAD, reference targets and staging area stay identical.
+    Comparing them would make the read-only assertions depend on timing.
+    """
+    repository = Path(repository)
+    snapshot = {}
+    for path in repository.rglob("*"):
+        if not path.is_file():
+            continue
+        relative = path.relative_to(repository)
+        if ".git" in relative.parts:
+            continue
+        snapshot[relative.as_posix()] = path.read_bytes()
+    return snapshot
+
+
+def repository_state(repository):
+    """Journal-free state of every repository in the tree: HEAD, reference
+    targets and staging area. Replaces the discarded .git byte comparison, so
+    accidental reference or index writes are still caught."""
+    repository = Path(repository)
+
+    def query(root, *arguments):
+        return subprocess.check_output(["git", "-C", str(root), *arguments], text=True,
+                                       stderr=subprocess.DEVNULL).strip()
+
+    roots = sorted({path.parent for path in repository.rglob(".git")} | {repository})
+    state = {}
+    for root in roots:
+        state[root.relative_to(repository).as_posix()] = (
+            query(root, "rev-parse", "--verify", "HEAD"),
+            query(root, "for-each-ref", "--format=%(refname) %(objectname)"),
+            query(root, "status", "--porcelain"),
+        )
+    return state
+
 
 class GitHistoryTests(unittest.TestCase):
     def setUp(self):
@@ -30,13 +75,26 @@ class GitHistoryTests(unittest.TestCase):
         self.git("add", ".")
         self.git("commit", "-qm", "fix source evidence")
         self.history = release_git.GitHistory(self.root, 100 * 1024)
+        self.state = repository_state(self.root)
 
     def git(self, *arguments):
-        return subprocess.check_output(["git", "-C", str(self.root), *arguments], text=True).strip()
+        return subprocess.check_output(["git", "-C", str(self.root), *GIT_MAINTENANCE_DISABLED, *arguments],
+                                       text=True).strip()
 
     def snapshot(self):
-        return {path.relative_to(self.root).as_posix(): path.read_bytes()
-                for path in self.root.rglob("*") if path.is_file()}
+        return worktree_snapshot(self.root)
+
+    def assert_repository_unchanged(self, before):
+        self.assertEqual(before, self.snapshot())
+        self.assertEqual(self.state, repository_state(self.root))
+
+    def test_repository_content_comparison_survives_storage_compaction(self):
+        # Git may pack loose objects or rewrite packed-refs in the background.
+        # Storage layout is not repository content, so the read-only invariant
+        # must hold across an explicit gc.
+        before = self.snapshot()
+        self.git("gc", "--quiet")
+        self.assert_repository_unchanged(before)
 
     def test_read_history_source_diff_and_tree_without_any_repository_write(self):
         before = self.snapshot()
@@ -50,7 +108,7 @@ class GitHistoryTests(unittest.TestCase):
         self.assertIn("+updated source", self.history.query({"command": "show"}))
         self.assertIn("+updated source", self.history.query({"command": "diff", "base": "v1"}))
         self.assertIn("code.cpp", self.history.query({"command": "ls-tree"}))
-        self.assertEqual(before, self.snapshot())
+        self.assert_repository_unchanged(before)
 
     def test_write_commands_option_injection_and_path_escape_are_rejected(self):
         before = self.snapshot()
@@ -67,7 +125,7 @@ class GitHistoryTests(unittest.TestCase):
         for arguments in cases:
             with self.subTest(arguments=arguments), self.assertRaises(release_git.QueryError):
                 self.history.query(arguments)
-        self.assertEqual(before, self.snapshot())
+        self.assert_repository_unchanged(before)
 
     def test_thirdparty_generated_and_binary_bodies_are_not_returned(self):
         for relative in ("thirdparty/vendor.cpp", "nested/thirdparty/vendor.cpp", "Build/generated.cpp", "nested/code.g.cs"):
@@ -112,7 +170,7 @@ class GitHistoryTests(unittest.TestCase):
             self.assertNotIn("GIT_EXTERNAL_DIFF", history.environment)
             self.assertNotIn("GIT_CONFIG_COUNT", history.environment)
             self.assertIn("+updated source", history.query({"command": "diff", "base": "v1"}))
-        self.assertEqual(before, self.snapshot())
+        self.assert_repository_unchanged(before)
 
     def test_non_utf8_source_is_bounded_after_decoding(self):
         (self.root / "legacy.cpp").write_bytes(b"\xff" * 20000)
@@ -144,7 +202,7 @@ class GitHistoryTests(unittest.TestCase):
         self.assertEqual(4, len(responses))
         self.assertIn("fix source evidence", responses[2]["result"]["content"][0]["text"])
         self.assertTrue(responses[3]["result"]["isError"])
-        self.assertEqual(before, self.snapshot())
+        self.assert_repository_unchanged(before)
 
 
 class SubmoduleGitHistoryTests(unittest.TestCase):
@@ -184,9 +242,11 @@ class SubmoduleGitHistoryTests(unittest.TestCase):
         self.link("thirdparty/Vendor")
         self.git(self.root, "commit", "-qm", "add excluded vendor submodule")
         self.history = release_git.GitHistory(self.root, 100 * 1024)
+        self.state = repository_state(self.root)
 
     def git(self, repository, *arguments):
-        return subprocess.check_output(["git", "-C", str(repository), *arguments], text=True).strip()
+        return subprocess.check_output(["git", "-C", str(repository), *GIT_MAINTENANCE_DISABLED, *arguments],
+                                       text=True).strip()
 
     def init_repo(self, repository):
         self.git(repository, "init", "-q")
@@ -199,8 +259,11 @@ class SubmoduleGitHistoryTests(unittest.TestCase):
         self.git(self.root, "update-index", "--add", "--cacheinfo", f"160000,{sha},{name}")
 
     def snapshot(self):
-        return {path.relative_to(self.root).as_posix(): path.read_bytes()
-                for path in self.root.rglob("*") if path.is_file()}
+        return worktree_snapshot(self.root)
+
+    def assert_repository_unchanged(self, before):
+        self.assertEqual(before, self.snapshot())
+        self.assertEqual(self.state, repository_state(self.root))
 
     def test_submodule_log_show_diff_and_tree_are_reachable_without_any_repository_write(self):
         before = self.snapshot()
@@ -214,7 +277,7 @@ class SubmoduleGitHistoryTests(unittest.TestCase):
         self.assertIn("+inner updated source", self.history.query({"command": "show", "submodule": "MetaSub"}))
         self.assertIn("+inner updated source", self.history.query({"command": "diff", "submodule": "MetaSub", "base": "v1"}))
         self.assertIn("inner.cpp", self.history.query({"command": "ls-tree", "submodule": "MetaSub"}))
-        self.assertEqual(before, self.snapshot())
+        self.assert_repository_unchanged(before)
 
     def test_submodule_names_are_validated_and_excluded(self):
         before = self.snapshot()
@@ -233,7 +296,7 @@ class SubmoduleGitHistoryTests(unittest.TestCase):
         for arguments in cases:
             with self.subTest(arguments=arguments), self.assertRaises(release_git.QueryError):
                 self.history.query(arguments)
-        self.assertEqual(before, self.snapshot())
+        self.assert_repository_unchanged(before)
 
     def test_submodule_absent_at_revision_is_rejected(self):
         with self.assertRaises(release_git.QueryError):
@@ -245,7 +308,7 @@ class SubmoduleGitHistoryTests(unittest.TestCase):
         self.assertLessEqual(len(self.history.query({"command": "show", "submodule": "MetaSub"}).encode("utf-8")), 128)
         with self.assertRaises(release_git.QueryError):
             self.history.query({"command": "log", "submodule": "MetaSub"})
-        self.assertEqual(before, self.snapshot())
+        self.assert_repository_unchanged(before)
 
     def test_real_stdio_submodule_round_trip(self):
         before = self.snapshot()
@@ -265,4 +328,4 @@ class SubmoduleGitHistoryTests(unittest.TestCase):
         self.assertEqual(4, len(responses))
         self.assertIn("inner fix evidence", responses[2]["result"]["content"][0]["text"])
         self.assertTrue(responses[3]["result"]["isError"])
-        self.assertEqual(before, self.snapshot())
+        self.assert_repository_unchanged(before)
