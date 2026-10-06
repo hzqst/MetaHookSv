@@ -39,7 +39,7 @@ jobs:
         run: |
           cmake -S . -B build -G "Visual Studio 17 2022" -A Win32 `
             "-DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install/output" `
-            -DMETAHOOKSV_INIT_SUBMODULES=OFF
+            -DMETAHOOKSV_INIT_SUBMODULES=OFF -DMETAHOOKSV_BUILD_AVX2=ON
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Build Release
@@ -99,6 +99,13 @@ jobs:
           foreach ($name in @('MetaHook.exe', 'MetaHook_blob.exe')) {
             if (!(Test-Path -LiteralPath (Join-Path $payloadDirectory $name) -PathType Leaf)) {
               throw "Missing installed launcher: $name"
+            }
+          }
+          # The AVX2 variants are probed ahead of the baseline plugin names, so a
+          # release must ship them; a stale user copy would otherwise be loaded.
+          foreach ($variant in @('BulletPhysics_AVX2.dll', 'Renderer_AVX2.dll')) {
+            if (!(Test-Path -LiteralPath (Join-Path $payloadDirectory "svencoop/metahook/plugins/$variant") -PathType Leaf)) {
+              throw "Missing installed AVX2 plugin variant: $variant"
             }
           }
           $staging = Join-Path $workspace 'build/package'
