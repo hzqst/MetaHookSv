@@ -13,6 +13,9 @@ SPEC = importlib.util.spec_from_file_location("release", Path(__file__).parents[
 release = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(release)
 NOTES = "## English\n- [Renderer] Fix cleanup.\n\n## \u4e2d\u6587\n- [Renderer] \u4fee\u590d\u6e05\u7406\u3002\n"
+# Invocation-scoped: the fixture repositories must not start background
+# maintenance while a test runs.
+GIT_MAINTENANCE_DISABLED = ("-c", "gc.auto=0", "-c", "maintenance.auto=false")
 
 
 class FakeGitHub:
@@ -184,7 +187,7 @@ class ContextTests(unittest.TestCase):
         self.head = self.git("rev-parse", "HEAD").strip()
 
     def git(self, *args):
-        return subprocess.check_output(["git", "-C", str(self.root), *args], text=True)
+        return subprocess.check_output(["git", "-C", str(self.root), *GIT_MAINTENANCE_DISABLED, *args], text=True)
 
     def commit(self, message):
         with (self.root / "code.cpp").open("a") as source:
