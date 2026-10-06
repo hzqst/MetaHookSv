@@ -62,6 +62,14 @@ jobs:
           python -B -m unittest discover -s scripts/tests -p 'test_release*.py' -v
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+      # Named separately so the read-only Git invariant is visible in CI on its
+      # own, independently of the suite discovery pattern above.
+      - name: Test read-only Git repository invariants
+        run: |
+          python -B -m unittest discover -s scripts/tests -p 'test_release_git.py' `
+            -k test_repository_content_comparison_survives_storage_compaction -v
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       - name: Publish MetahookInstaller
         run: |
           dotnet publish toolsrc/MetahookInstaller/src/MetahookInstallerAvalonia.Desktop/MetahookInstallerAvalonia.Desktop.csproj `
