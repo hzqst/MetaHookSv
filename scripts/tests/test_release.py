@@ -226,6 +226,52 @@ class ContextTests(unittest.TestCase):
         self.assertIn("TRUNCATED", context)
         self.assertNotIn("unique-vendor-body", context)
 
+    def inner_git(self, repository, *args):
+        return subprocess.check_output(["git", "-C", str(repository), *args], text=True).strip()
+
+    def submodule(self, name, message):
+        # Component code lives in a submodule; the aggregator only records a gitlink.
+        # Write it straight into the index so no .gitmodules entry or protocol
+        # allowance is needed.
+        repository = self.root.joinpath(*name.split("/"))
+        repository.mkdir(parents=True, exist_ok=True)
+        if not (repository / ".git").exists():
+            self.inner_git(repository, "init", "-q")
+            self.inner_git(repository, "config", "user.email", "test@example.invalid")
+            self.inner_git(repository, "config", "user.name", "Test")
+        with (repository / "component.cpp").open("a") as source:
+            source.write(message + "\n")
+        self.inner_git(repository, "add", ".")
+        self.inner_git(repository, "commit", "-qm", message)
+        sha = self.inner_git(repository, "rev-parse", "HEAD")
+        self.git("update-index", "--add", "--cacheinfo", f"160000,{sha},{name}")
+        self.git("commit", "-qm", f"bump {name}")
+        return repository
+
+    def test_context_inlines_submodule_inner_commit_subjects(self):
+        self.submodule("MetaSub", "inner-subject-marker")
+        (self.root / "code.cpp").write_text("root change\n", encoding="utf-8")
+        self.git("add", "code.cpp")
+        self.git("commit", "-qm", "root change")
+        head = self.git("rev-parse", "HEAD").strip()
+        context = release.build_context(self.root, [{"tag_name": "v1", "body": "style"}], "v3", head)
+        self.assertIn("SUBMODULE CHANGES (inner commit subjects)", context)
+        self.assertIn("inner-subject-marker", context)
+        self.assertLessEqual(len(context.encode("utf-8")), release.MAX_CONTEXT_BYTES)
+
+    def test_context_does_not_inline_excluded_submodules(self):
+        self.submodule("thirdparty/Vendor", "vendor-secret-marker")
+        head = self.git("rev-parse", "HEAD").strip()
+        context = release.build_context(self.root, [{"tag_name": "v1", "body": "style"}], "v3", head)
+        self.assertNotIn("vendor-secret-marker", context)
+
+    def test_first_release_with_submodule_stays_bounded(self):
+        self.submodule("MetaSub", "inner-subject-marker")
+        head = self.git("rev-parse", "HEAD").strip()
+        context = release.build_context(self.root, [], "v3", head)
+        self.assertIn("SUBMODULE CHANGES (inner commit subjects)", context)
+        self.assertLessEqual(len(context.encode("utf-8")), release.MAX_CONTEXT_BYTES)
+
 
 class NotesTests(unittest.TestCase):
     def test_invalid_provider_and_endpoint(self):

@@ -20,7 +20,7 @@ DIFF_EXCLUSIONS = [f":(exclude,glob,icase)**/{name}/**" for name in sorted(EXCLU
 DIFF_EXCLUSIONS += [f":(exclude,glob,icase)**/{name}" for name in EXCLUDED_FILES]
 TOOL = {
     "name": "git_history",
-    "description": "Read local Git history only. log lists commits; show reads a commit patch or a tracked text file at revision; diff compares base to revision; ls-tree lists tracked paths. Revisions must be ancestors of the release commit. No shell or arbitrary Git options. Output is bounded; paginate log with skip, or narrow by path.",
+    "description": "Read local Git history only. log lists commits; show reads a commit patch or a tracked text file at revision; diff compares base to revision; ls-tree lists tracked paths. Revisions must be ancestors of the release commit. Pass submodule=<path> (an aggregator path such as MetaHook or Plugins/Renderer) to read that component's own history at the gitlink recorded by the aggregator revision; submodule paths come from aggregator history and arbitrary commit names are rejected. No shell or arbitrary Git options. Output is bounded; paginate log with skip, or narrow by path.",
     "inputSchema": {
         "type": "object",
         "properties": {
@@ -28,6 +28,7 @@ TOOL = {
             "revision": {"type": "string", "description": "Commit/tag, default release HEAD"},
             "base": {"type": "string", "description": "Required for diff; optional for log to list base..revision; ancestor commit/tag"},
             "path": {"type": "string", "description": "Optional literal repository-relative path; show reads this file at revision"},
+            "submodule": {"type": "string", "description": "Optional aggregator submodule path (e.g. MetaHook, Plugins/Renderer); reads that component's own history at the gitlink recorded by the aggregator revision"},
             "limit": {"type": "integer", "minimum": 1, "maximum": 100},
             "skip": {"type": "integer", "minimum": 0, "maximum": 100000},
         },
@@ -53,9 +54,10 @@ class GitHistory:
                                  "GIT_TERMINAL_PROMPT": "0", "GIT_NO_REPLACE_OBJECTS": "1",
                                  "GIT_NO_LAZY_FETCH": "1", "LC_ALL": "C.UTF-8"})
         self.head = self.run("rev-parse", "--verify", "HEAD^{commit}", cap=128).strip()
+        self.submodules = self.link_map(self.head)
 
-    def run(self, *arguments, cap=MAX_QUERY_BYTES):
-        command = ["git", "--no-pager", "-C", str(self.repository),
+    def run(self, *arguments, cap=MAX_QUERY_BYTES, root=None):
+        command = ["git", "--no-pager", "-C", str(self.repository if root is None else root),
                    "-c", "core.fsmonitor=false", "-c", f"core.hooksPath={os.devnull}",
                    "-c", f"core.attributesFile={os.devnull}", "-c", "protocol.allow=never",
                    "-c", "credential.helper=", *arguments]
@@ -84,6 +86,36 @@ class GitHistory:
         self.run("merge-base", "--is-ancestor", resolved, self.head)
         return resolved
 
+    def link_map(self, revision):
+        listing = self.run("--literal-pathspecs", "ls-tree", "-r", revision, cap=1024 * 1024)
+        links = {}
+        for line in listing.splitlines():
+            meta, tab, path = line.partition("\t")
+            fields = meta.split(" ")
+            if tab and len(fields) == 3 and fields[0] == "160000":
+                links[path] = fields[2]
+        return links
+
+    def submodule_root(self, value):
+        parts = value.split("/") if isinstance(value, str) else []
+        if (not parts or value.startswith(("-", "/")) or "\\" in value or ":" in value
+                or any(ord(character) < 32 for character in value)
+                or any(part in ("", ".", "..", ".git") for part in parts)):
+            raise QueryError("Expected a component submodule path")
+        if value not in self.submodules:
+            raise QueryError("Unknown or nested submodule")
+        if {part.lower() for part in parts} & EXCLUDED_DIRECTORIES:
+            raise QueryError("Third-party submodule content is excluded")
+        return self.repository.joinpath(*parts)
+
+    def submodule_commit(self, revision, name):
+        entry = self.run("--literal-pathspecs", "ls-tree", "--full-tree", revision, "--", name, cap=512).strip()
+        meta, tab, _ = entry.partition("\t")
+        fields = meta.split(" ")
+        if not tab or len(fields) != 3 or fields[0] != "160000":
+            raise QueryError("Submodule was not present at that revision")
+        return fields[2]
+
     def query(self, arguments):
         self.queries += 1
         if self.queries > MAX_QUERIES or self.budget < 128:
@@ -104,24 +136,33 @@ class GitHistory:
         if path and (set(path.lower().split("/")) & EXCLUDED_DIRECTORIES
                      or any(fnmatch.fnmatchcase(path.lower().split("/")[-1], pattern) for pattern in EXCLUDED_FILES)):
             raise QueryError("Generated and third-party source bodies are excluded")
-        revision = self.revision(arguments.get("revision", self.head))
+        submodule = arguments.get("submodule")
+        if submodule is None:
+            root, pin = None, self.revision
+        else:
+            root = self.submodule_root(submodule)
+
+            def pin(value, name=submodule):
+                return self.submodule_commit(self.revision(value), name)
+
+        revision = pin(arguments.get("revision", self.head))
         paths = [f":(literal){path}" if path else ".", *DIFF_EXCLUSIONS]
         if command == "log":
             if "base" in arguments:
-                revision = f'{self.revision(arguments["base"])}..{revision}'
+                revision = f'{pin(arguments["base"])}..{revision}'
             query = ["log", "--no-show-signature", f"--max-count={limit}", f"--skip={skip}", "--format=%H %s%n%b", revision, "--", *paths]
         elif command == "show":
             query = (["show", "--no-show-signature", "--no-ext-diff", "--no-textconv", f"{revision}:{path}"] if path else
                      ["show", "--no-show-signature", "--no-ext-diff", "--no-textconv", "--ignore-submodules=all",
                       "--format=fuller", revision, "--", *paths])
         elif command == "diff":
-            base = self.revision(arguments.get("base"))
+            base = pin(arguments.get("base"))
             query = ["diff", "--no-ext-diff", "--no-textconv", "--ignore-submodules=all", "--no-renames", base, revision, "--", *paths]
         else:
             query = ["--literal-pathspecs", "ls-tree", "-r", "--name-only", revision, "--"]
             if path:
                 query.append(path)
-        result = self.run(*query, cap=min(MAX_QUERY_BYTES, self.budget))
+        result = self.run(*query, cap=min(MAX_QUERY_BYTES, self.budget), root=root)
         encoded = result.encode("utf-8")[:self.budget]
         self.budget -= len(encoded)
         return encoded.decode("utf-8", errors="ignore")

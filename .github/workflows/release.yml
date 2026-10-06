@@ -34,6 +34,7 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+          submodules: recursive
 
       - uses: actions/setup-python@v5
         with:

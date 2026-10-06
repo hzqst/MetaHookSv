@@ -145,3 +145,124 @@ class GitHistoryTests(unittest.TestCase):
         self.assertIn("fix source evidence", responses[2]["result"]["content"][0]["text"])
         self.assertTrue(responses[3]["result"]["isError"])
         self.assertEqual(before, self.snapshot())
+
+
+class SubmoduleGitHistoryTests(unittest.TestCase):
+    # The server runs with protocol.allow=never, but that only constrains its own
+    # queries. The fixture writes gitlink entries straight into the index instead of
+    # running `git submodule add`, so no protocol allowance and no .gitmodules entry
+    # are needed: GitHistory builds its map from ls-tree, not from .gitmodules.
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.init_repo(self.root)
+        (self.root / "aggregator.cpp").write_text("aggregator source\n", encoding="utf-8")
+        self.git(self.root, "add", ".")
+        self.git(self.root, "commit", "-qm", "aggregator initial history evidence")
+        self.git(self.root, "tag", "v0")
+        self.inner = self.root / "MetaSub"
+        self.inner.mkdir()
+        self.init_repo(self.inner)
+        (self.inner / "inner.cpp").write_text("inner initial source\n", encoding="utf-8")
+        self.git(self.inner, "add", ".")
+        self.git(self.inner, "commit", "-qm", "inner initial evidence")
+        self.link("MetaSub")
+        self.git(self.root, "commit", "-qm", "add MetaSub submodule")
+        self.git(self.root, "tag", "v1")
+        (self.inner / "inner.cpp").write_text("inner updated source\n", encoding="utf-8")
+        self.git(self.inner, "add", ".")
+        self.git(self.inner, "commit", "-qm", "inner fix evidence")
+        self.link("MetaSub")
+        self.git(self.root, "commit", "-qm", "bump MetaSub submodule")
+        vendor = self.root / "thirdparty" / "Vendor"
+        vendor.mkdir(parents=True)
+        self.init_repo(vendor)
+        (vendor / "vendor.cpp").write_text("vendor-secret-marker\n", encoding="utf-8")
+        self.git(vendor, "add", ".")
+        self.git(vendor, "commit", "-qm", "vendor content")
+        self.link("thirdparty/Vendor")
+        self.git(self.root, "commit", "-qm", "add excluded vendor submodule")
+        self.history = release_git.GitHistory(self.root, 100 * 1024)
+
+    def git(self, repository, *arguments):
+        return subprocess.check_output(["git", "-C", str(repository), *arguments], text=True).strip()
+
+    def init_repo(self, repository):
+        self.git(repository, "init", "-q")
+        self.git(repository, "config", "user.name", "Test")
+        self.git(repository, "config", "user.email", "test@example.invalid")
+
+    def link(self, name):
+        # Submodule paths always use forward slashes, even on Windows.
+        sha = self.git(self.root / Path(*name.split("/")), "rev-parse", "HEAD")
+        self.git(self.root, "update-index", "--add", "--cacheinfo", f"160000,{sha},{name}")
+
+    def snapshot(self):
+        return {path.relative_to(self.root).as_posix(): path.read_bytes()
+                for path in self.root.rglob("*") if path.is_file()}
+
+    def test_submodule_log_show_diff_and_tree_are_reachable_without_any_repository_write(self):
+        before = self.snapshot()
+        self.assertIn("inner fix evidence", self.history.query({"command": "log", "submodule": "MetaSub", "limit": 5}))
+        self.assertIn("inner initial evidence", self.history.query({"command": "log", "submodule": "MetaSub", "revision": "v1"}))
+        ranged = self.history.query({"command": "log", "submodule": "MetaSub", "base": "v1"})
+        self.assertIn("inner fix evidence", ranged)
+        self.assertNotIn("inner initial evidence", ranged)
+        self.assertEqual("inner initial source\n",
+                         self.history.query({"command": "show", "submodule": "MetaSub", "revision": "v1", "path": "inner.cpp"}))
+        self.assertIn("+inner updated source", self.history.query({"command": "show", "submodule": "MetaSub"}))
+        self.assertIn("+inner updated source", self.history.query({"command": "diff", "submodule": "MetaSub", "base": "v1"}))
+        self.assertIn("inner.cpp", self.history.query({"command": "ls-tree", "submodule": "MetaSub"}))
+        self.assertEqual(before, self.snapshot())
+
+    def test_submodule_names_are_validated_and_excluded(self):
+        before = self.snapshot()
+        cases = [{"command": "log", "submodule": "Missing"},
+                 {"command": "log", "submodule": "../MetaSub"},
+                 {"command": "log", "submodule": "MetaSub/.."},
+                 {"command": "log", "submodule": "MetaSub\\.."},
+                 {"command": "log", "submodule": "/MetaSub"},
+                 {"command": "log", "submodule": "MetaSub/.git"},
+                 {"command": "log", "submodule": "thirdparty/Vendor"},
+                 {"command": "log", "submodule": 123},
+                 {"command": "log", "submodule": "MetaSub", "path": "../inner.cpp"},
+                 {"command": "log", "submodule": "MetaSub", "revision": "HEAD:inner.cpp"},
+                 {"command": "log", "submodule": "MetaSub", "revision": "93e9eb1648f7cfe9c5b4d0d5a78707be825543d3"},
+                 {"command": "log", "submodule": "93e9eb1648f7cfe9c5b4d0d5a78707be825543d3"}]
+        for arguments in cases:
+            with self.subTest(arguments=arguments), self.assertRaises(release_git.QueryError):
+                self.history.query(arguments)
+        self.assertEqual(before, self.snapshot())
+
+    def test_submodule_absent_at_revision_is_rejected(self):
+        with self.assertRaises(release_git.QueryError):
+            self.history.query({"command": "log", "submodule": "MetaSub", "revision": "v0"})
+
+    def test_submodule_queries_respect_budget_and_do_not_mutate_repository(self):
+        before = self.snapshot()
+        self.history.budget = 128
+        self.assertLessEqual(len(self.history.query({"command": "show", "submodule": "MetaSub"}).encode("utf-8")), 128)
+        with self.assertRaises(release_git.QueryError):
+            self.history.query({"command": "log", "submodule": "MetaSub"})
+        self.assertEqual(before, self.snapshot())
+
+    def test_real_stdio_submodule_round_trip(self):
+        before = self.snapshot()
+        requests = [
+            {"id": 1, "method": "initialize", "params": {"protocolVersion": "2024-11-05"}},
+            {"method": "notifications/initialized"},
+            {"id": 2, "method": "tools/list"},
+            {"id": 3, "method": "tools/call", "params": {"name": "git_history",
+                                                         "arguments": {"command": "log", "submodule": "MetaSub"}}},
+            {"id": 4, "method": "tools/call", "params": {"name": "git_history",
+                                                         "arguments": {"command": "log", "submodule": "thirdparty/Vendor"}}},
+        ]
+        result = subprocess.run([sys.executable, "-B", str(Path(release_git.__file__)), "--repository", str(self.root),
+                                 "--budget", "10000"], input="\n".join(json.dumps(dict(request, jsonrpc="2.0")) for request in requests),
+                                text=True, capture_output=True, timeout=30, check=True)
+        responses = [json.loads(line) for line in result.stdout.splitlines()]
+        self.assertEqual(4, len(responses))
+        self.assertIn("inner fix evidence", responses[2]["result"]["content"][0]["text"])
+        self.assertTrue(responses[3]["result"]["isError"])
+        self.assertEqual(before, self.snapshot())
