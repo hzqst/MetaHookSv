@@ -46,7 +46,7 @@ Q. Why the game process hangs up / freeze occasionally for few seconds when play
 
 Q. Why the game process hangs up for tens of seconds on exiting / on restarting ?
 
-    This is because ThreadGuard.dll is waiting for Valve's network threads or similiar things to exit before actually exiting the game. See [ThreadGuard](https://github.com/hzqst/MetaHookSv#threadguard) for more details.
+    This is because ThreadGuard.dll is waiting for Valve's network threads or similiar things to exit before actually exiting the game. See [ThreadGuard](https://github.com/MetaHookSv/ThreadGuard) for more details.
 
 Q. Why I got black-screen in the main menu?
 
@@ -102,15 +102,15 @@ For a normal engine that imports SDL2, install both `install/output/SDL2.dll` an
 
 Clone recursively, then run from the repository root in PowerShell:
 
-```powershell
-git clone --recursive https://github.com/hzqst/MetaHookSv
-Set-Location MetaHookSv
+```bash
+git clone --recursive https://github.com/MetaHookSv/MetaHookSv
+cd MetaHookSv
 cmake -S . -B build -G "Visual Studio 17 2022" -A Win32 "-DCMAKE_INSTALL_PREFIX=$PWD/install/output"
 cmake --build build --config Release --parallel 2
 cmake --install build --config Release
 ```
 
-The aggregator builds MetaHook, MetaHook_blob, all enabled plugins (including BetterSpray), shared plugin libraries and CMake tools. Plugin list templates are owned by `assets/svencoop/metahook/configs/` and installed with the output. The .NET tools build separately; see [MetahookInstaller](toolsrc/MetahookInstaller/README.md).
+The aggregator builds MetaHook, MetaHook_blob, all enabled plugins (including BetterSpray), shared plugin libraries and CMake tools. Plugin list templates are owned by `assets/svencoop/metahook/configs/` and installed with the output. The .NET tools build separately; see [MetahookInstaller](https://github.com/MetaHookSv/MetahookInstaller).
 
 `windows.yml` builds, tests and packages the installer EXE plus the complete `install/output/` tree. Tag releases use this Windows artifact and the separate BSP tool artifact, with bilingual AI release notes.
 
@@ -118,7 +118,7 @@ The aggregator builds MetaHook, MetaHook_blob, all enabled plugins (including Be
 
 Enable the optional Visual Studio startup project (building InstallerCLI from source requires a compatible .NET SDK and .NET 8 runtime):
 
-```powershell
+```bash
 cmake -S . -B build -G "Visual Studio 17 2022" -A Win32 -DMETAHOOKSV_ENABLE_LAUNCH_GAME=ON -DMETAHOOKSV_GAME_APPID=225840
 # For a custom installation/mod, also pass:
 # "-DMETAHOOKSV_GAME_DIRECTORY=D:/Games/Half-Life" -DMETAHOOKSV_GAME_APPID=70 -DMETAHOOKSV_GAME_MOD=gearbox
@@ -136,7 +136,7 @@ In **Tools / Options / Projects and Solutions / Build and Run**, enable building
 
 All repositories under `Plugins/` support the same options when configured independently, including outside this checkout:
 
-```powershell
+```bash
 cmake -S Plugins/HeapPatch -B build/heappatch -G "Visual Studio 17 2022" -A Win32 -DMETAHOOKSV_ENABLE_LAUNCH_GAME=ON
 cmake --build build/heappatch --config Debug --target LaunchGame
 ```
@@ -150,6 +150,8 @@ Plugins share this repository's CMake module: `METAHOOKSV_LAUNCH_GAME_MODULE_DIR
 Downloads use the release's SHA-256 when provided and cache the executable and resolved tag under `build/launch-game/installer/<release>`. A valid cache is reused offline, without checking for newer releases. Select another tag or remove only that private cache directory to update; corrupt or incompatible caches report an error. GitHub API rate limits can be avoided with `GH_TOKEN` or `GITHUB_TOKEN` in the environment; tokens are not cached. Each configuration receives its own CLI and fresh payload under `build/launch-game/<config>`. Keep Visual Studio's build-before-run enabled and its build-error behavior set to **Do not launch**.
 
 ## MetaHook
+
+The GoldSrc game launcher, mirroring `hl.exe` with capability of client-side modding.
 
 [Link](https://github.com/MetaHookSv/MetaHook)
 
@@ -173,7 +175,7 @@ A plugin that transform player model into ragdoll when player is dead or being c
 
 [Link](https://github.com/MetaHookSv/BulletPhysics)
 
-### MetaRenderer
+### Renderer
 
 A graphic enhancement plugin that modifiy the original render engine.
 
@@ -187,7 +189,7 @@ This plugin can block studio-event sound spamming with controllable cvars.
 
 [Link](https://github.com/MetaHookSv/StudioEvents)
 
-### SteamScreenshots (Sven Co-op / GoldSrc post-25th update)
+### SteamScreenshots
 
 This plugin intercepts `snapshot` command and replace it with `ISteamScreenshots` interface which will upload the snapshot to Steam Screenshot Manager.
 
@@ -227,7 +229,7 @@ This plugin replaces in-game resources (mainly model and sound files) at runtime
 
 [Link](https://github.com/MetaHookSv/ResourceReplacer)
 
-### SCCameraFix  (Sven Co-op only)
+### SCCameraFix (Sven Co-op only)
 
 This plugin fixes camera glitching in spectator-view for Sven Co-op.
 
@@ -235,11 +237,19 @@ The updated spectator-view code credits to [halflife-updated](https://github.com
 
 [Link](https://github.com/MetaHookSv/SCCameraFix)
 
-### BetterSpray (Sven Co-op / GoldSrc post-25th update)
+### BetterSpray
 
 BetterSpray is a plugin for MetaHookSV that enhances Sven Co-op and GoldSrc’s spray system with support for high-res images, dynamic reloading and cloud sharing.
 
 [Link](https://github.com/MetaHookSv/BetterSpray)
+
+### HUDColor
+
+Changing HUD colors in game.
+
+Also as a good template for you to build your own plugin.
+
+https://github.com/MetaHookSv/HUDColor
 
 ### ABCEnchance (third-party) (Sven Co-op only)
 
@@ -254,14 +264,6 @@ ABCEnchance is a metahook plugin that provides experience improvement for Sven c
 7. Some useless blood efx
 
 https://github.com/DrAbcrealone/ABCEnchance
-
-### HUDColor (third-party) (Sven Co-op only)
-
-Changing HUD colors in game.
-
-Also as a good template for you to build your own plugin.
-
-https://github.com/hzqst/HUDColor
 
 ### MetaAudio (third-party) (GoldSrc only)
 
@@ -283,7 +285,7 @@ Server-Side part of the mod it´s done with a modifidied reGame dll.
 
 https://github.com/ollerjoaco/Trinity-EngineSv
 
-### Better Spray (third-party)
+### BetterSpray (third-party)
 
 BetterSpray is a plugin for MetaHookSV that enhances Sven Co-op’s spray system with support for multiple images, true aspect ratios, and dynamic reloading.
 

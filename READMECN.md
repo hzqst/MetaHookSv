@@ -102,15 +102,15 @@ A. 因为 [SDL3-over-SDL2 兼容层](https://github.com/libsdl-org/sdl2-compat) 
 
 递归克隆后，在仓库根目录使用 PowerShell 执行：
 
-```powershell
+```bash
 git clone --recursive https://github.com/hzqst/MetaHookSv
-Set-Location MetaHookSv
+cd MetaHookSv
 cmake -S . -B build -G "Visual Studio 17 2022" -A Win32 "-DCMAKE_INSTALL_PREFIX=$PWD/install/output"
 cmake --build build --config Release --parallel 2
 cmake --install build --config Release
 ```
 
-聚合管线构建 MetaHook、MetaHook_blob、所有启用的插件（包括 BetterSpray）、共享插件库和 CMake 工具。插件列表模板由 `assets/svencoop/metahook/configs/` 管理并安装到输出目录。.NET 工具单独构建，详见[安装器文档](toolsrc/MetahookInstaller/README.md)。
+聚合管线构建 MetaHook、MetaHook_blob、所有启用的插件（包括 BetterSpray）、共享插件库和 CMake 工具。插件列表模板由 `assets/svencoop/metahook/configs/` 管理并安装到输出目录。.NET 工具单独构建，详见[安装器文档](https://github.com/MetaHookSv/MetahookInstaller)。
 
 `windows.yml` 构建、验证并打包安装器 EXE 和完整的 `install/output/`。标签发布复用统一 Windows artifact 与独立 BSP 工具 artifact，并继续生成中英文 AI release notes。
 
@@ -118,7 +118,7 @@ cmake --install build --config Release
 
 启用可选的 Visual Studio 启动项目（从源码构建 InstallerCLI 时需要兼容的 .NET SDK 和 .NET 8 runtime）：
 
-```powershell
+```bash
 cmake -S . -B build -G "Visual Studio 17 2022" -A Win32 -DMETAHOOKSV_ENABLE_LAUNCH_GAME=ON -DMETAHOOKSV_GAME_APPID=225840
 # 自定义安装路径或 Mod 可另外传入：
 # "-DMETAHOOKSV_GAME_DIRECTORY=D:/Games/Half-Life" -DMETAHOOKSV_GAME_APPID=70 -DMETAHOOKSV_GAME_MOD=gearbox
@@ -136,7 +136,7 @@ cmake -S . -B build -G "Visual Studio 17 2022" -A Win32 -DMETAHOOKSV_ENABLE_LAUN
 
 `Plugins/` 下的全部插件在独立配置时支持相同选项，单独 clone 插件仓库也可使用：
 
-```powershell
+```bash
 cmake -S Plugins/HeapPatch -B build/heappatch -G "Visual Studio 17 2022" -A Win32 -DMETAHOOKSV_ENABLE_LAUNCH_GAME=ON
 cmake --build build/heappatch --config Debug --target LaunchGame
 ```
@@ -150,6 +150,8 @@ cmake --build build/heappatch --config Debug --target LaunchGame
 下载使用发布资产提供的 SHA-256 校验，将 EXE 和实际 tag 缓存到 `build/launch-game/installer/<release>`。有效缓存可离线复用，不自动查询升级；切换 tag 或仅清理该私有缓存目录后重新下载。缓存损坏或 CLI 过旧时会明确报错。GitHub API 限流时可通过环境变量 `GH_TOKEN` 或 `GITHUB_TOKEN` 提供凭据，凭据不会写入缓存。每个配置在 `build/launch-game/<config>` 下使用各自 CLI 和全新 payload。VS 必须开启运行前构建，并将构建失败策略设为 **不启动**。
 
 ## MetaHook
+
+核心启动器，用于启动游戏并加载插件
 
 [链接](https://github.com/MetaHookSv/MetaHook)
 
@@ -171,7 +173,7 @@ cmake --build build/heappatch --config Debug --target LaunchGame
 
 [链接](https://github.com/MetaHookSv/BulletPhysics)
 
-### MetaRenderer
+### Renderer
 
 替换了原版的图形渲染引擎，极大提升了渲染性能，使用了黑科技提升你的画质和帧率。
 
@@ -183,7 +185,7 @@ cmake --build build/heappatch --config Debug --target LaunchGame
 
 [链接](https://github.com/MetaHookSv/StudioEvents)
 
-### SteamScreenshots (只支持Sven Co-op)
+### SteamScreenshots
 
 该插件捕获了`snapshot`截图命令，将其重定向到Steam客户端自带的截图功能上。
 
@@ -198,10 +200,6 @@ cmake --build build/heappatch --config Debug --target LaunchGame
 控制台参数 : `scmodel_downloadlatest 0 / 1` 设为1时自动下载最新版本的模型（如果有多个版本的模型）
 
 [链接](https://github.com/MetaHookSv/SCModelDownloader)
-
-### CommunicationDemo (只支持Sven Co-op)
-
-该插件开放了一个接口用于进行客户端-服务端双向通信。
 
 ### PrecacheManager
 
@@ -223,7 +221,7 @@ cmake --build build/heappatch --config Debug --target LaunchGame
 
 [链接](https://github.com/MetaHookSv/ResourceReplacer)
 
-### SCCameraFix  (只支持Sven Co-op)
+### SCCameraFix (只支持Sven Co-op)
 
 该插件修复了Sven Co-op的观察者模式下摄像机视角/画面高频抖动的问题。
 
@@ -231,11 +229,17 @@ cmake --build build/heappatch --config Debug --target LaunchGame
 
 [链接](https://github.com/MetaHookSv/SCCameraFix)
 
-### BetterSpray (只支持Sven Co-op / GoldSrc 25周年更新后)
+### BetterSpray
 
-BetterSpray 是一个 MetaHookSV 插件，为 Sven Co-op 和 GoldSrc 的喷漆系统提供高分辨率图像、动态重载和云分享支持。
+为 Sven Co-op 和 GoldSrc 的喷漆系统提供高分辨率图像、动态重载和云分享支持。
 
 [链接](https://github.com/MetaHookSv/BetterSpray)
+
+### HUDColor
+
+该插件可以修改游戏中HUD的颜色。
+
+也可以作为参考模板在该插件的基础上构建你自己的插件。
 
 ### ABCEnchance (第三方) (只支持Sven Co-op)
 
@@ -251,12 +255,6 @@ BetterSpray 是一个 MetaHookSV 插件，为 Sven Co-op 和 GoldSrc 的喷漆�
 
 https://github.com/DrAbcrealone/ABCEnchance
 
-### HUDColor (第三方) (只支持Sven Co-op)
-
-该插件可以修改游戏中HUD的颜色。
-
-也可以作为参考模板在该插件的基础上构建你自己的插件。
-
 https://github.com/hzqst/HUDColor
 
 
@@ -271,3 +269,19 @@ https://github.com/LAGonauta/MetaAudio
 * 由于 MetaAudio 会拦截引擎中所有播放声音的接口。`MetaAudio.dll` 在 `plugins.lst` 中必须处于任何依赖于引擎中声音组件的插件之前 (例如：CaptionMod) ，你需要调整加载顺序以防止这些插件的功能被 MetaAudio 干扰。使用错误的加载顺序可能会导致这些插件无法正常工作。
 
 * 具体解释：如果两个插件都对同一个函数（比如引擎中播放声音的api）挂了hook，那么后安装的hook会先于先安装的hook执行，而我们必须确保hook的调用链为`hw.dll`->`CaptionMod.dll`->`MetaAudio.dll`才能让CaptionMod根据声音播放字幕的功能不被MetaAudio拦截，也就是说`CaptionMod.dll`必须在`MetaAudio.dll`之后安装hook。
+
+### Trinity-EngineSv (third-party) (GoldSrc only)
+
+This is a Trinity Engine porting for Counter Strike 1.6
+
+Client-Side part of the mod it´s introduced as a metahook plugin.
+
+Server-Side part of the mod it´s done with a modifidied reGame dll.
+
+https://github.com/ollerjoaco/Trinity-EngineSv
+
+### BetterSpray (third-party)
+
+BetterSpray is a plugin for MetaHookSV that enhances Sven Co-op’s spray system with support for multiple images, true aspect ratios, and dynamic reloading.
+
+https://github.com/KazamiiSC/BetterSpray-Sven-Coop
