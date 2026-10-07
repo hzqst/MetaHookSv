@@ -263,13 +263,13 @@ ABCEnchance is a metahook plugin that provides experience improvement for Sven c
 6. Teammate health, armor and name display with floattext.
 7. Some useless blood efx
 
-https://github.com/DrAbcrealone/ABCEnchance
+[Link](https://github.com/DrAbcrealone/ABCEnchance)
 
 ### halflife-cli (third-party)
 
 halflife-cli turns Half-Life / Sven Co-op into a CLI-driven program for automated testing or agent operation: it keeps the game window hidden but alive so screenshots still work, accepts console commands over stdin, and serves Source RCON on a random localhost port for discovery and remote control. A bundled Python MCP server exposes the game as callable tools (`launch_game`, `run_command`, `send_key`, `snapshot`, ...).
 
-https://github.com/DrAbcOfficial/halflife-cli
+[Link](https://github.com/DrAbcOfficial/halflife-cli)
 
 ### MetaAudio (third-party) (GoldSrc only)
 
@@ -277,7 +277,7 @@ This is a plugin for GoldSrc that adds OpenAL support to its sound system. This 
 
 Since SvEngine uses FMOD as it's sound system, you really shouldn't use this plugin in Sven Co-op.
 
-https://github.com/LAGonauta/MetaAudio
+[Link](https://github.com/LAGonauta/MetaAudio)
 
 * MetaAudio blocks goldsrc engine's sound system and replaces with it's own sound engine. You should always put `MetaAudio.dll` on top of any other plugins that rely on goldsrc engine's sound system (i.e CaptionMod) in the `plugins.lst` to prevent those plugins from being blocked by MetaAudio.
 
@@ -289,10 +289,10 @@ Client-Side part of the mod it´s introduced as a metahook plugin.
 
 Server-Side part of the mod it´s done with a modifidied reGame dll.
 
-https://github.com/ollerjoaco/Trinity-EngineSv
+[Link](https://github.com/ollerjoaco/Trinity-EngineSv)
 
 ### BetterSpray (third-party)
 
 BetterSpray is a plugin for MetaHookSV that enhances Sven Co-op’s spray system with support for multiple images, true aspect ratios, and dynamic reloading.
 
-https://github.com/KazamiiSC/BetterSpray-Sven-Coop
+[Link](https://github.com/KazamiiSC/BetterSpray-Sven-Coop)
