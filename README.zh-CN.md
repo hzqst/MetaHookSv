@@ -20,7 +20,7 @@
 
 ## 下载
 
-[GitHub Release](https://github.com/hzqst/MetaHookSv/releases)
+[GitHub Release](https://github.com/MetaHookSv/MetaHookSv/releases)
 
 * 因某些国内线路问题无法下载或下载过慢的话可以百度搜索GitHub加速镜像.随便找一个国内能直接访问的加速镜像站，往里复制从Release页面上复制的下载地址即可加速下载。
 
@@ -46,7 +46,7 @@ Q: 因为V社在引擎的主循环中使用了一个阻塞式API `gethostbyname`
 
 2. 为什么游戏进程会在退出/重启时卡住很久 ?
 
-Q: 因为 ThreadGuard.dll 会在游戏退出时强制等待 V社创建的网络线程退出，以防游戏意外崩溃。具体见 [ThreadGuard](https://github.com/hzqst/MetaHookSv#threadguard)。
+Q: 因为 ThreadGuard.dll 会在游戏退出时强制等待 V社创建的网络线程退出，以防游戏意外崩溃。具体见 [ThreadGuard](https://github.com/MetaHookSv/MetaHookSv#threadguard)。
 
 3. 为什么我进到主菜单界面之后就会黑屏？
 
@@ -103,7 +103,7 @@ A. 因为 [SDL3-over-SDL2 兼容层](https://github.com/libsdl-org/sdl2-compat) 
 递归克隆后，在仓库根目录使用 PowerShell 执行：
 
 ```bash
-git clone --recursive https://github.com/hzqst/MetaHookSv
+git clone --recursive https://github.com/MetaHookSv/MetaHookSv
 cd MetaHookSv
 cmake -S . -B build -G "Visual Studio 17 2022" -A Win32 "-DCMAKE_INSTALL_PREFIX=$PWD/install/output"
 cmake --build build --config Release --parallel 2

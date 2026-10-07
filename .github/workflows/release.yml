@@ -14,11 +14,11 @@ concurrency:
 
 jobs:
   windows:
-    if: github.repository == 'hzqst/MetaHookSv'
+    if: github.repository == 'MetaHookSv/MetaHookSv'
     uses: ./.github/workflows/windows.yml
 
   bsp-localization-tools:
-    if: github.repository == 'hzqst/MetaHookSv'
+    if: github.repository == 'MetaHookSv/MetaHookSv'
     uses: ./.github/workflows/bsp-localization-tools.yml
 
   notes:

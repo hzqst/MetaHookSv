@@ -20,7 +20,7 @@ Most of plugins are still compatible with vanilla GoldSrc engine. please check e
 
 ## Download
 
-[GitHub Release](https://github.com/hzqst/MetaHookSv/releases)
+[GitHub Release](https://github.com/MetaHookSv/MetaHookSv/releases)
 
 Download `MetaHookSv-windows-x86.7z`. It contains both normal and blob launchers.
 
