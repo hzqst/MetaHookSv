@@ -241,6 +241,8 @@ cmake --build build/heappatch --config Debug --target LaunchGame
 
 也可以作为参考模板在该插件的基础上构建你自己的插件。
 
+[链接](https://github.com/MetaHookSv/HUDColor)
+
 ### ABCEnchance (第三方) (只支持Sven Co-op)
 
 该插件提供以下功能：
@@ -253,10 +255,13 @@ cmake --build build/heappatch --config Debug --target LaunchGame
 6. 漂浮文字显示队友的血量、护甲、名字.
 7. 其他一些没什么用的特效
 
-https://github.com/DrAbcrealone/ABCEnchance
+[链接](https://github.com/DrAbcrealone/ABCEnchance)
 
-https://github.com/hzqst/HUDColor
+### halflife-cli (第三方)
 
+halflife-cli 将 Half-Life / Sven Co-op 变成一个可由 CLI 驱动的程序，用于自动化测试或 agent 操作：它隐藏游戏窗口但保持进程存活（以便截图），通过 stdin 接收控制台命令，并在本机随机端口上提供 Source RCON 服务以便发现与远程控制。随包提供的 Python MCP 服务器将游戏暴露为可调用的工具（`launch_game`、`run_command`、`send_key`、`snapshot` 等）。
+
+[链接](https://github.com/DrAbcOfficial/halflife-cli)
 
 ### MetaAudio (第三方) (只支持GoldSrc)
 
@@ -264,7 +269,7 @@ https://github.com/hzqst/HUDColor
 
 由于SvEngine已经使用FMOD作为声音引擎了，你不应该在Sven Co-op上使用该插件
 
-https://github.com/LAGonauta/MetaAudio
+[链接](https://github.com/LAGonauta/MetaAudio)
 
 * 由于 MetaAudio 会拦截引擎中所有播放声音的接口。`MetaAudio.dll` 在 `plugins.lst` 中必须处于任何依赖于引擎中声音组件的插件之前 (例如：CaptionMod) ，你需要调整加载顺序以防止这些插件的功能被 MetaAudio 干扰。使用错误的加载顺序可能会导致这些插件无法正常工作。
 
@@ -278,16 +283,10 @@ https://github.com/LAGonauta/MetaAudio
 
 该 Mod 的服务端部分通过一份修改过的 reGame dll 实现。
 
-https://github.com/ollerjoaco/Trinity-EngineSv
+[链接](https://github.com/ollerjoaco/Trinity-EngineSv)
 
 ### BetterSpray (第三方)
 
 BetterSpray 是 MetaHookSv 的一个插件，为 Sven Co-op 的喷漆系统提供多张图片、真实宽高比以及动态重载支持。
 
-https://github.com/KazamiiSC/BetterSpray-Sven-Coop
-
-### halflife-cli (第三方)
-
-halflife-cli 将 Half-Life / Sven Co-op 变成一个可由 CLI 驱动的程序，用于自动化测试或 agent 操作：它隐藏游戏窗口但保持进程存活（以便截图），通过 stdin 接收控制台命令，并在本机随机端口上提供 Source RCON 服务以便发现与远程控制。随包提供的 Python MCP 服务器将游戏暴露为可调用的工具（`launch_game`、`run_command`、`send_key`、`snapshot` 等）。
-
-https://github.com/DrAbcOfficial/halflife-cli
+[链接](https://github.com/KazamiiSC/BetterSpray-Sven-Coop)

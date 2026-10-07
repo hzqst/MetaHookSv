@@ -249,7 +249,7 @@ Changing HUD colors in game.
 
 Also as a good template for you to build your own plugin.
 
-https://github.com/MetaHookSv/HUDColor
+[Link](https://github.com/MetaHookSv/HUDColor)
 
 ### ABCEnchance (third-party) (Sven Co-op only)
 
@@ -264,6 +264,12 @@ ABCEnchance is a metahook plugin that provides experience improvement for Sven c
 7. Some useless blood efx
 
 https://github.com/DrAbcrealone/ABCEnchance
+
+### halflife-cli (third-party)
+
+halflife-cli turns Half-Life / Sven Co-op into a CLI-driven program for automated testing or agent operation: it keeps the game window hidden but alive so screenshots still work, accepts console commands over stdin, and serves Source RCON on a random localhost port for discovery and remote control. A bundled Python MCP server exposes the game as callable tools (`launch_game`, `run_command`, `send_key`, `snapshot`, ...).
+
+https://github.com/DrAbcOfficial/halflife-cli
 
 ### MetaAudio (third-party) (GoldSrc only)
 
@@ -290,9 +296,3 @@ https://github.com/ollerjoaco/Trinity-EngineSv
 BetterSpray is a plugin for MetaHookSV that enhances Sven Co-op’s spray system with support for multiple images, true aspect ratios, and dynamic reloading.
 
 https://github.com/KazamiiSC/BetterSpray-Sven-Coop
-
-### halflife-cli (third-party)
-
-halflife-cli turns Half-Life / Sven Co-op into a CLI-driven program for automated testing or agent operation: it keeps the game window hidden but alive so screenshots still work, accepts console commands over stdin, and serves Source RCON on a random localhost port for discovery and remote control. A bundled Python MCP server exposes the game as callable tools (`launch_game`, `run_command`, `send_key`, `snapshot`, ...).
-
-https://github.com/DrAbcOfficial/halflife-cli
