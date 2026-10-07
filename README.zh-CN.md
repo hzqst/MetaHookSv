@@ -157,11 +157,15 @@ cmake --build build/heappatch --config Debug --target LaunchGame
 
 ## 插件列表
 
+### VGUI2Extension
+
+VGUI2Extension 是一个 VGUI2 的 modding 框架，为其他插件提供对 VGUI2 组件安装 hook / patch 的能力。
+
+[链接](https://github.com/MetaHookSv/VGUI2Extension)
+
 ### CaptionMod
 
-这是一个使用VGUI2来显示字幕、翻译英文HUD消息和VGUI文本的插件。
-
-除此之外还为游戏添加了起源风格的聊天框以及高DPI支持。
+这是一个使用VGUI2来显示字幕、翻译英文HUD消息和VGUI文本的插件，除此之外还为游戏添加了起源风格的聊天框以及高DPI支持。
 
 对Sven Co-op而言，该插件修复了游戏中的汉字无法显示或者乱码的问题。
 

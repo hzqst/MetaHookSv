@@ -6,7 +6,7 @@ Mainly to keep you a good game experience in Sven Co-op or any other GoldSrc bas
 
 Most of plugins are still compatible with vanilla GoldSrc engine. please check each plugin's doc for plugin compatibility.
 
-[中文README](READMECN.md)
+[中文README](README.zh-CN.md)
 
 ### Compatibility (metahook loader only)
 
