@@ -91,7 +91,10 @@ function(metahooksv_add_launch_game)
     file(CONFIGURE OUTPUT "${_launch_root}/dummy_launcher.cpp"
         CONTENT "int main() { return 0; }\n" @ONLY)
     add_executable(LaunchGame EXCLUDE_FROM_ALL "${_launch_root}/dummy_launcher.cpp")
-    set(_arguments "-insecure -game \"${_game_mod}\"")
+    # The engine reads the raw command line (Valve_InitCmdLine -> COM_CheckParm ->
+    # IsGameSubscribed) and never strips quotes, so a quoted mod name makes it
+    # fall back to the app's base game (typically valve).
+    set(_arguments "-insecure -game ${_game_mod}")
     if(NOT METAHOOKSV_GAME_ARGUMENTS STREQUAL "")
         string(APPEND _arguments " ${METAHOOKSV_GAME_ARGUMENTS}")
     endif()

@@ -126,7 +126,7 @@ cmake -S . -B build -G "Visual Studio 17 2022" -A Win32 -DMETAHOOKSV_ENABLE_LAUN
 
 打开 `build/MetaHookSv.sln`，选择 Debug/Win32，将 **Launch-debugging / LaunchGame** 设为启动项目，然后按 **F5**。该流程会增量编译所有启用组件和 InstallerCLI，Install 到私有暂存目录，通过 InstallerCLI 部署，再由原生 C++ 调试器启动实际游戏启动器。dummy 程序不会被启动或安装。也支持 Release/Win32。
 
-`METAHOOKSV_GAME_DIRECTORY` 默认留空，由 InstallerCLI 按 AppID 查找 Steam 游戏目录；显式填写时优先使用填写值。`METAHOOKSV_GAME_MOD` 默认使用该 AppID 的基础 Mod。`METAHOOKSV_GAME_ARGUMENTS` 追加到 `-insecure -game "<mod>"` 之后。配置阶段会构建 CLI 并只读查询游戏，不执行部署；游戏缺失或无效会使配置失败。更换游戏、引擎或安装位置后需重新配置 CMake。
+`METAHOOKSV_GAME_DIRECTORY` 默认留空，由 InstallerCLI 按 AppID 查找 Steam 游戏目录；显式填写时优先使用填写值。`METAHOOKSV_GAME_MOD` 默认使用该 AppID 的基础 Mod。`METAHOOKSV_GAME_ARGUMENTS` 追加到 `-insecure -game <mod>` 之后。配置阶段会构建 CLI 并只读查询游戏，不执行部署；游戏缺失或无效会使配置失败。更换游戏、引擎或安装位置后需重新配置 CMake。
 
 每次构建启动项目均会部署，包括未修改源码时。私有 payload `build/launch-game/<Debug|Release>/install/output` 会重新生成，不改变普通 Install 的输出路径。聚合构建中的 Debug 插件和共享插件库统一使用正常模块名，与游戏插件列表及动态加载名称一致。InstallerCLI 保留已有插件选择，映射资源并选择 `svencoop.exe`、`MetaHook.exe` 或 `MetaHook_blob.exe`；根目录 PDB 也会按原文件名部署。游戏文件按既有 Installer 规则覆盖。停用组件后，它会从暂存 payload 消失，但不会自动卸载游戏目录中先前部署的文件。
 
