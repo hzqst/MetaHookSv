@@ -290,3 +290,9 @@ https://github.com/ollerjoaco/Trinity-EngineSv
 BetterSpray is a plugin for MetaHookSV that enhances Sven Co-op’s spray system with support for multiple images, true aspect ratios, and dynamic reloading.
 
 https://github.com/KazamiiSC/BetterSpray-Sven-Coop
+
+### halflife-cli (third-party)
+
+halflife-cli turns Half-Life / Sven Co-op into a CLI-driven program for automated testing or agent operation: it keeps the game window hidden but alive so screenshots still work, accepts console commands over stdin, and serves Source RCON on a random localhost port for discovery and remote control. A bundled Python MCP server exposes the game as callable tools (`launch_game`, `run_command`, `send_key`, `snapshot`, ...).
+
+https://github.com/DrAbcOfficial/halflife-cli

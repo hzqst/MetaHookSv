@@ -270,18 +270,24 @@ https://github.com/LAGonauta/MetaAudio
 
 * 具体解释：如果两个插件都对同一个函数（比如引擎中播放声音的api）挂了hook，那么后安装的hook会先于先安装的hook执行，而我们必须确保hook的调用链为`hw.dll`->`CaptionMod.dll`->`MetaAudio.dll`才能让CaptionMod根据声音播放字幕的功能不被MetaAudio拦截，也就是说`CaptionMod.dll`必须在`MetaAudio.dll`之后安装hook。
 
-### Trinity-EngineSv (third-party) (GoldSrc only)
+### Trinity-EngineSv (第三方) (只支持GoldSrc)
 
-This is a Trinity Engine porting for Counter Strike 1.6
+这是为 Counter-Strike 1.6 移植的 Trinity Engine
 
-Client-Side part of the mod it´s introduced as a metahook plugin.
+该 Mod 的客户端部分以 MetaHook 插件的形式引入。
 
-Server-Side part of the mod it´s done with a modifidied reGame dll.
+该 Mod 的服务端部分通过一份修改过的 reGame dll 实现。
 
 https://github.com/ollerjoaco/Trinity-EngineSv
 
-### BetterSpray (third-party)
+### BetterSpray (第三方)
 
-BetterSpray is a plugin for MetaHookSV that enhances Sven Co-op’s spray system with support for multiple images, true aspect ratios, and dynamic reloading.
+BetterSpray 是 MetaHookSv 的一个插件，为 Sven Co-op 的喷漆系统提供多张图片、真实宽高比以及动态重载支持。
 
 https://github.com/KazamiiSC/BetterSpray-Sven-Coop
+
+### halflife-cli (第三方)
+
+halflife-cli 将 Half-Life / Sven Co-op 变成一个可由 CLI 驱动的程序，用于自动化测试或 agent 操作：它隐藏游戏窗口但保持进程存活（以便截图），通过 stdin 接收控制台命令，并在本机随机端口上提供 Source RCON 服务以便发现与远程控制。随包提供的 Python MCP 服务器将游戏暴露为可调用的工具（`launch_game`、`run_command`、`send_key`、`snapshot` 等）。
+
+https://github.com/DrAbcOfficial/halflife-cli
