@@ -7,3 +7,4 @@ PrecacheManager.dll
 ThreadGuard.dll
 HeapPatch.dll
 ResourceReplacer.dll
+InterpFix.dll
