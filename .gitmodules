@@ -94,3 +94,7 @@
 [submodule "thirdparty/curl"]
 	path = thirdparty/curl
 	url = https://github.com/curl/curl
+[submodule "Plugins/InterpFix"]
+	path = Plugins/InterpFix
+	url = https://github.com/MetaHookSv/InterpFix.git
+	branch = main

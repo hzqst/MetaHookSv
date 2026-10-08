@@ -225,6 +225,12 @@ VGUI2Extension 是一个 VGUI2 的 modding 框架，为其他插件提供对 VGU
 
 [链接](https://github.com/MetaHookSv/ResourceReplacer)
 
+### InterpFix
+
+该插件修复高频快照耗尽 `ex_interp` 所需位置历史时，实体及其关联效果消失的问题。请求的插值时间早于有效历史时，使用最旧有效姿态保持实体可渲染。
+
+[链接](https://github.com/MetaHookSv/InterpFix)
+
 ### SCCameraFix (只支持Sven Co-op)
 
 该插件修复了Sven Co-op的观察者模式下摄像机视角/画面高频抖动的问题。

@@ -229,6 +229,12 @@ This plugin replaces in-game resources (mainly model and sound files) at runtime
 
 [Link](https://github.com/MetaHookSv/ResourceReplacer)
 
+### InterpFix
+
+This plugin keeps packet entities and their associated effects visible when high snapshot rates exhaust the position history required by `ex_interp`. It uses the oldest valid pose when the requested interpolation time is outside the history window.
+
+[Link](https://github.com/MetaHookSv/InterpFix)
+
 ### SCCameraFix (Sven Co-op only)
 
 This plugin fixes camera glitching in spectator-view for Sven Co-op.
