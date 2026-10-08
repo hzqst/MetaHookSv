@@ -41,6 +41,7 @@ Shared `thirdparty/` submodules and the variables they feed:
 | `libxml2` | `LIBXML2_SOURCE_PATH` | BetterSpray |
 | `Chocobo1Hash` | `CHOCOBO1HASH_SOURCE_PATH` | BulletPhysics (shares `MetaHook/thirdparty/Chocobo1Hash`) |
 | `SteamSDK` | `STEAMSDK_SOURCE_PATH` | SteamScreenshots, UtilHTTPClient_SteamAPI |
+| `FormatValidation` | `FORMAT_VALIDATION_SOURCE_PATH` | MetaHook, all Plugins and PluginLibs |
 
 BetterSpray also consumes the shared ScopeExit, FreeImage, SteamSDK and
 MetaHook Chocobo1Hash sources, plus VGUI2Extension, UtilThreadTask and
@@ -62,13 +63,31 @@ repository `thirdparty/` as a submodule (if not already present), accept
 `FetchContent` for the pinned commit — do **not** bundle a submodule inside the
 component.
 
+## Shared C/C++ formatting
+
+`thirdparty/FormatValidation` owns the DiligentCore-style configuration and pinned
+clang-format 23.1.3 validator. Consumers use `FORMAT_VALIDATION_SOURCE_PATH` (CMake
+or environment); standalone consumers otherwise fetch the retained fixed commit.
+Only the aggregator carries a tooling submodule. Do not move the v1.0.0 module tag.
+
+Use `FORMAT_VALIDATION_ONLY=ON` to configure without a compiler or native SDKs.
+`format-check` and `format` are explicit targets, with component-prefixed targets
+in the aggregate. The root aliases cover all MetaHook/Plugins/PluginLibs sources,
+including components disabled for native builds. CI uses the same check target.
+Normal native builds do not depend on formatting or install the Python package.
+
+CMake generates an ignored `.clang-format` in consumer roots; edit the shared
+configuration, not those generated files. Preserve `.clang-format-ignore` exclusions
+for external SDK trees and unmodified third-party copies. Keep MSVC inline assembly
+in explicit blocks: formatting unbraced assembly can absorb following C++ statements.
+
 ## Top-level CMake aggregator
 
 The root `CMakeLists.txt` adds every enabled component to **one CMake tree**
 with `add_subdirectory()` (binary dirs mirror the source paths, e.g.
 `build/Plugins/Renderer`), so one configure yields one solution with the real
 component targets. It resolves the shared VC-LTL and injects each component's
-`<NAME>_SOURCE_PATH` set (see the registry in the file) as normal variables of
+`<NAME>_SOURCE_PATH` set (see `cmake/Components.cmake`) as normal variables of
 that component's scope, which shadow the component's own cache defaults.
 
 ```bash

@@ -98,3 +98,6 @@
 	path = Plugins/InterpFix
 	url = https://github.com/MetaHookSv/InterpFix.git
 	branch = main
+[submodule "thirdparty/FormatValidation"]
+	path = thirdparty/FormatValidation
+	url = https://github.com/MetaHookSv/FormatValidation.git

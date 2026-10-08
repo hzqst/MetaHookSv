@@ -29,3 +29,6 @@ settings.local.json
 # Basic Memory knowledge base (memory.db, config, logs stay local)
 memory/*.db*
 memory/config.json
+
+# Generated from the shared FormatValidation source during CMake configuration.
+/.clang-format
