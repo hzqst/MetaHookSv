@@ -38,29 +38,29 @@
 
 ## 常见问题
 
-1. 为什么使用盗版/旧版引擎进行游戏时，游戏进程会周期性卡住几秒？
+Q. 为什么使用盗版/旧版引擎进行游戏时，游戏进程会周期性卡住几秒？
 
-Q: 因为V社在引擎的主循环中使用了一个阻塞式API `gethostbyname` 来请求域名。该API在请求已失效的域名的时候就是会阻塞当前进程直到超时返回的，这是Windows的设定。
+A: 因为V社在引擎的主循环中使用了一个阻塞式API `gethostbyname` 来请求域名。该API在请求已失效的域名的时候就是会阻塞当前进程直到超时返回的，这是Windows的设定。
 
 你可以通过在启动项中添加 `-nomaster` 或 `-steam` 来缓解该问题。（ `-steam` 在某些NoSteam盗版版本上可能导致游戏无法启动）
 
-2. 为什么游戏进程会在退出/重启时卡住很久 ?
+Q. 为什么游戏进程会在退出/重启时卡住很久 ?
 
-Q: 因为 ThreadGuard.dll 会在游戏退出时强制等待 V社创建的网络线程退出，以防游戏意外崩溃。具体见 [ThreadGuard](https://github.com/MetaHookSv/MetaHookSv#threadguard)。
+A: 因为 ThreadGuard.dll 会在游戏退出时强制等待 V社创建的网络线程退出，以防游戏意外崩溃。具体见 [ThreadGuard](https://github.com/MetaHookSv/MetaHookSv#threadguard)。
 
-3. 为什么我进到主菜单界面之后就会黑屏？
+Q. 为什么我进到主菜单界面之后就会黑屏？
 
 A. 因为 [SDL3-over-SDL2 兼容层](https://github.com/libsdl-org/sdl2-compat) 在软件渲染模式下无法正常工作。请切换至 OpenGL 模式以解决问题（在游戏启动项中添加 `-gl` 即可）。
 
-4. 如果游戏占用内存过多(超过2.7GB)导致崩溃怎么办？
+Q. 如果游戏占用内存过多(超过2.7GB)导致崩溃怎么办？
 
-尝试添加以下启动项：`-metahook_early_unload_mirrored_dll` （该选项可节约大约120MB内存）
+A. 尝试添加以下启动项：`-metahook_early_unload_mirrored_dll` （该选项可节约大约120MB内存）
 
-尝试启用以下控制台参数：`r_studio_lazy_load 1`， `r_leaf_lazy_load 1`
+A. 尝试启用以下控制台参数：`r_studio_lazy_load 1`， `r_leaf_lazy_load 1`
 
-5. 为什么在 `sv_cheats 1` 之后，地形变全黑了 ?
+Q. 为什么在 `sv_cheats 1` 之后，地形变全黑了 ?
 
-请设置 `r_lightmap 1`
+A. 请设置 `r_lightmap 1`
 
 ## 一键安装方式
 

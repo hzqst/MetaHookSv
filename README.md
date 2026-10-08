@@ -40,27 +40,27 @@ The binaries or executables of Sven Co-op are not signed with digital signatures
 
 Q. Why the game process hangs up / freeze occasionally for few seconds when playing on legacy / pirated version of GoldSrc game ?
 
-    This is because Valve uses `gethostbyname` with an non-existing hostname to query master servers. which is known to block the whole game loop for few seconds if the hostname is not available.
+A: This is because Valve uses `gethostbyname` with an non-existing hostname to query master servers. which is known to block the whole game loop for few seconds if the hostname is not available.
 
-    You can either add `-nomaster` to launch paramaters to prevent engine from querying invalid hostname or add `-steam` launch paramaters to force engine to use a valid master server source (which probably not gonna work on pirated game).
+A: You can either add `-nomaster` to launch paramaters to prevent engine from querying invalid hostname or add `-steam` launch paramaters to force engine to use a valid master server source (which probably not gonna work on pirated game).
 
 Q. Why the game process hangs up for tens of seconds on exiting / on restarting ?
 
-    This is because ThreadGuard.dll is waiting for Valve's network threads or similiar things to exit before actually exiting the game. See [ThreadGuard](https://github.com/MetaHookSv/ThreadGuard) for more details.
+A: This is because ThreadGuard.dll is waiting for Valve's network threads or similiar things to exit before actually exiting the game. See [ThreadGuard](https://github.com/MetaHookSv/ThreadGuard) for more details.
 
 Q. Why I got black-screen in the main menu?
 
-    The [SDL3-over-SDL2 compatibility layer](https://github.com/libsdl-org/sdl2-compat) is not working well with software-rendering mode. please switch to OpenGL mode by adding `-gl` in the launch parameter.
+A: The [SDL3-over-SDL2 compatibility layer](https://github.com/libsdl-org/sdl2-compat) is not working well with software-rendering mode. please switch to OpenGL mode by adding `-gl` in the launch parameter.
 
 Q. What if game crashes due to out of memory ?
 
-    try launch parameter: `-metahook_early_unload_mirrored_dll` (This saves ~120MB system memory)
+A: try launch parameter: `-metahook_early_unload_mirrored_dll` (This saves ~120MB system memory)
 
-    try ConVars: `r_studio_lazy_load 1`, `r_leaf_lazy_load 1`
+A: try ConVars: `r_studio_lazy_load 1`, `r_leaf_lazy_load 1`
 
 Q. Why the terrain become all black when `sv_cheats 1` ?
 
-    try `r_lightmap 1`.
+A: try `r_lightmap 1`.
 
 ## One Click Installation (GUI Installer)
 
