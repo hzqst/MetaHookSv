@@ -98,7 +98,7 @@ For a non-blob engine that imports SDL2, copy both `SDL2.dll` and `SDL3.dll` int
 
 3. [Git for Windows](https://gitforwindows.org/)
 
-4. Python 3.8+ for gamedata synchronization, and the .NET 8 SDK for MetahookInstaller.
+4. Python 3.8+ for gamedata synchronization, and the .NET 10 SDK for MetahookInstaller.
 
 ## Build Instruction
 
@@ -116,7 +116,7 @@ The aggregator builds MetaHook, MetaHook_blob, all enabled plugins (including Be
 
 ## Debugging
 
-Enable the optional Visual Studio startup project (building InstallerCLI from source requires a compatible .NET SDK and .NET 8 runtime):
+Enable the optional Visual Studio startup project (building InstallerCLI from source requires a compatible .NET SDK and .NET 10 runtime):
 
 ```bash
 sctipts/debug-<GameName>.bat

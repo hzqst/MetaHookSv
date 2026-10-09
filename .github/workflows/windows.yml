@@ -29,7 +29,7 @@ jobs:
 
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '10.0.x'
 
       - uses: actions/setup-python@v5
         with:
@@ -73,20 +73,19 @@ jobs:
       - name: Publish MetahookInstaller
         run: |
           dotnet publish toolsrc/MetahookInstaller/src/MetahookInstallerAvalonia.Desktop/MetahookInstallerAvalonia.Desktop.csproj `
-            -c Release -r win-x64 --self-contained true `
-            -p:PublishAot=false -p:PublishTrimmed=true -p:PublishSingleFile=true `
-            -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugSymbols=false -p:DebugType=None `
+            -p:PublishProfile=FolderProfile `
             -o build/installer-publish
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Get-ChildItem -LiteralPath build/installer-publish -Filter '*.pdb' -Recurse | Remove-Item -Force
 
       - name: Publish MetahookInstallerCLI
         run: |
           dotnet publish toolsrc/MetahookInstaller/src/MetahookInstallerCLI/MetahookInstallerCLI.csproj `
-            -c Release -r win-x64 --self-contained true `
-            -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
-            -p:EnableCompressionInSingleFile=false -p:PublishTrimmed=true -p:DebugSymbols=false -p:DebugType=None `
+            -c Release -r win-x64 `
             -o build/installer-cli-publish
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          # Native AOT discards PDBs; they are never part of the release payload.
+          Get-ChildItem -LiteralPath build/installer-cli-publish -Filter '*.pdb' -Recurse | Remove-Item -Force
 
       - name: Package and verify release
         id: package
