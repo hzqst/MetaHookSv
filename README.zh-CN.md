@@ -96,7 +96,7 @@ A. 请设置 `r_lightmap 1`
 
 3. Git 客户端
 
-4. Python 3.8+（同步 gamedata），以及 .NET 8 SDK（构建安装器）。
+4. Python 3.8+（同步 gamedata），以及 .NET 10 SDK（构建安装器）。
 
 ## 如何构建
 
@@ -116,7 +116,7 @@ cmake --install build/x86/Release --config Release
 
 ## 如何调试
 
-启用可选的 Visual Studio 启动项目（从源码构建 InstallerCLI 时需要兼容的 .NET SDK 和 .NET 8 runtime）：
+启用可选的 Visual Studio 启动项目（从源码构建 InstallerCLI 时需要兼容的 .NET SDK 和 .NET 10 runtime）：
 
 ```bash
 cmake -S . -B build/x86/Debug -G "Visual Studio 17 2022" -A Win32 -DMETAHOOKSV_ENABLE_LAUNCH_GAME=ON -DMETAHOOKSV_GAME_APPID=225840

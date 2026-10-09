@@ -11,7 +11,7 @@ This repository holds **no component source of its own**. Each component is a gi
 | `MetaHook/` | Loader, core logic, public API, project memory, docs | CMake (`MetaHook/CMakeLists.txt`) |
 | `Plugins/` | Game plugins (BulletPhysics, Renderer, CaptionMod, HeapPatch, ...) | CMake (per plugin) |
 | `PluginLibs/` | Shared plugin libraries (`Util*`) | CMake (per library) |
-| `toolsrc/` | Standalone tools: `BSPLocalizationTools`, `MetahookInstaller`, `SteamAppsLocation` | per repo (`.sln` / CMake) |
+| `toolsrc/` | Standalone tools: `BSPLocalizationTools`, `MetahookInstaller`, `SteamAppsLocation` | per repo (own solution / CMake) |
 
 Submodule workflow:
 
