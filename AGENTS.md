@@ -127,10 +127,10 @@ requires an existing MetaHook installation. Missing CLI sources use a cached,
 self-contained Installer release; source builds and explicit executable overrides
 take precedence. Keep the feature off by default and add targets only at top level.
 The plugin bootstraps pin the shared module commit, retained by the
-`launch-game-cmake-v2` tag (formerly `launch-game-cmake-v1`). When updating
-shared behavior for standalone clones, publish a new retained module commit and
-update all plugin pins together; do not move an existing module tag or rely on a
-feature branch remaining available.
+`launch-game-cmake-v3` tag (formerly `launch-game-cmake-v2`, then
+`launch-game-cmake-v1`). When updating shared behavior for standalone clones,
+publish a new retained module commit and update all plugin pins together; do not
+move an existing module tag or rely on a feature branch remaining available.
 
 The Windows workflow explicitly installs to `install/output` and packages only
 that tree plus the single-file MetahookInstaller GUI and MetahookInstallerCLI
