@@ -6,8 +6,9 @@ rem   GameAppId    Steam app ID (required)
 rem   LauncherMod  mod directory under the game root (optional; CLI default when omitted)
 rem   GameDir      game root override (optional; Steam discovery when omitted)
 rem
-rem It configures the CMake build tree under <repo>\build with the LaunchGame
-rem debug workflow enabled and then opens the generated MetaHookSv.sln.
+rem It configures the CMake build tree under <repo>\build\x86\Debug with the
+rem LaunchGame debug workflow enabled and then opens the generated MetaHookSv.sln.
+rem The tree leaf (Debug) selects the default install prefix install\x86\Debug.
 
 if not defined GameAppId (
     echo Error: GameAppId is not defined.
@@ -15,7 +16,7 @@ if not defined GameAppId (
 )
 
 for %%I in ("%~dp0..") do set "RepoRoot=%%~fI"
-set "BuildDir=%RepoRoot%\build"
+set "BuildDir=%RepoRoot%\build\x86\Debug"
 
 rem Keep quotes inside the value so a GameDir containing spaces stays one argument.
 set "DepArgs="

@@ -18,10 +18,12 @@
 #     PROJECT_BINARY_DIR, not CMAKE_BINARY_DIR;
 #   - generic cache variables (for example BUILD_SHARED_LIBS) are not forced.
 #
-# Usage (MSVC x86 / Win32 is required by every component):
-#   cmake -S . -B build -A Win32
-#   cmake --build build --config Release
-#   cmake --install build --config Release      # stages into install/
+# Usage (MSVC x86 / Win32 is required by every component). Configure one build
+# tree per configuration under build/<arch>/<config> so the default install
+# prefix can carry the same arch/config (see the layout block below):
+#   cmake -S . -B build/x86/Release -A Win32
+#   cmake --build build/x86/Release --config Release
+#   cmake --install build/x86/Release --config Release   # stages into install/x86/Release
 #
 # The aggregated sibling sources are injected per component (see the registry
 # below) so components consume the local submodules instead of downloading
@@ -52,9 +54,39 @@ endif()
 # ---------------------------------------------------------------------------
 option(METAHOOKSV_INIT_SUBMODULES "Run 'git submodule update --init --recursive' at configure time" ON)
 
+# ---------------------------------------------------------------------------
+# Shared build/install layout: build/<arch>/<config> and install/<arch>/<config>.
+#
+# Configure one CMake tree per configuration (for example -B build/x86/Release),
+# so the configuration is already known at configure time. That is required:
+# a multi-config generator cannot expand $<CONFIG> inside CMAKE_INSTALL_PREFIX,
+# because the generated cmake_install.cmake runs with CMAKE_INSTALL_PREFIX
+# already defined and would install into a literal "$<CONFIG>" directory.
+# ---------------------------------------------------------------------------
+if(CMAKE_SIZEOF_VOID_P EQUAL 4)
+    set(METAHOOKSV_BUILD_ARCH "x86")
+elseif(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    set(METAHOOKSV_BUILD_ARCH "x64")
+else()
+    message(FATAL_ERROR "Unsupported pointer size ${CMAKE_SIZEOF_VOID_P}; expected 4 (x86) or 8 (x64).")
+endif()
+
+# Derive the configuration from the build tree leaf (build/x86/<config>); fall
+# back to CMAKE_BUILD_TYPE for single-config generators, then to Release.
+get_filename_component(_metahooksv_build_leaf "${CMAKE_BINARY_DIR}" NAME)
+if(_metahooksv_build_leaf MATCHES "^(Debug|Release)$")
+    set(METAHOOKSV_BUILD_CONFIG "${_metahooksv_build_leaf}")
+elseif(CMAKE_BUILD_TYPE MATCHES "^(Debug|Release)$")
+    set(METAHOOKSV_BUILD_CONFIG "${CMAKE_BUILD_TYPE}")
+else()
+    set(METAHOOKSV_BUILD_CONFIG "Release")
+endif()
+unset(_metahooksv_build_leaf)
+
 # Stage every component into one shared prefix unless one was chosen explicitly.
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/install" CACHE PATH "Shared install prefix for all components" FORCE)
+    set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/install/${METAHOOKSV_BUILD_ARCH}/${METAHOOKSV_BUILD_CONFIG}"
+        CACHE PATH "Shared install prefix for all components" FORCE)
 elseif(DEFINED CACHE{METAHOOKSV_INSTALL_PREFIX})
     # Build trees from the former ExternalProject superbuild kept the shared
     # prefix in METAHOOKSV_INSTALL_PREFIX; carry it over once.
@@ -408,4 +440,5 @@ endif()
 
 message(STATUS "MetaHookSv aggregator configured.")
 message(STATUS "  Components: metahook=${_targets_metahook} plugins=${_targets_plugins} pluginlibs=${_targets_pluginlibs} tools=${_targets_toolsrc}")
+message(STATUS "  Layout: ${METAHOOKSV_BUILD_ARCH}/${METAHOOKSV_BUILD_CONFIG}")
 message(STATUS "  Install prefix: ${CMAKE_INSTALL_PREFIX}")

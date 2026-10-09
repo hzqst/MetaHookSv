@@ -36,20 +36,36 @@ if(NOT current_launcher STREQUAL launcher)
     message(FATAL_ERROR "The game's launcher changed. Reconfigure CMake before debugging. Expected '${launcher}', now '${current_launcher}'.")
 endif()
 
-# Only remove the private staging payload; never clean the game's directory.
-# Resolve the paths before the recursive removal, including junctions/symlinks.
-file(REAL_PATH "${binary_dir}" binary_real)
-file(REAL_PATH "${stage}/install/output" payload_real)
-file(REAL_PATH "${game_directory}" game_real)
-set(expected_payload "${binary_real}/launch-game/${CONFIG}/install/output")
+# The payload is the shared install directory install/<arch>/<config>; it is
+# cleared and re-staged so every F5 deploys a fresh, complete tree. Never touch
+# the game's own directory. Resolve the paths before the recursive removal,
+# including junctions/symlinks, and refuse unless the target is exactly the
+# expected install directory and does not overlap the game.
+set(payload "${install_dir_base}/${CONFIG}")
+# Materialize the install base so REAL_PATH has no missing path to warn about.
+file(MAKE_DIRECTORY "${install_dir_base}")
+if(EXISTS "${payload}")
+    file(REAL_PATH "${payload}" payload_real)
+else()
+    file(REAL_PATH "${install_dir_base}" base_real)
+    set(payload_real "${base_real}/${CONFIG}")
+endif()
+if(EXISTS "${game_directory}")
+    file(REAL_PATH "${game_directory}" game_real)
+else()
+    set(game_real "${game_directory}")
+endif()
+if(NOT payload_real STREQUAL "${install_dir_base}/${CONFIG}")
+    message(FATAL_ERROR "Refusing to clean an unexpected LaunchGame payload: ${payload_real}")
+endif()
 cmake_path(IS_PREFIX payload_real "${game_real}" NORMALIZE game_inside_payload)
 cmake_path(IS_PREFIX game_real "${payload_real}" NORMALIZE payload_inside_game)
-if(NOT payload_real STREQUAL expected_payload OR game_inside_payload OR payload_inside_game)
-    message(FATAL_ERROR "Refusing to clean an unexpected or overlapping LaunchGame payload: ${payload_real}")
+if(game_inside_payload OR payload_inside_game)
+    message(FATAL_ERROR "Refusing to clean a LaunchGame payload that overlaps the game directory: ${payload_real}")
 endif()
 file(REMOVE_RECURSE "${payload_real}")
 if(EXISTS "${payload_real}")
-    message(FATAL_ERROR "Cannot clear the private LaunchGame payload (a file may be locked): ${payload_real}")
+    message(FATAL_ERROR "Cannot clear the LaunchGame payload (a file may be locked): ${payload_real}")
 endif()
 run_checked("${CMAKE_COMMAND}" --install "${binary_dir}" --config "${CONFIG}" --prefix "${payload_real}")
 run_checked(${cli_command} ${target_args} -include-debug-symbols)

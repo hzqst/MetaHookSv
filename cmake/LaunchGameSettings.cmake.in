@@ -1,5 +1,6 @@
 set(launch_root [==[@_launch_root@]==])
 set(binary_dir [==[@CMAKE_BINARY_DIR@]==])
+set(install_dir_base [==[@_install_dir_base@]==])
 set(dotnet [==[@METAHOOKSV_DOTNET_EXECUTABLE@]==])
 set(cli_project [==[@_cli_project@]==])
 set(cli_executable [==[@_cli_executable@]==])

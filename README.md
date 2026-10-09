@@ -80,13 +80,15 @@ See [MetahookInstaller](https://github.com/MetaHookSv/MetahookInstaller) for all
 
 ## Manual Installation
 
-Runtime files are in `install/output/`. For Sven Co-op, merge `svencoop/`, its sibling resource directories and `platform/` into the game root. For other mods, merge the common `svencoop/` resources into the selected mod directory and add its matching resource directories.
+1. Download the release and extract the complete archive.
 
-Copy the required launcher, `libcurl.dll` and `steam_api.dll` into the game root. Rename the normal launcher to `svencoop.exe` for Sven Co-op; other games use `MetaHook.exe -insecure -game <mod-directory>`. Legacy blob engines use `MetaHook_blob.exe`.
+2. For Sven Co-op, merge `svencoop/`, its sibling resource directories and `platform/` into the game root. For other mods, merge the common `svencoop/` resources into the selected mod directory and add its matching resource directories.
+
+Copy the `MetaHook.exe` / `MetaHook_blob.dll` (depending on your engine type) into the game root. Rename the normal launcher to `svencoop.exe` for Sven Co-op; other games use `MetaHook.exe -insecure -game <mod-directory>`. Legacy blob engines use `MetaHook_blob.exe`.
 
 In the mod's `metahook/configs/`, copy `plugins_svencoop.lst` for Sven Co-op or `plugins_goldsrc.lst` for other games to `plugins.lst`, unless a user list already exists. BetterSpray is enabled by default for Sven Co-op.
 
-For a normal engine that imports SDL2, install both `install/output/SDL2.dll` and `SDL3.dll` together to enable IME candidate support. The GUI installer checks this condition automatically.
+For a non-blob engine that imports SDL2, copy both `SDL2.dll` and `SDL3.dll` into the game toot, to enable IME candidate support. The GUI installer checks this condition automatically.
 
 ## Build Requirements
 
@@ -105,30 +107,34 @@ Clone recursively, then run from the repository root in PowerShell:
 ```bash
 git clone --recursive https://github.com/MetaHookSv/MetaHookSv
 cd MetaHookSv
-cmake -S . -B build -G "Visual Studio 17 2022" -A Win32 "-DCMAKE_INSTALL_PREFIX=$PWD/install/output"
-cmake --build build --config Release --parallel 2
-cmake --install build --config Release
+cmake -S . -B build/x86/Release -G "Visual Studio 17 2022" -A Win32
+cmake --build build/x86/Release --config Release
+cmake --install build/x86/Release --config Release
 ```
 
 The aggregator builds MetaHook, MetaHook_blob, all enabled plugins (including BetterSpray), shared plugin libraries and CMake tools. Plugin list templates are owned by `assets/svencoop/metahook/configs/` and installed with the output. The .NET tools build separately; see [MetahookInstaller](https://github.com/MetaHookSv/MetahookInstaller).
-
-`windows.yml` builds, tests and packages the installer EXE plus the complete `install/output/` tree. Tag releases use this Windows artifact and the separate BSP tool artifact, with bilingual AI release notes.
 
 ## Debugging
 
 Enable the optional Visual Studio startup project (building InstallerCLI from source requires a compatible .NET SDK and .NET 8 runtime):
 
 ```bash
-cmake -S . -B build -G "Visual Studio 17 2022" -A Win32 -DMETAHOOKSV_ENABLE_LAUNCH_GAME=ON -DMETAHOOKSV_GAME_APPID=225840
+sctipts/debug-<GameName>.bat
+```
+
+or
+
+```bash
+cmake -S . -B build/x86/Debug -G "Visual Studio 17 2022" -A Win32 -DMETAHOOKSV_ENABLE_LAUNCH_GAME=ON -DMETAHOOKSV_GAME_APPID=225840
 # For a custom installation/mod, also pass:
 # "-DMETAHOOKSV_GAME_DIRECTORY=D:/Games/Half-Life" -DMETAHOOKSV_GAME_APPID=70 -DMETAHOOKSV_GAME_MOD=gearbox
 ```
 
-Open `build/MetaHookSv.sln`, select Debug/Win32, set **Launch-debugging / LaunchGame** as the startup project if necessary, and press **F5**. This incrementally builds all enabled components and InstallerCLI, installs into a private staging directory, deploys through InstallerCLI, and starts the actual game launcher with the native C++ debugger. The dummy executable is never launched or installed. Release/Win32 also works.
+Open `build/x86/Debug/MetaHookSv.sln`, select Debug/Win32, set **Launch-debugging / LaunchGame** as the startup project if necessary, and press **F5**. This incrementally builds all enabled components and InstallerCLI, installs into a private staging directory, deploys through InstallerCLI, and starts the actual game launcher with the native C++ debugger. The dummy executable is never launched or installed. Release/Win32 also works.
 
 `METAHOOKSV_GAME_DIRECTORY` defaults to empty (InstallerCLI discovers the Steam game by AppID); an explicit directory takes precedence. `METAHOOKSV_GAME_MOD` defaults to the app's base mod. `METAHOOKSV_GAME_ARGUMENTS` appends arguments after `-insecure -game <mod>`. Configuration builds the CLI and queries the game without deploying anything; invalid/missing games fail configuration. Reconfigure after changing the game/engine or moving its installation.
 
-Each startup build redeploys, including when no source changed. The private payload in `build/launch-game/<Debug|Release>/install/output` is recreated, leaving the normal install prefix unchanged. The aggregator uses the normal module names for Debug plugins/shared plugin libraries as well, matching the game's plugin list and dynamic library lookups. InstallerCLI preserves existing plugin selections, maps resources and selects `svencoop.exe`, `MetaHook.exe` or `MetaHook_blob.exe`; root PDBs are also deployed with their original names. Existing game files are overwritten according to the normal installer rules. Disabled components disappear from the staged payload, but previously deployed files are not uninstalled from the game.
+Each startup build redeploys, including when no source changed. The payload is the normal install directory `install/<x86/x64>/<Debug|Release>` for the build tree's configuration: it is cleared and re-staged with debug symbols, so it matches `cmake --install` for that prefix (the last one run wins). The aggregator uses the normal module names for Debug plugins/shared plugin libraries as well, matching the game's plugin list and dynamic library lookups. InstallerCLI preserves existing plugin selections, maps resources and selects `svencoop.exe`, `MetaHook.exe` or `MetaHook_blob.exe`; root PDBs are also deployed with their original names. Existing game files are overwritten according to the normal installer rules. Disabled components disappear from the staged payload, but previously deployed files are not uninstalled from the game.
 
 In **Tools / Options / Projects and Solutions / Build and Run**, enable building out-of-date projects before running and set **On Run, when build or deployment errors occur** to **Do not launch**. Stop the game before redeploying; locked files fail the build and no process is terminated automatically. Use the debugger's Modules window to check symbol loading if a breakpoint remains unbound. The workflow is opt-in and does not change normal builds or CI when disabled.
 
@@ -147,7 +153,7 @@ Plugins share this repository's CMake module: `METAHOOKSV_LAUNCH_GAME_MODULE_DIR
 
 `METAHOOKSV_INSTALLER_CLI_EXECUTABLE` can point to a self-contained CLI for offline use. Otherwise an available `toolsrc/MetahookInstaller/src` is built; when absent, CMake downloads `MetahookInstaller-windows-x64.7z` from the Installer release selected by `METAHOOKSV_INSTALLER_RELEASE` (default `latest`, or a fixed tag). The downloaded CLI needs no .NET installation. Plugin deployment requires a release supporting `-plugins-only` (v20261004c or later).
 
-Downloads use the release's SHA-256 when provided and cache the executable and resolved tag under `build/launch-game/installer/<release>`. A valid cache is reused offline, without checking for newer releases. Select another tag or remove only that private cache directory to update; corrupt or incompatible caches report an error. GitHub API rate limits can be avoided with `GH_TOKEN` or `GITHUB_TOKEN` in the environment; tokens are not cached. Each configuration receives its own CLI and fresh payload under `build/launch-game/<config>`. Keep Visual Studio's build-before-run enabled and its build-error behavior set to **Do not launch**.
+Downloads use the release's SHA-256 when provided and cache the executable and resolved tag under `build/<arch>/<config>/launch-game/installer/<release>`. A valid cache is reused offline, without checking for newer releases. Select another tag or remove only that private cache directory to update; corrupt or incompatible caches report an error. GitHub API rate limits can be avoided with `GH_TOKEN` or `GITHUB_TOKEN` in the environment; tokens are not cached. Each build tree receives its own CLI and deploys a fresh payload into `install/<arch>/<config>`. Keep Visual Studio's build-before-run enabled and its build-error behavior set to **Do not launch**.
 
 ## MetaHook
 
