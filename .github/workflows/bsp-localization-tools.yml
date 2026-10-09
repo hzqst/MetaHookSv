@@ -17,9 +17,9 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  SOLUTION_FILE_PATH: toolsrc\BSPLocalizationTools\BSPLocalizationTools.sln
+  SOLUTION_FILE_PATH: toolsrc\BSPLocalizationTools\BSPLocalizationTools.slnx
   BUILD_CONFIGURATION: Release
-  DOTNET_VERSION: 8.0.x
+  DOTNET_VERSION: 10.0.x
   RUNTIME_IDENTIFIER: win-x64
   OUTPUT_DIRECTORY: BSPLocalizationTools-Output
   ARCHIVE_NAME: BSPLocalizationTools-windows-x64.7z
@@ -50,15 +50,48 @@ jobs:
         run: dotnet test "${{env.SOLUTION_FILE_PATH}}" -c ${{env.BUILD_CONFIGURATION}} --no-restore
         shell: cmd
 
-      - name: Publish BSPLocalizationTools GUI
+      - name: Publish BSPLocalizationTools GUI (Native AOT)
         working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: dotnet publish "toolsrc\BSPLocalizationTools\src\BSPLocalizationTools\BSPLocalizationTools.csproj" -c ${{env.BUILD_CONFIGURATION}} -r ${{env.RUNTIME_IDENTIFIER}} --self-contained true -o "${{env.OUTPUT_DIRECTORY}}\GUI"
+        run: dotnet publish "toolsrc\BSPLocalizationTools\src\BSPLocalizationTools\BSPLocalizationTools.csproj" -c ${{env.BUILD_CONFIGURATION}} -r ${{env.RUNTIME_IDENTIFIER}} -o "${{env.OUTPUT_DIRECTORY}}\GUI"
         shell: cmd
 
-      - name: Publish BSPLocalizationTools CLI
+      - name: Publish BSPLocalizationTools CLI (Native AOT)
         working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: dotnet publish "toolsrc\BSPLocalizationTools\src\BSPLocalizationToolsCLI\BSPLocalizationToolsCLI.csproj" -c ${{env.BUILD_CONFIGURATION}} -r ${{env.RUNTIME_IDENTIFIER}} --self-contained true -o "${{env.OUTPUT_DIRECTORY}}\CLI"
+        run: dotnet publish "toolsrc\BSPLocalizationTools\src\BSPLocalizationToolsCLI\BSPLocalizationToolsCLI.csproj" -c ${{env.BUILD_CONFIGURATION}} -r ${{env.RUNTIME_IDENTIFIER}} -o "${{env.OUTPUT_DIRECTORY}}\CLI"
         shell: cmd
+
+      - name: Verify publish output
+        shell: pwsh
+        run: |
+          # Native AOT discards PDBs; the release payload never ships them.
+          Get-ChildItem -LiteralPath $env:OUTPUT_DIRECTORY -Filter *.pdb -Recurse | Remove-Item -Force
+
+          $cliFiles = @(Get-ChildItem -LiteralPath (Join-Path $env:OUTPUT_DIRECTORY 'CLI') -Recurse -File)
+          if ($cliFiles.Count -ne 1 -or $cliFiles[0].Name -ne 'BSPLocalizationToolsCLI.exe') {
+            throw 'CLI publish must contain exactly one self-contained executable.'
+          }
+
+          # Native AOT cannot fold Avalonia's native backends into the executable,
+          # and satellite resource assemblies are still emitted for localized
+          # strings. The published set is exact.
+          $exeName = 'BSPLocalizationTools.exe'
+          $nativeDlls = @('av_libglesv2.dll', 'libSkiaSharp.dll', 'libHarfBuzzSharp.dll')
+          $guiDirectory = Join-Path $env:OUTPUT_DIRECTORY 'GUI'
+          $unexpected = @(Get-ChildItem -LiteralPath $guiDirectory -Recurse -File | Where-Object {
+            $_.Name -ne $exeName -and $nativeDlls -notcontains $_.Name -and
+            $_.Name -ne 'BSPLocalizationTools.resources.dll'
+          })
+          if ($unexpected.Count -gt 0) {
+            throw "GUI publish contains unexpected files: $($unexpected.Name -join ', ')"
+          }
+          if (!(Test-Path -LiteralPath (Join-Path $guiDirectory $exeName) -PathType Leaf)) {
+            throw "GUI publish is missing its executable: $exeName"
+          }
+          foreach ($nativeDll in $nativeDlls) {
+            if (!(Test-Path -LiteralPath (Join-Path $guiDirectory $nativeDll) -PathType Leaf)) {
+              throw "GUI publish is missing its native backend library: $nativeDll"
+            }
+          }
 
       - name: Copy README to output
         working-directory: ${{env.GITHUB_WORKSPACE}}
