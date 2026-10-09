@@ -91,10 +91,16 @@ component targets. It resolves the shared VC-LTL and injects each component's
 that component's scope, which shadow the component's own cache defaults.
 
 ```bash
-cmake -S . -B build -A Win32             # MSVC x86 is required by all components
-cmake --build build --config Release
-cmake --install build --config Release   # stages into install/ (CMAKE_INSTALL_PREFIX)
+cmake -S . -B build/x86/Release -A Win32   # MSVC x86 is required by all components
+cmake --build build/x86/Release --config Release
+cmake --install build/x86/Release --config Release   # stages into install/x86/Release
 ```
+
+The default layout is `build/<arch>/<config>` and `install/<arch>/<config>`:
+one build tree per configuration, with `<arch>` derived from the pointer size
+and `<config>` from the build-tree leaf (`build/x86/Debug` → `install/x86/Debug`).
+A multi-config generator cannot expand `$<CONFIG>` inside `CMAKE_INSTALL_PREFIX`,
+which is exactly why the configuration must live in the tree path.
 
 Per-component and per-group options (`METAHOOKSV_BUILD_*`) default to `ON`.
 Group targets `plugins`, `pluginlibs`, `tools` and `all-components` build a
@@ -108,8 +114,8 @@ and runtime lookups. Vendor targets retain their own naming conventions.
 
 Exception: `METAHOOKSV_ENABLE_LAUNCH_GAME=ON` adds an opt-in Visual Studio
 `LaunchGame` startup project. Its deploy dependency builds InstallerCLI (not the
-GUI), stages the complete enabled native install under
-`build/launch-game/<config>/install/output`, and deploys with debug symbols.
+GUI), clears and re-stages the complete enabled native install into the shared
+payload `install/<arch>/<config>`, and deploys with debug symbols.
 Configuration builds/queries the CLI without modifying the game. Empty
 `METAHOOKSV_GAME_DIRECTORY` uses InstallerCLI's Steam discovery by AppID.
 See the root README debugging section and `cmake/LaunchGame.cmake`.

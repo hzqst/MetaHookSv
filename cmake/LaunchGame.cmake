@@ -30,6 +30,18 @@ function(metahooksv_add_launch_game)
     endif()
 
     set(_launch_root "${CMAKE_BINARY_DIR}/launch-game")
+    # The deployed payload shares the normal install layout: install/<arch>/<config>.
+    # Root CMakeLists provides METAHOOKSV_BUILD_ARCH; a standalone plugin (which
+    # pins an older module tag and normally never reaches this path) falls back
+    # to the platform implied by its own pointer size.
+    if(METAHOOKSV_BUILD_ARCH)
+        set(_install_arch "${METAHOOKSV_BUILD_ARCH}")
+    elseif(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set(_install_arch "x64")
+    else()
+        set(_install_arch "x86")
+    endif()
+    set(_install_dir_base "${CMAKE_SOURCE_DIR}/install/${_install_arch}")
     set(_cli_root "${CMAKE_SOURCE_DIR}/toolsrc/MetahookInstaller/src")
     set(_cli_project "${_cli_root}/MetahookInstallerCLI/MetahookInstallerCLI.csproj")
     file(MAKE_DIRECTORY "${_launch_root}/configure")
