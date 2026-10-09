@@ -427,7 +427,7 @@ if(TARGET MetaHook_blob)
     add_dependencies(all-components MetaHook_blob)
 endif()
 
-# toolsrc/BSPLocalizationTools (.NET 8) and toolsrc/MetahookInstaller (.NET 10) are
+# toolsrc/BSPLocalizationTools (.NET 10) and toolsrc/MetahookInstaller (.NET 10) are
 # .NET projects driven by their own solution files; they are intentionally not
 # aggregated here.
 if(METAHOOKSV_BUILD_TOOLSRC)
