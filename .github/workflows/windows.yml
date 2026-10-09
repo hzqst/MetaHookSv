@@ -93,9 +93,25 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $workspace = (Resolve-Path '.').Path
           $publishDirectory = Join-Path $workspace 'build/installer-publish'
+          $installerName = 'MetahookInstallerAvalonia.Desktop.exe'
+          $installerFiles = @(Get-ChildItem -LiteralPath $publishDirectory -Recurse -File -Filter $installerName)
+          if ($installerFiles.Count -ne 1) {
+            throw "Installer publish must contain exactly one $installerName."
+          }
+          # Native AOT cannot fold Avalonia's native backends into the executable,
+          # so the GUI ships as the executable plus its native libraries. The set
+          # is exact: any other file means an unintended payload crept in.
+          $expectedNativeDlls = @('av_libglesv2.dll', 'libSkiaSharp.dll', 'libHarfBuzzSharp.dll')
           $publishedFiles = @(Get-ChildItem -LiteralPath $publishDirectory -Recurse -File)
-          if ($publishedFiles.Count -ne 1 -or $publishedFiles[0].Name -ne 'MetahookInstallerAvalonia.Desktop.exe') {
-            throw 'Installer publish must contain exactly one self-contained executable.'
+          $unexpectedFiles = @($publishedFiles |
+            Where-Object { $_.Name -ne $installerName -and $expectedNativeDlls -notcontains $_.Name })
+          if ($unexpectedFiles.Count -gt 0) {
+            throw "Installer publish contains unexpected files: $($unexpectedFiles.Name -join ', ')"
+          }
+          foreach ($nativeDll in $expectedNativeDlls) {
+            if (!(Test-Path -LiteralPath (Join-Path $publishDirectory $nativeDll) -PathType Leaf)) {
+              throw "Installer publish is missing its native backend library: $nativeDll"
+            }
           }
           $cliPublishDirectory = Join-Path $workspace 'build/installer-cli-publish'
           $cliFiles = @(Get-ChildItem -LiteralPath $cliPublishDirectory -Recurse -File)
@@ -126,7 +142,8 @@ jobs:
             throw 'Packaging requires fresh staging, extraction and archive paths.'
           }
           New-Item -ItemType Directory -Path (Join-Path $staging 'install'), (Split-Path $archive), $extracted, $debugStaging, $debugExtracted -Force | Out-Null
-          Copy-Item -LiteralPath $publishedFiles[0].FullName -Destination (Join-Path $staging 'MetahookInstaller.exe')
+          Copy-Item -LiteralPath $publishedFiles.FullName -Destination $staging
+          Move-Item -LiteralPath (Join-Path $staging $installerName) -Destination (Join-Path $staging 'MetahookInstaller.exe') -Force
           Copy-Item -LiteralPath $cliFiles[0].FullName -Destination (Join-Path $staging 'MetahookInstallerCLI.exe')
           # Main archive never ships PDBs; the debug-info archive carries each
           # PDB next to its PE body in the same install-relative layout.
@@ -145,7 +162,9 @@ jobs:
           }
           Push-Location $staging
           try {
-            & 7z a -t7z $archive 'MetahookInstaller.exe' 'MetahookInstallerCLI.exe' 'install/output' -r
+            # The installer and its native backend libraries are named explicitly;
+            # 'install/output' is recursive. Nothing else may reach the staging root.
+            & 7z a -t7z $archive 'MetahookInstaller.exe' 'MetahookInstallerCLI.exe' $expectedNativeDlls 'install/output' -r
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           } finally {
             Pop-Location
