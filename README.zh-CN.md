@@ -128,7 +128,7 @@ cmake -S . -B build/x86/Debug -G "Visual Studio 17 2022" -A Win32 -DMETAHOOKSV_E
 
 `METAHOOKSV_GAME_DIRECTORY` 默认留空，由 InstallerCLI 按 AppID 查找 Steam 游戏目录；显式填写时优先使用填写值。`METAHOOKSV_GAME_MOD` 默认使用该 AppID 的基础 Mod。`METAHOOKSV_GAME_ARGUMENTS` 追加到 `-insecure -game <mod>` 之后。配置阶段会构建 CLI 并只读查询游戏，不执行部署；游戏缺失或无效会使配置失败。更换游戏、引擎或安装位置后需重新配置 CMake。
 
-每次构建启动项目均会部署，包括未修改源码时。部署载荷就是该构建树配置对应的普通安装目录 `install/<x86|x64>/<Debug|Release>`：它会先被清空再以带调试符号的载荷重新 Install，因此与该前缀下的 `cmake --install` 输出一致（同一配置下以最后运行者为准）。聚合构建中的 Debug 插件和共享插件库统一使用正常模块名，与游戏插件列表及动态加载名称一致。InstallerCLI 保留已有插件选择，映射资源并选择 `svencoop.exe`、`MetaHook.exe` 或 `MetaHook_blob.exe`；根目录 PDB 也会按原文件名部署。游戏文件按既有 Installer 规则覆盖。停用组件后，它会从暂存 payload 消失，但不会自动卸载游戏目录中先前部署的文件。
+每次构建启动项目均会部署，包括未修改源码时。部署载荷就是该构建树配置对应的普通安装目录 `install/<x86|x64>/<Debug|Release>`：它会先被清空再以带调试符号的载荷重新 Install，因此与该前缀下的 `cmake --install` 输出一致（同一配置下以最后运行者为准）。聚合构建中的 Debug 插件和共享插件库统一使用正常模块名，与游戏插件列表及动态加载名称一致。InstallerCLI 保留已有插件选择，映射资源并选择 `svencoop.exe`、`MetaHook.exe` 或 `MetaHook_blob.exe`；根目录 PDB 也会按原文件名部署。DeployGame 通过 `-source` 传入载荷路径，因此 CLI 不会再在自身附近搜索发布包专用的 `install/output` 布局。游戏文件按既有 Installer 规则覆盖。停用组件后，它会从暂存 payload 消失，但不会自动卸载游戏目录中先前部署的文件。
 
 在 **工具 / 选项 / 项目和解决方案 / 生成并运行** 中，启用运行前构建过期项目，将构建或部署出错时的行为设为 **不启动**。重新部署前请退出游戏；文件占用会导致构建失败，不会自动结束进程。断点未绑定时可在调试器的“模块”窗口检查符号加载。此功能默认关闭，不影响普通构建或 CI。
 
@@ -145,9 +145,9 @@ cmake --build build/heappatch --config Debug --target LaunchGame
 
 插件共享本仓库的 CMake 模块：优先使用 `METAHOOKSV_LAUNCH_GAME_MODULE_DIR` 指定的目录，其次使用所在聚合仓库；独立 clone 时将固定提交的源码包下载到构建目录，不拉取子模块、不配置聚合工程。关闭 LaunchGame 时不下载模块或 CLI。
 
-可通过 `METAHOOKSV_INSTALLER_CLI_EXECUTABLE` 指定自包含 CLI，以便离线使用。否则存在 `toolsrc/MetahookInstaller/src` 时从源码构建；缺失时从 Installer Release 下载 `MetahookInstaller-windows-x64.7z`，版本由 `METAHOOKSV_INSTALLER_RELEASE` 选择（默认 `latest`，也可填写固定 tag）。下载的 CLI 无需安装 .NET。插件部署要求支持 `-plugins-only` 的版本（v20261004c 或之后的版本）。
+可通过 `METAHOOKSV_INSTALLER_CLI_EXECUTABLE` 指定自包含 CLI，以便离线使用。否则存在 `toolsrc/MetahookInstaller/src` 时从源码构建；缺失时从 Installer Release 下载 `MetahookInstaller-windows-x64.7z`，版本由 `METAHOOKSV_INSTALLER_RELEASE` 选择（默认 `latest`，也可填写固定 tag）。下载的 CLI 无需安装 .NET。插件部署要求支持 `-plugins-only` 的版本（v20261004c 或之后的版本）；下载的 CLI 还需支持 `-source`（见下文）。
 
-下载使用发布资产提供的 SHA-256 校验，将 EXE 和实际 tag 缓存到 `build/<arch>/<config>/launch-game/installer/<release>`。有效缓存可离线复用，不自动查询升级；切换 tag 或仅清理该私有缓存目录后重新下载。缓存损坏或 CLI 过旧时会明确报错。GitHub API 限流时可通过环境变量 `GH_TOKEN` 或 `GITHUB_TOKEN` 提供凭据，凭据不会写入缓存。每个构建树使用各自 CLI，并把全新载荷部署到 `install/<arch>/<config>`。VS 必须开启运行前构建，并将构建失败策略设为 **不启动**。
+下载使用发布资产提供的 SHA-256 校验，将 EXE 和实际 tag 缓存到 `build/<arch>/<config>/launch-game/installer/<release>`。有效缓存可离线复用，不自动查询升级；切换 tag 或仅清理该私有缓存目录后重新下载。缓存损坏或 CLI 过旧时会明确报错；不支持 `-source` 的旧 Release 会在部署时报出未知参数错误。GitHub API 限流时可通过环境变量 `GH_TOKEN` 或 `GITHUB_TOKEN` 提供凭据，凭据不会写入缓存。每个构建树使用各自 CLI，并把全新载荷部署到 `install/<arch>/<config>`。VS 必须开启运行前构建，并将构建失败策略设为 **不启动**。
 
 ## MetaHook
 

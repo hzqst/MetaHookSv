@@ -68,5 +68,7 @@ if(EXISTS "${payload_real}")
     message(FATAL_ERROR "Cannot clear the LaunchGame payload (a file may be locked): ${payload_real}")
 endif()
 run_checked("${CMAKE_COMMAND}" --install "${binary_dir}" --config "${CONFIG}" --prefix "${payload_real}")
-run_checked(${cli_command} ${target_args} -include-debug-symbols)
+# The payload lives at install/<arch>/<config>, so the CLI cannot find it by
+# searching for an install/output folder next to itself: pass it explicitly.
+run_checked(${cli_command} ${target_args} -source "${payload_real}" -include-debug-symbols)
 message(STATUS "LaunchGame deployment ready: ${launcher}")
