@@ -189,6 +189,12 @@ You can even play with 200k epolys models and still keep a high framerate.
 
 [Link](https://github.com/MetaHookSv/Renderer)
 
+HL25 startup video uses Mile.FFmpeg 6.1.0.0, downloaded once from its fixed release
+with SHA-256 verification. `MILE_FFMPEG_ROOT` (CMake or environment) can supply an
+extracted SDK instead. Its x86 DLL and license install under
+`svencoop/metahook/dlls/Mile.FFmpeg/`; only HL25 playback loads the DLL explicitly.
+See [startup video and distribution requirements](Plugins/Renderer/docs/en/startup-video.md).
+
 ### StudioEvents
 
 This plugin can block studio-event sound spamming with controllable cvars.
