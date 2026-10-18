@@ -269,11 +269,14 @@ function(metahooksv_dependency_path dep_var out_var)
     set(${out_var} "${_path}" PARENT_SCOPE)
 endfunction()
 
+include(cmake/TargetFolders.cmake)
+
 # Add one component from its own function scope: the injected dependency
 # variables are normal variables of this call, so they reach only that
 # component's directory and shadow its cache defaults (CMP0126). Locals are
 # '_'-prefixed because the component's directory inherits this scope too.
-function(metahooksv_add_component _component_path _component_deps _component_folder)
+function(metahooksv_add_component _component_path _component_deps
+        _component_group_folder _component_folder _component_recursive)
     if(NOT _component_deps STREQUAL "-")
         string(REPLACE "," ";" _dep_list "${_component_deps}")
         foreach(_dep IN LISTS _dep_list)
@@ -296,19 +299,25 @@ function(metahooksv_add_component _component_path _component_deps _component_fol
         endif()
     endif()
 
-    add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/${_component_path}" "${CMAKE_CURRENT_BINARY_DIR}/${_component_path}")
+    set(_component_source_dir "${CMAKE_CURRENT_SOURCE_DIR}/${_component_path}")
+    add_subdirectory("${_component_source_dir}"
+        "${CMAKE_CURRENT_BINARY_DIR}/${_component_path}")
 
-    # Group a component's own targets into one IDE filter. Vendored libraries keep
-    # the folder their component assigned them, so an existing FOLDER is left as is.
+    # Group a component's own targets into one IDE filter. A component may add
+    # subdirectories of its own (tests, ...); those targets belong to the same
+    # component. Vendored libraries keep the folder their component assigned
+    # them, so an existing FOLDER is left as is -- except when it merely repeats
+    # the group root, which is moved to the component's subfilter.
     if(NOT _component_folder STREQUAL "-")
-        get_property(_component_targets DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${_component_path}"
-            PROPERTY BUILDSYSTEM_TARGETS)
-        foreach(_component_target IN LISTS _component_targets)
-            get_target_property(_existing_folder "${_component_target}" FOLDER)
-            if(NOT _existing_folder OR _existing_folder STREQUAL "_existing_folder-NOTFOUND")
-                set_target_properties("${_component_target}" PROPERTIES FOLDER "${_component_folder}")
-            endif()
-        endforeach()
+        if(_component_recursive)
+            metahooksv_collect_component_targets("${_component_source_dir}"
+                _component_targets)
+        else()
+            get_property(_component_targets DIRECTORY "${_component_source_dir}"
+                PROPERTY BUILDSYSTEM_TARGETS)
+        endif()
+        metahooksv_assign_component_folders("${_component_targets}"
+            "${_component_group_folder}" "${_component_folder}")
     endif()
 endfunction()
 
@@ -378,19 +387,32 @@ foreach(_def IN LISTS METAHOOKSV_COMPONENT_DEFS)
     # Each component's primary target is named after its directory.
     get_filename_component(_name "${_path}" NAME)
     message(STATUS "Enabling ${_path} (target '${_name}')")
-    # Each group maps to one IDE filter; MetaHook keeps its own.
+    # Each group maps to one IDE filter. Plugins and PluginLibs add a
+    # per-component subfilter so their targets, tests and *_AVX2 variants are
+    # grouped by component instead of piling up at the group root.
     if(_group STREQUAL "metahook")
+        set(_component_group_folder "MetaHookCore")
         set(_component_folder "MetaHookCore")
+        set(_component_recursive FALSE)
     elseif(_group STREQUAL "plugins")
-        set(_component_folder "MetaHookPlugins")
+        set(_component_group_folder "MetaHookPlugins")
+        set(_component_folder "MetaHookPlugins/${_name}")
+        set(_component_recursive TRUE)
     elseif(_group STREQUAL "pluginlibs")
-        set(_component_folder "MetaHookPluginLibs")
+        set(_component_group_folder "MetaHookPluginLibs")
+        set(_component_folder "MetaHookPluginLibs/${_name}")
+        set(_component_recursive TRUE)
     elseif(_group STREQUAL "toolsrc")
+        set(_component_group_folder "MetaHookTools")
         set(_component_folder "MetaHookTools")
+        set(_component_recursive FALSE)
     else()
+        set(_component_group_folder "-")
         set(_component_folder "-")
+        set(_component_recursive FALSE)
     endif()
-    metahooksv_add_component("${_path}" "${_dep_vars}" "${_component_folder}")
+    metahooksv_add_component("${_path}" "${_dep_vars}"
+        "${_component_group_folder}" "${_component_folder}" "${_component_recursive}")
     if(NOT TARGET ${_name})
         message(FATAL_ERROR "${_path} did not define its primary target '${_name}'.")
     endif()
