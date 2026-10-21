@@ -65,6 +65,11 @@ component.
 
 ## Shared C/C++ formatting
 
+Full setup, command and checked-scope notes live in the Basic Memory project
+`metahooksv`, note `CppFormatting` (`memory/CppFormatting.md`,
+`permalink: metahooksv/cpp-formatting`). The rules below always apply; read that
+note before changing formatting tooling or CI.
+
 `thirdparty/FormatValidation` owns the DiligentCore-style configuration and pinned
 clang-format 23.1.3 validator. Consumers use `FORMAT_VALIDATION_SOURCE_PATH` (CMake
 or environment); standalone consumers otherwise fetch the retained fixed commit.
