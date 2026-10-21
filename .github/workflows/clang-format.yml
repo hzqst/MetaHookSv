@@ -35,6 +35,7 @@ jobs:
             Plugins/ResourceReplacer \
             Plugins/SCCameraFix \
             Plugins/SCModelDownloader \
+            Plugins/StandaloneView \
             Plugins/SteamScreenshots \
             Plugins/StudioEvents \
             Plugins/ThreadGuard \
