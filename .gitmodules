@@ -101,3 +101,7 @@
 [submodule "thirdparty/FormatValidation"]
 	path = thirdparty/FormatValidation
 	url = https://github.com/MetaHookSv/FormatValidation.git
+[submodule "Plugins/StandaloneView"]
+	path = Plugins/StandaloneView
+	url = https://github.com/MetaHookSv/StandaloneView.git
+	branch = main

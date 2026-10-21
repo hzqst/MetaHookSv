@@ -245,6 +245,12 @@ VGUI2Extension 是一个 VGUI2 的 modding 框架，为其他插件提供对 VGU
 
 [链接](https://github.com/MetaHookSv/BetterSpray)
 
+### StandaloneView
+
+该插件让其他插件通过引擎自身的 `V_RenderView` 渲染额外的 3D 视图（例如菜单中的模型预览），装不装 Renderer 插件都能工作，也不依赖 Renderer。
+
+[链接](https://github.com/MetaHookSv/StandaloneView)
+
 ### HUDColor
 
 该插件可以修改游戏中HUD的颜色。

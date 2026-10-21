@@ -261,6 +261,12 @@ BetterSpray is a plugin for MetaHookSV that enhances Sven Co-op and GoldSrc’s 
 
 [Link](https://github.com/MetaHookSv/BetterSpray)
 
+### StandaloneView
+
+This plugin lets other plugins render additional 3D views, such as a model preview in a menu, through the engine's own `V_RenderView`, with or without the Renderer plugin and without depending on it.
+
+[Link](https://github.com/MetaHookSv/StandaloneView)
+
 ### HUDColor
 
 Changing HUD colors in game.
