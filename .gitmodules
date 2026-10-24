@@ -105,3 +105,7 @@
 	path = Plugins/StandaloneView
 	url = https://github.com/MetaHookSv/StandaloneView.git
 	branch = main
+[submodule "Plugins/CDAudioFix"]
+	path = Plugins/CDAudioFix
+	url = https://github.com/MetaHookSv/CDAudioFix.git
+	branch = main

@@ -251,6 +251,12 @@ VGUI2Extension 是一个 VGUI2 的 modding 框架，为其他插件提供对 VGU
 
 [链接](https://github.com/MetaHookSv/StandaloneView)
 
+### CDAudioFix
+
+该插件修复音乐淡出被打断后 MP3 音乐音量变小的问题，例如 Career 中 `MatchWin` 音乐尚未淡出完毕就进入了下一局。若曲目在 `cd fadeout` 期间播放结束，引擎会把淡出后的音量带到下一次 `mp3 play`；插件会在每个新 MP3 流开始播放前恢复为 `MP3Volume`。
+
+[链接](https://github.com/MetaHookSv/CDAudioFix)
+
 ### HUDColor
 
 该插件可以修改游戏中HUD的颜色。
