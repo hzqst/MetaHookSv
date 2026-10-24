@@ -267,6 +267,12 @@ This plugin lets other plugins render additional 3D views, such as a model previ
 
 [Link](https://github.com/MetaHookSv/StandaloneView)
 
+### CDAudioFix
+
+This plugin fixes MP3 music that plays too quietly after an interrupted fade-out, for example when the next Career round starts while the `MatchWin` music is still fading. If a track ends during `cd fadeout`, the engine keeps the faded volume for the next `mp3 play`. The plugin restores `MP3Volume` on each new MP3 stream before playback starts.
+
+[Link](https://github.com/MetaHookSv/CDAudioFix)
+
 ### HUDColor
 
 Changing HUD colors in game.
